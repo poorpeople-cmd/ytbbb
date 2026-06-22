@@ -1,0 +1,57 @@
+name: Trendy Live Stream Timer
+
+on:
+  workflow_dispatch:
+    inputs:
+      stream_key:
+        description: 'Apni YouTube Stream Key yahan paste karein'
+        required: true
+        type: string
+      hours:
+        description: 'Kitne Hours stream karna hai?'
+        required: true
+        default: '1'
+        type: string
+      minutes:
+        description: 'Kitne Minutes?'
+        required: true
+        default: '0'
+        type: string
+      seconds:
+        description: 'Kitne Seconds?'
+        required: true
+        default: '0'
+        type: string
+
+jobs:
+  stream-to-youtube:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg and Modern Fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-inter
+
+      - name: Start Broadcast with Animated Timer
+        run: |
+          # Manual inputs ko variables mein store karna
+          STREAM_KEY="${{ github.event.inputs.stream_key }}"
+          HOURS=${{ github.event.inputs.hours }}
+          MINS=${{ github.event.inputs.minutes }}
+          SECS=${{ github.event.inputs.seconds }}
+          
+          TOTAL_SECONDS=$((HOURS * 3600 + MINS * 60 + SECS))
+          echo "Stream configured for $TOTAL_SECONDS seconds."
+
+          # Trendy Typography Style
+          DRAWTEXT="drawtext=fontfile=/usr/share/fonts/truetype/inter/Inter-Bold.ttf: text='%{pts\:hms}': fontcolor=white: fontsize=140: shadowcolor=black@0.8: shadowx=8: shadowy=8: x=(w-tw)/2: y=(h-th)/2"
+
+          # Live Broadcast
+          ffmpeg -stream_loop -1 -re -i video.mp4 -vf "$DRAWTEXT" \
+            -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
+            -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
+            -t $TOTAL_SECONDS \
+            -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
