@@ -1,51 +1,17 @@
-name: PKT Auto-Stop Live Stream
-
-on:
-  workflow_dispatch:
-    inputs:
-      stream_key:
-        description: 'Apni YouTube Stream Key paste karein'
-        required: true
-        type: string
-      video_file:
-        description: 'Apni video file ka naam likhein (e.g., video.mp4)'
-        required: true
-        default: 'video.mp4'
-        type: string
-      stop_time:
-        description: 'Kab stop karna hai? PKT Time (e.g., 03:00 AM, 11:30 PM)'
-        required: true
-        default: '12:00 PM'
-        type: string
-      # 👇 [Bot-Only] Yeh input system khud use karega exact target yaad rakhne ke liye
-      target_epoch:
-        description: '[BOT USE ONLY] Absolute target timestamp'
-        default: '0'
-        type: string
-
-permissions:
-  contents: write
-  actions: write
-
-jobs:
-  stream-to-youtube:
-    runs-on: ubuntu-latest
-    timeout-minutes: 360 # GitHub max limit
-
-    steps:
+steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install FFmpeg and Modern Fonts
+      - name: Install FFmpeg and Reliable Fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-inter
+          # 🔥 100% working Ubuntu font install kiya hai
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
 
       - name: Start Dynamic Auto-Stop Broadcast
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          # 🔥 Pura system ab Pakistan Standard Time par chalega!
           TZ: "Asia/Karachi"
         run: |
           STREAM_KEY="${{ github.event.inputs.stream_key }}"
@@ -53,18 +19,14 @@ jobs:
           STOP_TIME="${{ github.event.inputs.stop_time }}"
           TARGET_EPOCH="${{ github.event.inputs.target_epoch }}"
 
-          # Current waqt (Seconds mein)
           NOW=$(date +%s)
 
-          # Agar yeh pehli baar chal raha hai toh Target Time calculate karo
           if [ "$TARGET_EPOCH" -eq "0" ]; then
             DATE_TODAY=$(date +%Y-%m-%d)
-            # Aaj ki date aur aapke diye gaye time ko mila kar dekho
             CALC_EPOCH=$(date -d "$DATE_TODAY $STOP_TIME" +%s)
             
-            # Agar bataya gaya time current time se peeche hai, iska matlab kal (tomorrow) ka time hai
             if [ "$CALC_EPOCH" -le "$NOW" ]; then
-              TARGET_EPOCH=$((CALC_EPOCH + 86400)) # 86400 seconds = 1 Day add kar do
+              TARGET_EPOCH=$((CALC_EPOCH + 86400))
               echo "[*] Time has passed for today. Scheduled for TOMORROW!"
             else
               TARGET_EPOCH=$CALC_EPOCH
@@ -72,7 +34,6 @@ jobs:
             fi
           fi
 
-          # Bacha hua waqt calculate karo
           TOTAL_SECONDS=$((TARGET_EPOCH - NOW))
 
           if [ "$TOTAL_SECONDS" -le "0" ]; then
@@ -80,28 +41,22 @@ jobs:
              exit 0
           fi
 
-          echo "==================================================="
-          echo "[*] Target Stop Time: $STOP_TIME (PKT)"
-          echo "[*] Total time remaining to stream: $TOTAL_SECONDS seconds"
-          echo "==================================================="
-
-          MAX_RUN_TIME=19800 # 5.5 Hours = 19800 Seconds
+          MAX_RUN_TIME=19800
 
           if [ "$TOTAL_SECONDS" -gt "$MAX_RUN_TIME" ]; then
             CURRENT_STREAM_TIME=$MAX_RUN_TIME
             WILL_LOOP="YES"
-            echo "[!] Stream is longer than 5.5 hours. It will auto-loop after 5.5 hours."
           else
             CURRENT_STREAM_TIME=$TOTAL_SECONDS
             WILL_LOOP="NO"
-            echo "[+] Final stretch! Stream will end accurately at $STOP_TIME."
           fi
 
-          # 🔥 LIVE CLOCK LOGIC: Ab screen par current PKT time chalega! (e.g., 04:15:30 PM)
-          # %{localtime\:%I\:%M\:%S %p} = 12-Hour format with AM/PM
-          DRAWTEXT="drawtext=fontfile=/usr/share/fonts/truetype/inter/Inter-Bold.ttf: text='%{localtime\:%I\\:%M\\:%S %p}': fontcolor=white: fontsize=140: shadowcolor=black@0.8: shadowx=8: shadowy=8: x=(w-tw)/2: y=(h-th)/2"
+          # 🔥 FIXED: Bulletproof Font Path & Box Overlay for Match Streams
+          FONT_PATH="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+          
+          # Incrementing Timer (00:00:00), size 60, white text, black transparent box, top-right position
+          DRAWTEXT="drawtext=fontfile=$FONT_PATH: text='%{pts\:hms}': fontcolor=white: fontsize=60: box=1: boxcolor=black@0.6: boxborderw=10: x=w-tw-50: y=50"
 
-          # Live Broadcast with precise timer constraint (-t)
           echo "[🚀] STARTING BROADCAST..."
           ffmpeg -stream_loop -1 -re -i "$VIDEO_FILE" -vf "$DRAWTEXT" \
             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
@@ -109,9 +64,6 @@ jobs:
             -t $CURRENT_STREAM_TIME \
             -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
 
-          echo "[✅] FFMPEG BROADCAST PAUSED FOR THIS RUNNER!"
-
-          # Loop Logic (Agla Runner Trigger Karna with absolute memory)
           if [ "$WILL_LOOP" == "YES" ]; then
             echo "[🔄] TRIGGERING NEXT RUNNER..."
             gh workflow run "${{ github.workflow }}" \
@@ -119,11 +71,147 @@ jobs:
               -f video_file="$VIDEO_FILE" \
               -f stop_time="$STOP_TIME" \
               -f target_epoch="$TARGET_EPOCH"
-            
-            echo "[+] Next Runner Triggered! This runner will now close."
-          else
-            echo "[🎉] ALL DONE! Auto-stop time ($STOP_TIME) has been successfully reached."
           fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# name: PKT Auto-Stop Live Stream
+
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       stream_key:
+#         description: 'Apni YouTube Stream Key paste karein'
+#         required: true
+#         type: string
+#       video_file:
+#         description: 'Apni video file ka naam likhein (e.g., video.mp4)'
+#         required: true
+#         default: 'video.mp4'
+#         type: string
+#       stop_time:
+#         description: 'Kab stop karna hai? PKT Time (e.g., 03:00 AM, 11:30 PM)'
+#         required: true
+#         default: '12:00 PM'
+#         type: string
+#       # 👇 [Bot-Only] Yeh input system khud use karega exact target yaad rakhne ke liye
+#       target_epoch:
+#         description: '[BOT USE ONLY] Absolute target timestamp'
+#         default: '0'
+#         type: string
+
+# permissions:
+#   contents: write
+#   actions: write
+
+# jobs:
+#   stream-to-youtube:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 360 # GitHub max limit
+
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: Install FFmpeg and Modern Fonts
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y ffmpeg fonts-inter
+
+#       - name: Start Dynamic Auto-Stop Broadcast
+#         env:
+#           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           GH_REPO: ${{ github.repository }}
+#           # 🔥 Pura system ab Pakistan Standard Time par chalega!
+#           TZ: "Asia/Karachi"
+#         run: |
+#           STREAM_KEY="${{ github.event.inputs.stream_key }}"
+#           VIDEO_FILE="${{ github.event.inputs.video_file }}"
+#           STOP_TIME="${{ github.event.inputs.stop_time }}"
+#           TARGET_EPOCH="${{ github.event.inputs.target_epoch }}"
+
+#           # Current waqt (Seconds mein)
+#           NOW=$(date +%s)
+
+#           # Agar yeh pehli baar chal raha hai toh Target Time calculate karo
+#           if [ "$TARGET_EPOCH" -eq "0" ]; then
+#             DATE_TODAY=$(date +%Y-%m-%d)
+#             # Aaj ki date aur aapke diye gaye time ko mila kar dekho
+#             CALC_EPOCH=$(date -d "$DATE_TODAY $STOP_TIME" +%s)
+            
+#             # Agar bataya gaya time current time se peeche hai, iska matlab kal (tomorrow) ka time hai
+#             if [ "$CALC_EPOCH" -le "$NOW" ]; then
+#               TARGET_EPOCH=$((CALC_EPOCH + 86400)) # 86400 seconds = 1 Day add kar do
+#               echo "[*] Time has passed for today. Scheduled for TOMORROW!"
+#             else
+#               TARGET_EPOCH=$CALC_EPOCH
+#               echo "[*] Scheduled for TODAY!"
+#             fi
+#           fi
+
+#           # Bacha hua waqt calculate karo
+#           TOTAL_SECONDS=$((TARGET_EPOCH - NOW))
+
+#           if [ "$TOTAL_SECONDS" -le "0" ]; then
+#              echo "[🛑] TARGET TIME REACHED! Stream is officially ending."
+#              exit 0
+#           fi
+
+#           echo "==================================================="
+#           echo "[*] Target Stop Time: $STOP_TIME (PKT)"
+#           echo "[*] Total time remaining to stream: $TOTAL_SECONDS seconds"
+#           echo "==================================================="
+
+#           MAX_RUN_TIME=19800 # 5.5 Hours = 19800 Seconds
+
+#           if [ "$TOTAL_SECONDS" -gt "$MAX_RUN_TIME" ]; then
+#             CURRENT_STREAM_TIME=$MAX_RUN_TIME
+#             WILL_LOOP="YES"
+#             echo "[!] Stream is longer than 5.5 hours. It will auto-loop after 5.5 hours."
+#           else
+#             CURRENT_STREAM_TIME=$TOTAL_SECONDS
+#             WILL_LOOP="NO"
+#             echo "[+] Final stretch! Stream will end accurately at $STOP_TIME."
+#           fi
+
+#           # 🔥 LIVE CLOCK LOGIC: Ab screen par current PKT time chalega! (e.g., 04:15:30 PM)
+#           # %{localtime\:%I\:%M\:%S %p} = 12-Hour format with AM/PM
+#           DRAWTEXT="drawtext=fontfile=/usr/share/fonts/truetype/inter/Inter-Bold.ttf: text='%{localtime\:%I\\:%M\\:%S %p}': fontcolor=white: fontsize=140: shadowcolor=black@0.8: shadowx=8: shadowy=8: x=(w-tw)/2: y=(h-th)/2"
+
+#           # Live Broadcast with precise timer constraint (-t)
+#           echo "[🚀] STARTING BROADCAST..."
+#           ffmpeg -stream_loop -1 -re -i "$VIDEO_FILE" -vf "$DRAWTEXT" \
+#             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
+#             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
+#             -t $CURRENT_STREAM_TIME \
+#             -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+
+#           echo "[✅] FFMPEG BROADCAST PAUSED FOR THIS RUNNER!"
+
+#           # Loop Logic (Agla Runner Trigger Karna with absolute memory)
+#           if [ "$WILL_LOOP" == "YES" ]; then
+#             echo "[🔄] TRIGGERING NEXT RUNNER..."
+#             gh workflow run "${{ github.workflow }}" \
+#               -f stream_key="$STREAM_KEY" \
+#               -f video_file="$VIDEO_FILE" \
+#               -f stop_time="$STOP_TIME" \
+#               -f target_epoch="$TARGET_EPOCH"
+            
+#             echo "[+] Next Runner Triggered! This runner will now close."
+#           else
+#             echo "[🎉] ALL DONE! Auto-stop time ($STOP_TIME) has been successfully reached."
+#           fi
 
 
 
