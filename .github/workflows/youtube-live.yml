@@ -1,37 +1,37 @@
-
-name: Trendy Live Stream Timer
+name: PKT Auto-Stop Live Stream
 
 on:
   workflow_dispatch:
     inputs:
       stream_key:
-        description: 'Apni YouTube Stream Key yahan paste karein'
+        description: 'Apni YouTube Stream Key paste karein'
         required: true
         type: string
       video_file:
-        description: 'Apni video file ka naam likhein extension ke sath (e.g., video1.mp4)'
+        description: 'Apni video file ka naam likhein (e.g., video.mp4)'
         required: true
         default: 'video.mp4'
         type: string
-      hours:
-        description: 'Kitne Hours stream karna hai?'
+      stop_time:
+        description: 'Kab stop karna hai? PKT Time (e.g., 03:00 AM, 11:30 PM)'
         required: true
-        default: '1'
+        default: '12:00 PM'
         type: string
-      minutes:
-        description: 'Kitne Minutes?'
-        required: true
+      # 👇 [Bot-Only] Yeh input system khud use karega exact target yaad rakhne ke liye
+      target_epoch:
+        description: '[BOT USE ONLY] Absolute target timestamp'
         default: '0'
         type: string
-      seconds:
-        description: 'Kitne Seconds?'
-        required: true
-        default: '0'
-        type: string
+
+permissions:
+  contents: write
+  actions: write
 
 jobs:
   stream-to-youtube:
     runs-on: ubuntu-latest
+    timeout-minutes: 360 # GitHub max limit
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -41,27 +41,172 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-inter
 
-      - name: Start Broadcast with Animated Timer
+      - name: Start Dynamic Auto-Stop Broadcast
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          # 🔥 Pura system ab Pakistan Standard Time par chalega!
+          TZ: "Asia/Karachi"
         run: |
-          # Manual inputs ko variables mein store karna
           STREAM_KEY="${{ github.event.inputs.stream_key }}"
           VIDEO_FILE="${{ github.event.inputs.video_file }}"
-          HOURS=${{ github.event.inputs.hours }}
-          MINS=${{ github.event.inputs.minutes }}
-          SECS=${{ github.event.inputs.seconds }}
-          
-          TOTAL_SECONDS=$((HOURS * 3600 + MINS * 60 + SECS))
-          echo "Stream configured for $TOTAL_SECONDS seconds using file: $VIDEO_FILE"
+          STOP_TIME="${{ github.event.inputs.stop_time }}"
+          TARGET_EPOCH="${{ github.event.inputs.target_epoch }}"
 
-          # Trendy Typography Style
-          DRAWTEXT="drawtext=fontfile=/usr/share/fonts/truetype/inter/Inter-Bold.ttf: text='%{pts\:hms}': fontcolor=white: fontsize=140: shadowcolor=black@0.8: shadowx=8: shadowy=8: x=(w-tw)/2: y=(h-th)/2"
+          # Current waqt (Seconds mein)
+          NOW=$(date +%s)
 
-          # Live Broadcast
+          # Agar yeh pehli baar chal raha hai toh Target Time calculate karo
+          if [ "$TARGET_EPOCH" -eq "0" ]; then
+            DATE_TODAY=$(date +%Y-%m-%d)
+            # Aaj ki date aur aapke diye gaye time ko mila kar dekho
+            CALC_EPOCH=$(date -d "$DATE_TODAY $STOP_TIME" +%s)
+            
+            # Agar bataya gaya time current time se peeche hai, iska matlab kal (tomorrow) ka time hai
+            if [ "$CALC_EPOCH" -le "$NOW" ]; then
+              TARGET_EPOCH=$((CALC_EPOCH + 86400)) # 86400 seconds = 1 Day add kar do
+              echo "[*] Time has passed for today. Scheduled for TOMORROW!"
+            else
+              TARGET_EPOCH=$CALC_EPOCH
+              echo "[*] Scheduled for TODAY!"
+            fi
+          fi
+
+          # Bacha hua waqt calculate karo
+          TOTAL_SECONDS=$((TARGET_EPOCH - NOW))
+
+          if [ "$TOTAL_SECONDS" -le "0" ]; then
+             echo "[🛑] TARGET TIME REACHED! Stream is officially ending."
+             exit 0
+          fi
+
+          echo "==================================================="
+          echo "[*] Target Stop Time: $STOP_TIME (PKT)"
+          echo "[*] Total time remaining to stream: $TOTAL_SECONDS seconds"
+          echo "==================================================="
+
+          MAX_RUN_TIME=19800 # 5.5 Hours = 19800 Seconds
+
+          if [ "$TOTAL_SECONDS" -gt "$MAX_RUN_TIME" ]; then
+            CURRENT_STREAM_TIME=$MAX_RUN_TIME
+            WILL_LOOP="YES"
+            echo "[!] Stream is longer than 5.5 hours. It will auto-loop after 5.5 hours."
+          else
+            CURRENT_STREAM_TIME=$TOTAL_SECONDS
+            WILL_LOOP="NO"
+            echo "[+] Final stretch! Stream will end accurately at $STOP_TIME."
+          fi
+
+          # 🔥 LIVE CLOCK LOGIC: Ab screen par current PKT time chalega! (e.g., 04:15:30 PM)
+          # %{localtime\:%I\:%M\:%S %p} = 12-Hour format with AM/PM
+          DRAWTEXT="drawtext=fontfile=/usr/share/fonts/truetype/inter/Inter-Bold.ttf: text='%{localtime\:%I\\:%M\\:%S %p}': fontcolor=white: fontsize=140: shadowcolor=black@0.8: shadowx=8: shadowy=8: x=(w-tw)/2: y=(h-th)/2"
+
+          # Live Broadcast with precise timer constraint (-t)
+          echo "[🚀] STARTING BROADCAST..."
           ffmpeg -stream_loop -1 -re -i "$VIDEO_FILE" -vf "$DRAWTEXT" \
             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
-            -t $TOTAL_SECONDS \
+            -t $CURRENT_STREAM_TIME \
             -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+
+          echo "[✅] FFMPEG BROADCAST PAUSED FOR THIS RUNNER!"
+
+          # Loop Logic (Agla Runner Trigger Karna with absolute memory)
+          if [ "$WILL_LOOP" == "YES" ]; then
+            echo "[🔄] TRIGGERING NEXT RUNNER..."
+            gh workflow run "${{ github.workflow }}" \
+              -f stream_key="$STREAM_KEY" \
+              -f video_file="$VIDEO_FILE" \
+              -f stop_time="$STOP_TIME" \
+              -f target_epoch="$TARGET_EPOCH"
+            
+            echo "[+] Next Runner Triggered! This runner will now close."
+          else
+            echo "[🎉] ALL DONE! Auto-stop time ($STOP_TIME) has been successfully reached."
+          fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ============================ Alhamdullah done simple model ======================
+
+
+
+# name: Trendy Live Stream Timer
+
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       stream_key:
+#         description: 'Apni YouTube Stream Key yahan paste karein'
+#         required: true
+#         type: string
+#       video_file:
+#         description: 'Apni video file ka naam likhein extension ke sath (e.g., video1.mp4)'
+#         required: true
+#         default: 'video.mp4'
+#         type: string
+#       hours:
+#         description: 'Kitne Hours stream karna hai?'
+#         required: true
+#         default: '1'
+#         type: string
+#       minutes:
+#         description: 'Kitne Minutes?'
+#         required: true
+#         default: '0'
+#         type: string
+#       seconds:
+#         description: 'Kitne Seconds?'
+#         required: true
+#         default: '0'
+#         type: string
+
+# jobs:
+#   stream-to-youtube:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: Install FFmpeg and Modern Fonts
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y ffmpeg fonts-inter
+
+#       - name: Start Broadcast with Animated Timer
+#         run: |
+#           # Manual inputs ko variables mein store karna
+#           STREAM_KEY="${{ github.event.inputs.stream_key }}"
+#           VIDEO_FILE="${{ github.event.inputs.video_file }}"
+#           HOURS=${{ github.event.inputs.hours }}
+#           MINS=${{ github.event.inputs.minutes }}
+#           SECS=${{ github.event.inputs.seconds }}
+          
+#           TOTAL_SECONDS=$((HOURS * 3600 + MINS * 60 + SECS))
+#           echo "Stream configured for $TOTAL_SECONDS seconds using file: $VIDEO_FILE"
+
+#           # Trendy Typography Style
+#           DRAWTEXT="drawtext=fontfile=/usr/share/fonts/truetype/inter/Inter-Bold.ttf: text='%{pts\:hms}': fontcolor=white: fontsize=140: shadowcolor=black@0.8: shadowx=8: shadowy=8: x=(w-tw)/2: y=(h-th)/2"
+
+#           # Live Broadcast
+#           ffmpeg -stream_loop -1 -re -i "$VIDEO_FILE" -vf "$DRAWTEXT" \
+#             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
+#             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
+#             -t $TOTAL_SECONDS \
+#             -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
 
 
 
