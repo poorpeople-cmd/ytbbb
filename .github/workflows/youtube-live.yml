@@ -1,4 +1,4 @@
-name: Restream YouTube to Facebook (Anti-Bot Bypass)
+name: Restream YouTube to Facebook (File Cookies Bypass)
 
 on:
   workflow_dispatch:
@@ -11,10 +11,6 @@ on:
         description: 'Facebook Stream Key (FB-1222...)'
         required: true
         type: string
-      yt_cookies:
-        description: 'Cookies.txt ka sara text yahan paste karein (Optional)'
-        required: false
-        type: string
 
 permissions:
   contents: write
@@ -26,6 +22,9 @@ jobs:
     timeout-minutes: 360 # 6 hours max limit
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Install FFmpeg, Deno and yt-dlp
         run: |
           sudo apt-get update
@@ -47,21 +46,18 @@ jobs:
              exit 1
           fi
 
-          # GitHub Actions ki formatting bachane ke liye advance method
-          if [ -n "${{ github.event.inputs.yt_cookies }}" ]; then
-            echo "[*] Using Manual Cookies for bot bypass..."
-            cat << 'EOF' > cookies.txt
-          ${{ github.event.inputs.yt_cookies }}
-          EOF
+          # Check if cookies.txt exists in the repository
+          if [ -f "cookies.txt" ]; then
+            echo "[*] Repository se cookies.txt file mil gayi! Bot bypass active."
             COOKIE_CMD="--cookies cookies.txt"
           else
-            echo "[*] No cookies provided, trying without them..."
+            echo "[⚠️] cookies.txt file repo mein nahi mili! Baghair cookies ke try kar rahe hain..."
             COOKIE_CMD=""
           fi
 
           echo "[*] Extracting direct video URL from YouTube..."
           
-          # 🔥 Android Spoofing Trick 🔥 (--extractor-args add kiya hai)
+          # 🔥 Android Spoofing + Local Cookies File Trick
           DIRECT_URL=$(yt-dlp $COOKIE_CMD --extractor-args "youtube:player_client=android,web" -g -f "best[height<=1080]/best" "$YT_LINK")
 
           if [ -z "$DIRECT_URL" ]; then
@@ -76,7 +72,6 @@ jobs:
             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
             -f flv "$DEST"
-
 
 
 
