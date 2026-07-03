@@ -1,10 +1,10 @@
-name: Restream YouTube to Facebook (Manual Cookies)
+name: Restream YouTube to Facebook (Anti-Bot Bypass)
 
 on:
   workflow_dispatch:
     inputs:
       youtube_link:
-        description: 'YouTube Video ya Live Link dalein'
+        description: 'YouTube Video ya Live Link dalein (e.g., FIFA Gameplay)'
         required: true
         type: string
       fb_stream_key:
@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       yt_cookies:
-        description: 'Cookies.txt ka sara text yahan paste karein (Bot bypass ke liye)'
+        description: 'Cookies.txt ka sara text yahan paste karein (Optional)'
         required: false
         type: string
 
@@ -41,17 +41,18 @@ jobs:
         run: |
           YT_LINK="${{ github.event.inputs.youtube_link }}"
           FB_KEY="${{ github.event.inputs.fb_stream_key }}"
-          YT_COOKIES="${{ github.event.inputs.yt_cookies }}"
 
           if [ -z "$FB_KEY" ] || [ -z "$YT_LINK" ]; then
              echo "[❌] ERROR: YouTube Link aur Facebook Stream Key dono zaroori hain!"
              exit 1
           fi
 
-          # Agar user ne cookies dali hain toh file banaye, warna baghair cookies ke try kare
-          if [ -n "$YT_COOKIES" ]; then
+          # GitHub Actions ki formatting bachane ke liye advance method
+          if [ -n "${{ github.event.inputs.yt_cookies }}" ]; then
             echo "[*] Using Manual Cookies for bot bypass..."
-            echo "$YT_COOKIES" > cookies.txt
+            cat << 'EOF' > cookies.txt
+          ${{ github.event.inputs.yt_cookies }}
+          EOF
             COOKIE_CMD="--cookies cookies.txt"
           else
             echo "[*] No cookies provided, trying without them..."
@@ -59,7 +60,9 @@ jobs:
           fi
 
           echo "[*] Extracting direct video URL from YouTube..."
-          DIRECT_URL=$(yt-dlp $COOKIE_CMD -g -f "best[height<=1080]/best" "$YT_LINK")
+          
+          # 🔥 Android Spoofing Trick 🔥 (--extractor-args add kiya hai)
+          DIRECT_URL=$(yt-dlp $COOKIE_CMD --extractor-args "youtube:player_client=android,web" -g -f "best[height<=1080]/best" "$YT_LINK")
 
           if [ -z "$DIRECT_URL" ]; then
              echo "[❌] ERROR: YouTube link se stream extract nahi ho saki. Link ya Cookies check karein."
@@ -73,8 +76,6 @@ jobs:
             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
             -f flv "$DEST"
-
-
 
 
 
