@@ -1,63 +1,19 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-name: Restream YouTube to Facebook (FIFA Gaming)
+name: Restream YouTube to Facebook (Manual Cookies)
 
 on:
   workflow_dispatch:
     inputs:
       youtube_link:
-        description: 'Dost ki YouTube Video ya Live Stream ka Link yahan dalein'
+        description: 'YouTube Video ya Live Link dalein'
         required: true
         type: string
       fb_stream_key:
-        description: 'Apni Facebook Stream Key (FB-1222...) yahan dalein'
+        description: 'Facebook Stream Key (FB-1222...)'
         required: true
+        type: string
+      yt_cookies:
+        description: 'Cookies.txt ka sara text yahan paste karein (Bot bypass ke liye)'
+        required: false
         type: string
 
 permissions:
@@ -70,11 +26,14 @@ jobs:
     timeout-minutes: 360 # 6 hours max limit
 
     steps:
-      - name: Install FFmpeg and yt-dlp
+      - name: Install FFmpeg, Deno and yt-dlp
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          # 🔥 Install yt-dlp to extract direct YouTube streams
+          sudo apt-get install -y ffmpeg unzip
+          # JS warning fix karne ke liye Deno install kar rahe hain
+          curl -fsSL https://deno.land/x/install/install.sh | sh
+          sudo ln -s /home/runner/.deno/bin/deno /usr/bin/deno
+          # yt-dlp install
           sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
 
@@ -82,31 +41,38 @@ jobs:
         run: |
           YT_LINK="${{ github.event.inputs.youtube_link }}"
           FB_KEY="${{ github.event.inputs.fb_stream_key }}"
+          YT_COOKIES="${{ github.event.inputs.yt_cookies }}"
 
           if [ -z "$FB_KEY" ] || [ -z "$YT_LINK" ]; then
              echo "[❌] ERROR: YouTube Link aur Facebook Stream Key dono zaroori hain!"
              exit 1
           fi
 
+          # Agar user ne cookies dali hain toh file banaye, warna baghair cookies ke try kare
+          if [ -n "$YT_COOKIES" ]; then
+            echo "[*] Using Manual Cookies for bot bypass..."
+            echo "$YT_COOKIES" > cookies.txt
+            COOKIE_CMD="--cookies cookies.txt"
+          else
+            echo "[*] No cookies provided, trying without them..."
+            COOKIE_CMD=""
+          fi
+
           echo "[*] Extracting direct video URL from YouTube..."
-          # yt-dlp video ki raw link nikalega (1080p ya us se kam)
-          DIRECT_URL=$(yt-dlp -g -f "best[height<=1080]/best" "$YT_LINK")
+          DIRECT_URL=$(yt-dlp $COOKIE_CMD -g -f "best[height<=1080]/best" "$YT_LINK")
 
           if [ -z "$DIRECT_URL" ]; then
-             echo "[❌] ERROR: YouTube link se stream extract nahi ho saki. Link check karein."
+             echo "[❌] ERROR: YouTube link se stream extract nahi ho saki. Link ya Cookies check karein."
              exit 1
           fi
 
           echo "[🚀] Direct stream URL mil gayi! Facebook par bhej rahe hain..."
           DEST="rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
 
-          # FFmpeg is direct link ko pick karega aur bina laptop use kiye FB pe Live karega
           ffmpeg -re -i "$DIRECT_URL" \
             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
             -f flv "$DEST"
-
-
 
 
 
