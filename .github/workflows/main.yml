@@ -1,77 +1,124 @@
-name: Restream YouTube to Facebook (File Cookies Bypass)
+name: 24/7 Pro Stream Bot (OBS Engine)
+
+run-name: "OBS Stream Live Broadcaster"
 
 on:
   workflow_dispatch:
     inputs:
-      youtube_link:
-        description: 'YouTube Video ya Live Link dalein (e.g., FIFA Gameplay)'
+      target_urls:
+        description: 'Comma-separated Target URLs (Server1, Server2, Server3)'
         required: true
         type: string
-      fb_stream_key:
-        description: 'Facebook Stream Key (FB-1222...)'
+        default: 'https://dadocric.st/player.php?id=starsp3&v=m'
+      youtube_stream_key:
+        description: 'YouTube Stream Key (Optional)'
+        required: false
+        type: string
+      facebook_stream_key:
+        description: 'Facebook Stream Key (Optional)'
+        required: false
+        type: string
+      server_selection:
+        description: 'Target Server Button - Type "None" to skip'
         required: true
         type: string
+        default: 'None'
+      stream_quality:
+        description: 'Select Stream Quality'
+        required: true
+        type: choice
+        options:
+          - 'Original (1080p Max)'
+          - '1080p'
+          - '720p'
+          - '480p'
+          - '360p'
+        default: 'Original (1080p Max)'
+      proxy_engine:
+        description: 'Network Proxy Engine (Bypass Blocking)'
+        required: true
+        type: choice
+        options:
+          - 'Cloudflare WARP (Recommended)'
+          - 'None (Direct GitHub IP)'
+        default: 'Cloudflare WARP (Recommended)'
+      custom_duration:
+        description: 'Exact Duration to run (e.g., 4h 30m, 5h). Type "None" for auto-overlap.'
+        required: true
+        type: string
+        default: 'None'
 
 permissions:
   contents: write
-  actions: write
+  actions: write 
 
 jobs:
-  restream-to-fb:
+  stream-and-record:
     runs-on: ubuntu-latest
-    timeout-minutes: 360 # 6 hours max limit
+    timeout-minutes: 360 
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Get Code
+        uses: actions/checkout@v3
 
-      - name: Install FFmpeg, Deno and yt-dlp
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies & OBS Studio
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg unzip
-          # JS warning fix karne ke liye Deno install kar rahe hain
-          curl -fsSL https://deno.land/x/install/install.sh | sh
-          sudo ln -s /home/runner/.deno/bin/deno /usr/bin/deno
-          # yt-dlp install
-          sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
-          sudo chmod a+rx /usr/local/bin/yt-dlp
+          sudo apt-get install -y xvfb pulseaudio dbus-x11 obs-studio
+          npm install
 
-      - name: Start Broadcast to Facebook
+      # 🌟 CONDITIONAL CLOUDFLARE WARP INSTALLATION
+      - name: Install & Connect Cloudflare WARP (Anti-Block Bypass)
+        if: github.event.inputs.proxy_engine == 'Cloudflare WARP (Recommended)'
         run: |
-          YT_LINK="${{ github.event.inputs.youtube_link }}"
-          FB_KEY="${{ github.event.inputs.fb_stream_key }}"
-
-          if [ -z "$FB_KEY" ] || [ -z "$YT_LINK" ]; then
-             echo "[❌] ERROR: YouTube Link aur Facebook Stream Key dono zaroori hain!"
-             exit 1
-          fi
-
-          # Check if cookies.txt exists in the repository
-          if [ -f "cookies.txt" ]; then
-            echo "[*] Repository se cookies.txt file mil gayi! Bot bypass active."
-            COOKIE_CMD="--cookies cookies.txt"
-          else
-            echo "[⚠️] cookies.txt file repo mein nahi mili! Baghair cookies ke try kar rahe hain..."
-            COOKIE_CMD=""
-          fi
-
-          echo "[*] Extracting direct video URL from YouTube..."
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update && sudo apt-get install -y cloudflare-warp
           
-          # 🔥 Android Spoofing + Local Cookies File Trick
-          DIRECT_URL=$(yt-dlp $COOKIE_CMD --extractor-args "youtube:player_client=android,web" -g -f "best[height<=1080]/best" "$YT_LINK")
+          # Stable Cloudflare WARP Proxy Engine
+          warp-cli --accept-tos registration new
+          warp-cli --accept-tos mode proxy
+          warp-cli --accept-tos proxy port 40000
+          warp-cli --accept-tos connect
+          sleep 5
+          echo "[+] Cloudflare WARP Proxy Shield is UP on Port 40000"
 
-          if [ -z "$DIRECT_URL" ]; then
-             echo "[❌] ERROR: YouTube link se stream extract nahi ho saki. Link ya Cookies check karein."
-             exit 1
-          fi
+      - name: Run OBS Stream Engine
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          TARGET_URLS: ${{ github.event.inputs.target_urls }}
+          YOUTUBE_KEY: ${{ github.event.inputs.youtube_stream_key }}
+          FACEBOOK_KEY: ${{ github.event.inputs.facebook_stream_key }}
+          SERVER_SELECTION: ${{ github.event.inputs.server_selection }}
+          STREAM_QUALITY: ${{ github.event.inputs.stream_quality }}
+          PROXY_ENGINE: ${{ github.event.inputs.proxy_engine }}
+          CUSTOM_DURATION: ${{ github.event.inputs.custom_duration }}
+        run: |
+          # Virtual Audio Setup
+          pulseaudio -D --exit-idle-time=-1
+          pacmd load-module module-virtual-sink sink_name=v1
+          pacmd set-default-sink v1
+          pacmd set-default-source v1.monitor
+          
+          # 🌟 SMOOTHNESS FIX: Enforced 60Hz refresh rate on the virtual display to eliminate tearing
+          xvfb-run -s "-screen 0 1920x1080x24 -ac -r -extension RANDR" node stream.js
 
-          echo "[🚀] Direct stream URL mil gayi! Facebook par bhej rahe hain..."
-          DEST="rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
-
-          ffmpeg -re -i "$DIRECT_URL" \
-            -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
-            -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
-            -f flv "$DEST"
+      - name: Final Leftover Upload
+        if: always() 
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "live-stream-logs"
+          name: "Live Broadcast Logs"
+          body: "Auto updated live stream status."
+          files: |
+            screenshots/*.png
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 
