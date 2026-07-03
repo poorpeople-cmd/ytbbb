@@ -1,25 +1,63 @@
 
-name: PKT Auto-Stop Live Stream (Random Loop + Multistream)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+name: Restream YouTube to Facebook (FIFA Gaming)
 
 on:
   workflow_dispatch:
     inputs:
-      yt_stream_key:
-        description: 'YouTube Stream Key (Optional)'
-        required: false
+      youtube_link:
+        description: 'Dost ki YouTube Video ya Live Stream ka Link yahan dalein'
+        required: true
         type: string
       fb_stream_key:
-        description: 'Facebook Stream Key (Optional)'
-        required: false
-        type: string
-      stop_time:
-        description: 'Kab stop karna hai? PKT Time (e.g., 03:00 AM, 11:30 PM)'
+        description: 'Apni Facebook Stream Key (FB-1222...) yahan dalein'
         required: true
-        default: '12:00 PM'
-        type: string
-      target_epoch:
-        description: '[BOT USE ONLY] Absolute target timestamp'
-        default: '0'
         type: string
 
 permissions:
@@ -27,113 +65,228 @@ permissions:
   actions: write
 
 jobs:
-  stream-to-live:
+  restream-to-fb:
     runs-on: ubuntu-latest
-    timeout-minutes: 360 # GitHub max limit (6 hours)
+    timeout-minutes: 360 # 6 hours max limit
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install FFmpeg and Reliable Fonts
+      - name: Install FFmpeg and yt-dlp
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          sudo apt-get install -y ffmpeg
+          # 🔥 Install yt-dlp to extract direct YouTube streams
+          sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
 
-      - name: Start Dynamic Auto-Stop Broadcast
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          TZ: "Asia/Karachi"
+      - name: Start Broadcast to Facebook
         run: |
-          YT_KEY="${{ github.event.inputs.yt_stream_key }}"
+          YT_LINK="${{ github.event.inputs.youtube_link }}"
           FB_KEY="${{ github.event.inputs.fb_stream_key }}"
-          STOP_TIME="${{ github.event.inputs.stop_time }}"
-          TARGET_EPOCH="${{ github.event.inputs.target_epoch }}"
 
-          # Stream Key Validation
-          if [ -z "$YT_KEY" ] && [ -z "$FB_KEY" ]; then
-             echo "[❌] ERROR: Kam az kam ek Stream Key (YouTube ya Facebook) daalna zaroori hai!"
+          if [ -z "$FB_KEY" ] || [ -z "$YT_LINK" ]; then
+             echo "[❌] ERROR: YouTube Link aur Facebook Stream Key dono zaroori hain!"
              exit 1
           fi
 
-          NOW=$(date +%s)
+          echo "[*] Extracting direct video URL from YouTube..."
+          # yt-dlp video ki raw link nikalega (1080p ya us se kam)
+          DIRECT_URL=$(yt-dlp -g -f "best[height<=1080]/best" "$YT_LINK")
 
-          # Stop time ki calculation (Today ya Tomorrow)
-          if [ "$TARGET_EPOCH" -eq "0" ]; then
-            DATE_TODAY=$(date +%Y-%m-%d)
-            CALC_EPOCH=$(date -d "$DATE_TODAY $STOP_TIME" +%s)
-            
-            if [ "$CALC_EPOCH" -le "$NOW" ]; then
-              TARGET_EPOCH=$((CALC_EPOCH + 86400))
-              echo "[*] Time has passed for today. Scheduled for TOMORROW!"
-            else
-              TARGET_EPOCH=$CALC_EPOCH
-              echo "[*] Scheduled for TODAY!"
-            fi
+          if [ -z "$DIRECT_URL" ]; then
+             echo "[❌] ERROR: YouTube link se stream extract nahi ho saki. Link check karein."
+             exit 1
           fi
 
-          TOTAL_SECONDS=$((TARGET_EPOCH - NOW))
+          echo "[🚀] Direct stream URL mil gayi! Facebook par bhej rahe hain..."
+          DEST="rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
 
-          if [ "$TOTAL_SECONDS" -le "0" ]; then
-             echo "[🛑] TARGET TIME REACHED! Stream is officially ending."
-             exit 0
-          fi
-
-          MAX_RUN_TIME=19800 # 5.5 Hours in seconds
-
-          if [ "$TOTAL_SECONDS" -gt "$MAX_RUN_TIME" ]; then
-            CURRENT_STREAM_TIME=$MAX_RUN_TIME
-            WILL_LOOP="YES"
-          else
-            CURRENT_STREAM_TIME=$TOTAL_SECONDS
-            WILL_LOOP="NO"
-          fi
-
-          # 🔥 RANDOM PLAYLIST GENERATOR 🔥
-          # 3000 videos ki list banayega (vid1, vid2, vid3 se randomly)
-          echo "[*] Generating random playlist..."
-          rm -f playlist.txt
-          for i in {1..3000}; do
-            RAND=$(( (RANDOM % 3) + 1 ))
-            echo "file 'vid${RAND}.mp4'" >> playlist.txt
-          done
-          echo "[*] Playlist generated with 3000 random clips."
-
-          # 🔥 CENTER ALIGNMENT + BIG DISPLAY
-          FONT_PATH="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-          DRAWTEXT="drawtext=fontfile=$FONT_PATH: text='%{pts\:hms}': fontcolor=white: fontsize=250: box=1: boxcolor=black@0.6: boxborderw=30: x=(w-tw)/2: y=(h-th)/2"
-
-          # Output Destination Logic (Multistreaming)
-          if [ -n "$YT_KEY" ] && [ -n "$FB_KEY" ]; then
-             echo "[*] Multistreaming to YouTube AND Facebook!"
-             DEST="[f=flv]rtmp://a.rtmp.youtube.com/live2/$YT_KEY|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
-             MUXER="tee"
-          elif [ -n "$YT_KEY" ]; then
-             echo "[*] Streaming to YouTube only!"
-             DEST="rtmp://a.rtmp.youtube.com/live2/$YT_KEY"
-             MUXER="flv"
-          elif [ -n "$FB_KEY" ]; then
-             echo "[*] Streaming to Facebook only!"
-             DEST="rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
-             MUXER="flv"
-          fi
-
-          echo "[🚀] STARTING BROADCAST WITH RANDOM CLIPS..."
-          ffmpeg -re -f concat -safe 0 -i playlist.txt -vf "$DRAWTEXT" \
+          # FFmpeg is direct link ko pick karega aur bina laptop use kiye FB pe Live karega
+          ffmpeg -re -i "$DIRECT_URL" \
             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
-            -t $CURRENT_STREAM_TIME \
-            -f $MUXER "$DEST"
+            -f flv "$DEST"
 
-          if [ "$WILL_LOOP" == "YES" ]; then
-            echo "[🔄] TRIGGERING NEXT RUNNER..."
-            gh workflow run "${{ github.workflow }}" \
-              -f yt_stream_key="$YT_KEY" \
-              -f fb_stream_key="$FB_KEY" \
-              -f stop_time="$STOP_TIME" \
-              -f target_epoch="$TARGET_EPOCH"
-          fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ============ facebook done use vid1,2 and 3 randomly =================
+
+
+
+
+# name: PKT Auto-Stop Live Stream (Random Loop + Multistream)
+
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       yt_stream_key:
+#         description: 'YouTube Stream Key (Optional)'
+#         required: false
+#         type: string
+#       fb_stream_key:
+#         description: 'Facebook Stream Key (Optional)'
+#         required: false
+#         type: string
+#       stop_time:
+#         description: 'Kab stop karna hai? PKT Time (e.g., 03:00 AM, 11:30 PM)'
+#         required: true
+#         default: '12:00 PM'
+#         type: string
+#       target_epoch:
+#         description: '[BOT USE ONLY] Absolute target timestamp'
+#         default: '0'
+#         type: string
+
+# permissions:
+#   contents: write
+#   actions: write
+
+# jobs:
+#   stream-to-live:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 360 # GitHub max limit (6 hours)
+
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: Install FFmpeg and Reliable Fonts
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+#       - name: Start Dynamic Auto-Stop Broadcast
+#         env:
+#           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           GH_REPO: ${{ github.repository }}
+#           TZ: "Asia/Karachi"
+#         run: |
+#           YT_KEY="${{ github.event.inputs.yt_stream_key }}"
+#           FB_KEY="${{ github.event.inputs.fb_stream_key }}"
+#           STOP_TIME="${{ github.event.inputs.stop_time }}"
+#           TARGET_EPOCH="${{ github.event.inputs.target_epoch }}"
+
+#           # Stream Key Validation
+#           if [ -z "$YT_KEY" ] && [ -z "$FB_KEY" ]; then
+#              echo "[❌] ERROR: Kam az kam ek Stream Key (YouTube ya Facebook) daalna zaroori hai!"
+#              exit 1
+#           fi
+
+#           NOW=$(date +%s)
+
+#           # Stop time ki calculation (Today ya Tomorrow)
+#           if [ "$TARGET_EPOCH" -eq "0" ]; then
+#             DATE_TODAY=$(date +%Y-%m-%d)
+#             CALC_EPOCH=$(date -d "$DATE_TODAY $STOP_TIME" +%s)
+            
+#             if [ "$CALC_EPOCH" -le "$NOW" ]; then
+#               TARGET_EPOCH=$((CALC_EPOCH + 86400))
+#               echo "[*] Time has passed for today. Scheduled for TOMORROW!"
+#             else
+#               TARGET_EPOCH=$CALC_EPOCH
+#               echo "[*] Scheduled for TODAY!"
+#             fi
+#           fi
+
+#           TOTAL_SECONDS=$((TARGET_EPOCH - NOW))
+
+#           if [ "$TOTAL_SECONDS" -le "0" ]; then
+#              echo "[🛑] TARGET TIME REACHED! Stream is officially ending."
+#              exit 0
+#           fi
+
+#           MAX_RUN_TIME=19800 # 5.5 Hours in seconds
+
+#           if [ "$TOTAL_SECONDS" -gt "$MAX_RUN_TIME" ]; then
+#             CURRENT_STREAM_TIME=$MAX_RUN_TIME
+#             WILL_LOOP="YES"
+#           else
+#             CURRENT_STREAM_TIME=$TOTAL_SECONDS
+#             WILL_LOOP="NO"
+#           fi
+
+#           # 🔥 RANDOM PLAYLIST GENERATOR 🔥
+#           # 3000 videos ki list banayega (vid1, vid2, vid3 se randomly)
+#           echo "[*] Generating random playlist..."
+#           rm -f playlist.txt
+#           for i in {1..3000}; do
+#             RAND=$(( (RANDOM % 3) + 1 ))
+#             echo "file 'vid${RAND}.mp4'" >> playlist.txt
+#           done
+#           echo "[*] Playlist generated with 3000 random clips."
+
+#           # 🔥 CENTER ALIGNMENT + BIG DISPLAY
+#           FONT_PATH="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+#           DRAWTEXT="drawtext=fontfile=$FONT_PATH: text='%{pts\:hms}': fontcolor=white: fontsize=250: box=1: boxcolor=black@0.6: boxborderw=30: x=(w-tw)/2: y=(h-th)/2"
+
+#           # Output Destination Logic (Multistreaming)
+#           if [ -n "$YT_KEY" ] && [ -n "$FB_KEY" ]; then
+#              echo "[*] Multistreaming to YouTube AND Facebook!"
+#              DEST="[f=flv]rtmp://a.rtmp.youtube.com/live2/$YT_KEY|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
+#              MUXER="tee"
+#           elif [ -n "$YT_KEY" ]; then
+#              echo "[*] Streaming to YouTube only!"
+#              DEST="rtmp://a.rtmp.youtube.com/live2/$YT_KEY"
+#              MUXER="flv"
+#           elif [ -n "$FB_KEY" ]; then
+#              echo "[*] Streaming to Facebook only!"
+#              DEST="rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
+#              MUXER="flv"
+#           fi
+
+#           echo "[🚀] STARTING BROADCAST WITH RANDOM CLIPS..."
+#           ffmpeg -re -f concat -safe 0 -i playlist.txt -vf "$DRAWTEXT" \
+#             -c:v libx264 -preset veryfast -b:v 4000k -maxrate 4000k -bufsize 8000k \
+#             -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
+#             -t $CURRENT_STREAM_TIME \
+#             -f $MUXER "$DEST"
+
+#           if [ "$WILL_LOOP" == "YES" ]; then
+#             echo "[🔄] TRIGGERING NEXT RUNNER..."
+#             gh workflow run "${{ github.workflow }}" \
+#               -f yt_stream_key="$YT_KEY" \
+#               -f fb_stream_key="$FB_KEY" \
+#               -f stop_time="$STOP_TIME" \
+#               -f target_epoch="$TARGET_EPOCH"
+#           fi
 
 
 
