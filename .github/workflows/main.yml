@@ -1,5 +1,7 @@
 name: 24/7 Pro Stream Bot (OBS Engine)
 
+run-name: "OBS Stream Live Broadcaster"
+
 on:
   workflow_dispatch:
     inputs:
@@ -45,8 +47,6 @@ on:
         required: true
         type: string
         default: 'None'
-      
-      # 🌟 NAYE LUXURY OVERLAY INPUTS 🌟
       overlay_title:
         description: 'Main Match Title'
         required: true
@@ -63,7 +63,7 @@ on:
         type: string
         default: '👇 CHECK THE COMMENT FOR LINK 👇'
       overlay_opacity:
-        description: 'Overlay Background Opacity (0.0 to 1.0) - Best for Anti-Ban is 0.7'
+        description: 'Overlay Background Opacity (0.0 to 1.0) - e.g., 0.7'
         required: true
         type: string
         default: '0.7'
@@ -116,13 +116,10 @@ jobs:
           STREAM_QUALITY: ${{ github.event.inputs.stream_quality }}
           PROXY_ENGINE: ${{ github.event.inputs.proxy_engine }}
           CUSTOM_DURATION: ${{ github.event.inputs.custom_duration }}
-          
-          # 🌟 PASSING NEW INPUTS TO NODE.JS SCRIPT 🌟
           OVERLAY_TITLE: ${{ github.event.inputs.overlay_title }}
           OVERLAY_TIMER: ${{ github.event.inputs.overlay_timer }}
           OVERLAY_MESSAGE: ${{ github.event.inputs.overlay_message }}
           OVERLAY_OPACITY: ${{ github.event.inputs.overlay_opacity }}
-
         run: |
           pulseaudio -D --exit-idle-time=-1
           pacmd load-module module-virtual-sink sink_name=v1
@@ -142,9 +139,6 @@ jobs:
             screenshots/*.png
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-
 
 
 
