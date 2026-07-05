@@ -1,79 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ======================== 111111 done alhamdullah for facebook and youtube here woo overlay not ok =======================
-
-
-
 name: 24/7 Pro Stream Bot (OBS Engine)
 
 run-name: "OBS Stream Live Broadcaster"
@@ -99,6 +24,14 @@ on:
         required: true
         type: string
         default: 'None'
+      stream_format:
+        description: 'Select Stream Format'
+        required: true
+        type: choice
+        options:
+          - 'Original (16:9 Standard)'
+          - 'Shorts (9:16 Vertical)'
+        default: 'Original (16:9 Standard)'
       stream_quality:
         description: 'Select Stream Quality'
         required: true
@@ -171,6 +104,7 @@ jobs:
           YOUTUBE_KEY: ${{ github.event.inputs.youtube_stream_key }}
           FACEBOOK_KEY: ${{ github.event.inputs.facebook_stream_key }}
           SERVER_SELECTION: ${{ github.event.inputs.server_selection }}
+          STREAM_FORMAT: ${{ github.event.inputs.stream_format }}
           STREAM_QUALITY: ${{ github.event.inputs.stream_quality }}
           PROXY_ENGINE: ${{ github.event.inputs.proxy_engine }}
           CUSTOM_DURATION: ${{ github.event.inputs.custom_duration }}
@@ -195,6 +129,201 @@ jobs:
             screenshots/*.png
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ======================== 111111 done alhamdullah for facebook and youtube , upper yeh new system add akrty live for youtube shorts =======================
+
+
+
+# name: 24/7 Pro Stream Bot (OBS Engine)
+
+# run-name: "OBS Stream Live Broadcaster"
+
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       target_urls:
+#         description: 'Comma-separated Target URLs (Server1, Server2, Server3)'
+#         required: true
+#         type: string
+#         default: 'https://dadocric.st/player.php?id=starsp3&v=m'
+#       youtube_stream_key:
+#         description: 'YouTube Stream Key (Optional)'
+#         required: false
+#         type: string
+#       facebook_stream_key:
+#         description: 'Facebook Stream Key (Optional)'
+#         required: false
+#         type: string
+#       server_selection:
+#         description: 'Target Server Button - Type "None" to skip'
+#         required: true
+#         type: string
+#         default: 'None'
+#       stream_quality:
+#         description: 'Select Stream Quality'
+#         required: true
+#         type: choice
+#         options:
+#           - 'Original (1080p Max)'
+#           - '1080p'
+#           - '720p'
+#           - '480p'
+#           - '360p'
+#         default: 'Original (1080p Max)'
+#       proxy_engine:
+#         description: 'Network Proxy Engine (Bypass Blocking)'
+#         required: true
+#         type: choice
+#         options:
+#           - 'Cloudflare WARP (Recommended)'
+#           - 'None (Direct GitHub IP)'
+#         default: 'Cloudflare WARP (Recommended)'
+#       custom_duration:
+#         description: 'Exact Duration to run (e.g., 4h 30m, 5h). Type "None" for auto-overlap.'
+#         required: true
+#         type: string
+#         default: 'None'
+
+# permissions:
+#   contents: write
+#   actions: write 
+
+# jobs:
+#   stream-and-record:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 360 
+
+#     steps:
+#       - name: Get Code
+#         uses: actions/checkout@v3
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: '18'
+
+#       - name: Install Dependencies & OBS Studio
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y xvfb pulseaudio dbus-x11 obs-studio
+#           npm install
+
+#       # 🌟 CONDITIONAL CLOUDFLARE WARP INSTALLATION
+#       - name: Install & Connect Cloudflare WARP (Anti-Block Bypass)
+#         if: github.event.inputs.proxy_engine == 'Cloudflare WARP (Recommended)'
+#         run: |
+#           curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+#           echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+#           sudo apt-get update && sudo apt-get install -y cloudflare-warp
+          
+#           # Stable Cloudflare WARP Proxy Engine
+#           warp-cli --accept-tos registration new
+#           warp-cli --accept-tos mode proxy
+#           warp-cli --accept-tos proxy port 40000
+#           warp-cli --accept-tos connect
+#           sleep 5
+#           echo "[+] Cloudflare WARP Proxy Shield is UP on Port 40000"
+
+#       - name: Run OBS Stream Engine
+#         env:
+#           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+#           TARGET_URLS: ${{ github.event.inputs.target_urls }}
+#           YOUTUBE_KEY: ${{ github.event.inputs.youtube_stream_key }}
+#           FACEBOOK_KEY: ${{ github.event.inputs.facebook_stream_key }}
+#           SERVER_SELECTION: ${{ github.event.inputs.server_selection }}
+#           STREAM_QUALITY: ${{ github.event.inputs.stream_quality }}
+#           PROXY_ENGINE: ${{ github.event.inputs.proxy_engine }}
+#           CUSTOM_DURATION: ${{ github.event.inputs.custom_duration }}
+#         run: |
+#           # Virtual Audio Setup
+#           pulseaudio -D --exit-idle-time=-1
+#           pacmd load-module module-virtual-sink sink_name=v1
+#           pacmd set-default-sink v1
+#           pacmd set-default-source v1.monitor
+          
+#           # 🌟 SMOOTHNESS FIX: Enforced 60Hz refresh rate on the virtual display to eliminate tearing
+#           xvfb-run -s "-screen 0 1920x1080x24 -ac -r -extension RANDR" node stream.js
+
+#       - name: Final Leftover Upload
+#         if: always() 
+#         uses: softprops/action-gh-release@v1
+#         with:
+#           tag_name: "live-stream-logs"
+#           name: "Live Broadcast Logs"
+#           body: "Auto updated live stream status."
+#           files: |
+#             screenshots/*.png
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 
