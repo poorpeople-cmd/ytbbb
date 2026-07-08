@@ -312,6 +312,22 @@ function setupOBSConfig() {
     const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIniContent);
     
+//     const basicIniContent = `[General]
+// Name=Untitled
+// [Video]
+// BaseCX=${RES_W}
+// BaseCY=${RES_H}
+// OutputCX=${RES_W}
+// OutputCY=${RES_H}
+// FPSCommon=30
+// [Output]
+// Mode=Simple
+// [SimpleOutput]
+// VBitrate=${BITRATE}
+// StreamEncoder=x264
+// x264Preset=ultrafast
+// x264Settings=keyint=60 tune=zerolatency profile=main threads=4 rc-lookahead=0
+// `;
     const basicIniContent = `[General]
 Name=Untitled
 [Video]
@@ -321,13 +337,19 @@ OutputCX=${RES_W}
 OutputCY=${RES_H}
 FPSCommon=30
 [Output]
-Mode=Simple
-[SimpleOutput]
-VBitrate=${BITRATE}
-StreamEncoder=x264
-x264Preset=ultrafast
-x264Settings=keyint=60 tune=zerolatency profile=main threads=4 rc-lookahead=0
+Mode=Advanced
+[AdvOut]
+TrackIndex=1
+RecType=Standard
+Encoder=obs_x264
+[obs_x264]
+bitrate=${BITRATE}
+keyint_sec=2
+preset=ultrafast
+profile=main
+tune=zerolatency
 `;
+    
     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIniContent);
 
     // 🔥 YT / FB Output Logic
