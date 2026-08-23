@@ -1,4 +1,3 @@
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -9,65 +8,58 @@ const os = require('os');
 const { spawn, execSync } = require('child_process');
 const { OBSWebSocket } = require('obs-websocket-js');
 
+const obs = new OBSWebSocket();
 
-// =========================================================================================
-// 🛡️ GLOBAL ERROR SHIELD
-// =========================================================================================
-
+// ============================================================
+// GLOBAL ERROR SHIELD
+// ============================================================
 process.on('uncaughtException', (err) => {
-    console.log(`[⚠️] UNCAUGHT EXCEPTION: ${err?.message || err}`);
+    console.log(`[⚠️] Uncaught Exception: ${err?.message || err}`);
 });
 
 process.on('unhandledRejection', (reason) => {
-    console.log(`[⚠️] UNHANDLED REJECTION: ${reason?.message || reason}`);
+    console.log(`[⚠️] Unhandled Rejection: ${reason?.message || reason}`);
 });
 
-
-// =========================================================================================
-// OBS
-// =========================================================================================
-
-const obs = new OBSWebSocket();
-
-let browser = null;
-let page = null;
-let obsProcess = null;
-let obsConnected = false;
-
-
-// =========================================================================================
+// ============================================================
 // ENVIRONMENT
-// =========================================================================================
-
-const TARGET_URLS = (process.env.TARGET_URLS || '').trim();
-
-const TARGET_URL = TARGET_URLS
-    ? TARGET_URLS
-        .split(',')
-        .map(u => u.trim())
-        .filter(Boolean)[0]
-    : 'https://example.com';
-
-const PROXY_ENGINE =
-    process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
+// ============================================================
+const TARGET_URLS =
+    (process.env.TARGET_URLS || '').trim();
 
 const YT_KEY =
-    process.env.YOUTUBE_KEY || '';
+    (process.env.YOUTUBE_KEY || '').trim();
 
 const FB_KEY =
-    process.env.FACEBOOK_KEY || '';
+    (process.env.FACEBOOK_KEY || '').trim();
 
 const STREAM_QUALITY =
-    process.env.STREAM_QUALITY || '1080p';
+    process.env.STREAM_QUALITY || 'Original (1080p Max)';
 
 const STREAM_FORMAT =
     process.env.STREAM_FORMAT || 'Original (16:9 Standard)';
 
+const PROXY_ENGINE =
+    process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
 
-// =========================================================================================
+const CUSTOM_DURATION =
+    process.env.CUSTOM_DURATION || 'None';
+
+// ============================================================
+// URL
+// ============================================================
+const targetUrl = TARGET_URLS
+    ? TARGET_URLS.split(',')[0].trim()
+    : 'https://dadocric.st/player.php?id=starsp3&v=m';
+
+console.log(`\n==================================================`);
+console.log(`[🌐] TARGET URL`);
+console.log(targetUrl);
+console.log(`==================================================\n`);
+
+// ============================================================
 // RESOLUTION
-// =========================================================================================
-
+// ============================================================
 let RES_W = 1920;
 let RES_H = 1080;
 let BITRATE = 6000;
@@ -90,50 +82,45 @@ else if (STREAM_QUALITY === '720p') {
 else if (STREAM_QUALITY === '1080p') {
     RES_W = 1920;
     RES_H = 1080;
+    BITRATE = 4500;
+}
+else {
+    RES_W = 1920;
+    RES_H = 1080;
     BITRATE = 6000;
 }
 
-
-// =========================================================================================
-// SHORTS / VERTICAL
-// =========================================================================================
-
-if (STREAM_FORMAT.toLowerCase().includes('shorts')) {
+// Shorts option
+if (STREAM_FORMAT.includes('Shorts')) {
     const temp = RES_W;
     RES_W = RES_H;
     RES_H = temp;
 
-    console.log(
-        `[📱] SHORTS MODE: ${RES_W}x${RES_H}`
-    );
+    console.log(`[📱] Shorts mode: ${RES_W}x${RES_H}`);
 }
 
+console.log(`[🎥] OBS OUTPUT: ${RES_W}x${RES_H}`);
+console.log(`[📡] BITRATE: ${BITRATE} kbps`);
 
-console.log(
-    `[🚀] OUTPUT: ${RES_W}x${RES_H} @ ${BITRATE} kbps`
-);
+// ============================================================
+// GLOBALS
+// ============================================================
+let browser = null;
+let obsProcess = null;
+let activePage = null;
 
-console.log(
-    `[🌐] TARGET URL: ${TARGET_URL}`
-);
-
-
-// =========================================================================================
-// 🛡️ AD BLOCKER
-// =========================================================================================
-
+// ============================================================
+// AD BLOCKER
+// ONLY AD BLOCKING — NO VIDEO MANIPULATION
+// ============================================================
 async function setupNetworkAdBlocker(page) {
-
     if (!page) return;
 
     try {
-
         await page.setRequestInterception(true);
 
         page.on('request', request => {
-
             try {
-
                 const url = request.url().toLowerCase();
                 const type = request.resourceType();
 
@@ -148,61 +135,36 @@ async function setupNetworkAdBlocker(page) {
                     'doubleclick',
                     'googlesyndication',
                     'ad-delivery',
-                    'adrevenue'
+                    'adrevenue',
+                    'adnxs',
+                    'outbrain',
+                    'taboola'
                 ];
 
                 const blocked =
-                    blockedDomains.some(domain =>
-                        url.includes(domain)
+                    blockedDomains.some(x => url.includes(x));
+
+                const trackingScript =
+                    type === 'script' &&
+                    (
+                        url.includes('analytics') ||
+                        url.includes('tracking') ||
+                        url.includes('tracker') ||
+                        url.includes('/ads/') ||
+                        url.includes('/ad/')
                     );
 
-                if (blocked) {
-
+                if (blocked || trackingScript) {
                     console.log(
                         `[🛡️] BLOCKED AD: ${url.substring(0, 100)}`
                     );
 
                     request.abort().catch(() => {});
-                    return;
+                } else {
+                    request.continue().catch(() => {});
                 }
-
-                /*
-                 * Block obvious popup/navigation ad redirects.
-                 * Normal page navigation remains untouched.
-                 */
-
-                if (
-                    request.isNavigationRequest() &&
-                    request.frame() === page.mainFrame()
-                ) {
-
-                    const suspicious = [
-                        'popads',
-                        'popcash',
-                        'exoclick',
-                        'adsterra',
-                        'onclickads',
-                        'juicyads',
-                        'trafficjunky'
-                    ];
-
-                    if (
-                        suspicious.some(x => url.includes(x))
-                    ) {
-
-                        console.log(
-                            `[🛡️] BLOCKED NAVIGATION: ${url.substring(0, 100)}`
-                        );
-
-                        request.abort().catch(() => {});
-                        return;
-                    }
-                }
-
-                request.continue().catch(() => {});
 
             } catch (e) {
-
                 try {
                     request.continue().catch(() => {});
                 } catch (_) {}
@@ -210,43 +172,31 @@ async function setupNetworkAdBlocker(page) {
         });
 
     } catch (e) {
-
-        console.log(
-            `[⚠️] Ad blocker setup failed: ${e.message}`
-        );
+        console.log(`[⚠️] Ad blocker setup failed: ${e.message}`);
     }
 }
 
-
-// =========================================================================================
-// 🛡️ LIGHT POPUP PROTECTION
-// =========================================================================================
-
-async function setupPopupProtection(page) {
-
+// ============================================================
+// POPUP BLOCKER
+// ONLY BLOCK POPUP WINDOWS
+// ============================================================
+function attachPopupProtection(page) {
     if (!page) return;
 
     page.on('dialog', async dialog => {
-
         try {
             await dialog.dismiss();
         } catch (_) {}
     });
 }
 
-
-// =========================================================================================
+// ============================================================
 // OBS CONFIG
-// =========================================================================================
-
+// ============================================================
 function setupOBSConfig() {
 
     const obsDir =
-        path.join(
-            os.homedir(),
-            '.config',
-            'obs-studio'
-        );
+        path.join(os.homedir(), '.config', 'obs-studio');
 
     const profilesDir =
         path.join(
@@ -263,19 +213,12 @@ function setupOBSConfig() {
             'scenes'
         );
 
-    fs.mkdirSync(profilesDir, {
-        recursive: true
-    });
+    fs.mkdirSync(profilesDir, { recursive: true });
+    fs.mkdirSync(scenesDir, { recursive: true });
 
-    fs.mkdirSync(scenesDir, {
-        recursive: true
-    });
-
-
-    // ---------------------------------------------------------------------
-    // OBS GLOBAL CONFIG
-    // ---------------------------------------------------------------------
-
+    // --------------------------------------------------------
+    // OBS GLOBAL
+    // --------------------------------------------------------
     const globalIni = `
 [General]
 LicenseAccepted=true
@@ -295,11 +238,9 @@ ServerPassword=secret
         globalIni.trim()
     );
 
-
-    // ---------------------------------------------------------------------
-    // VIDEO / OUTPUT PROFILE
-    // ---------------------------------------------------------------------
-
+    // --------------------------------------------------------
+    // VIDEO PROFILE
+    // --------------------------------------------------------
     const basicIni = `
 [General]
 Name=Untitled
@@ -332,411 +273,189 @@ tune=zerolatency
         basicIni.trim()
     );
 
+    // --------------------------------------------------------
+    // PLATFORM
+    // --------------------------------------------------------
+    let server = '';
+    let key = '';
 
-    // ---------------------------------------------------------------------
-    // SELECT PLATFORM
-    // ---------------------------------------------------------------------
+    if (YT_KEY) {
+        server = 'rtmp://a.rtmp.youtube.com/live2/';
+        key = YT_KEY;
 
-    let rtmpServer = '';
-    let streamKey = '';
-
-    if (
-        YT_KEY &&
-        YT_KEY.trim() !== ''
-    ) {
-
-        rtmpServer =
-            'rtmp://a.rtmp.youtube.com/live2/';
-
-        streamKey =
-            YT_KEY.trim();
-
-        console.log(
-            '[🚀] PLATFORM: YOUTUBE'
-        );
-
-    } else if (
-        FB_KEY &&
-        FB_KEY.trim() !== ''
-    ) {
-
-        rtmpServer =
-            'rtmps://live-api-s.facebook.com:443/rtmp/';
-
-        streamKey =
-            FB_KEY.trim();
-
-        console.log(
-            '[🚀] PLATFORM: FACEBOOK'
-        );
-
-    } else {
-
-        throw new Error(
-            'YouTube ya Facebook Stream Key required hai.'
-        );
+        console.log(`[🚀] PLATFORM: YOUTUBE`);
     }
+    else if (FB_KEY) {
+        server = 'rtmps://live-api-s.facebook.com:443/rtmp/';
+        key = FB_KEY;
 
+        console.log(`[🚀] PLATFORM: FACEBOOK`);
+    }
+    else {
+        console.log(
+            `[❌] No YouTube/Facebook stream key provided.`
+        );
+
+        process.exit(1);
+    }
 
     const serviceJson = {
-
+        type: 'rtmp_custom',
         settings: {
-            server: rtmpServer,
-            key: streamKey
-        },
-
-        type: 'rtmp_custom'
+            server,
+            key
+        }
     };
 
+    fs.writeFileSync(
+        path.join(profilesDir, 'service.json'),
+        JSON.stringify(serviceJson, null, 2)
+    );
+
+    // --------------------------------------------------------
+    // INITIAL OBS SCENE
+    // --------------------------------------------------------
+    const sceneJson = {
+        current_scene: 'MainScene',
+        current_program_scene: 'MainScene',
+        name: 'Untitled',
+
+        scene_order: [
+            {
+                name: 'MainScene'
+            }
+        ],
+
+        sources: [
+            {
+                id: 'xshm_input',
+                name: 'Screen',
+                settings: {
+                    show_cursor: false
+                }
+            }
+        ]
+    };
 
     fs.writeFileSync(
-        path.join(
-            profilesDir,
-            'service.json'
-        ),
-        JSON.stringify(
-            serviceJson,
-            null,
-            2
-        )
+        path.join(scenesDir, 'Untitled.json'),
+        JSON.stringify(sceneJson, null, 2)
     );
 }
 
+// ============================================================
+// OBS TEXT OVERLAY
+// ============================================================
+async function setupOBSTextOverlay() {
 
-// =========================================================================================
-// OBS WEBSOCKET CONNECT
-// =========================================================================================
+    console.log(`[📝] Creating OBS text overlay...`);
 
-async function connectOBS() {
+    try {
 
-    console.log(
-        '[*] Connecting to OBS WebSocket...'
-    );
-
-    for (
-        let attempt = 1;
-        attempt <= 20;
-        attempt++
-    ) {
-
+        // Remove old source if it exists
         try {
+            await obs.call('RemoveInput', {
+                inputName: 'OfficialWatchText'
+            });
+        } catch (_) {}
 
-            await Promise.race([
+        // Create text source
+        await obs.call('CreateInput', {
+            sceneName: 'MainScene',
+            inputName: 'OfficialWatchText',
+            inputKind: 'text_ft2_source_v2',
+            inputSettings: {
+                text:
+                    'Where to Watch Officially?\n' +
+                    'sport4u.online',
 
-                obs.connect(
-                    'ws://127.0.0.1:4455',
-                    'secret'
-                ),
-
-                new Promise(
-                    (_, reject) =>
-                        setTimeout(
-                            () =>
-                                reject(
-                                    new Error('Timeout')
-                                ),
-                            3000
-                        )
-                )
-            ]);
-
-            obsConnected = true;
-
-            console.log(
-                '[+] OBS WebSocket Connected.'
-            );
-
-            return;
-
-        } catch (e) {
-
-            console.log(
-                `[⏳] OBS connection attempt ${attempt}/20`
-            );
-
-            await sleep(1500);
-        }
-    }
-
-    throw new Error(
-        'OBS WebSocket connection failed.'
-    );
-}
-
-
-// =========================================================================================
-// OBS VIDEO SETTINGS
-// =========================================================================================
-
-async function configureOBSVideo() {
-
-    try {
-
-        await obs.call(
-            'SetVideoSettings',
-            {
-                baseWidth: RES_W,
-                baseHeight: RES_H,
-                outputWidth: RES_W,
-                outputHeight: RES_H,
-                fpsNumerator: 30,
-                fpsDenominator: 1
-            }
-        );
-
-        console.log(
-            `[+] OBS Canvas: ${RES_W}x${RES_H}`
-        );
-
-    } catch (e) {
-
-        console.log(
-            `[⚠️] OBS video settings could not be changed: ${e.message}`
-        );
-    }
-}
-
-
-// =========================================================================================
-// OBS SCENE SETUP
-// =========================================================================================
-
-async function setupOBSScene() {
-
-    const sceneName = 'MainScene';
-
-    // ---------------------------------------------------------------------
-    // Delete existing scene if possible
-    // ---------------------------------------------------------------------
-
-    try {
-
-        await obs.call(
-            'RemoveScene',
-            {
-                sceneName
-            }
-        );
-
-    } catch (_) {}
-
-
-    // ---------------------------------------------------------------------
-    // Create scene
-    // ---------------------------------------------------------------------
-
-    try {
-
-        await obs.call(
-            'CreateScene',
-            {
-                sceneName
-            }
-        );
-
-    } catch (_) {}
-
-
-    // ---------------------------------------------------------------------
-    // SCREEN CAPTURE
-    // ---------------------------------------------------------------------
-
-    try {
-
-        await obs.call(
-            'CreateInput',
-            {
-                sceneName,
-
-                inputName: 'Browser Screen',
-
-                inputKind: 'xshm_input',
-
-                inputSettings: {
-                    screen: 0,
-                    show_cursor: false
+                font: {
+                    face: 'DejaVu Sans',
+                    size: 42,
+                    style: 'Bold'
                 },
 
-                sceneItemEnabled: true
-            }
-        );
+                color1: 4294967295,
+                color2: 4294967295,
 
-        console.log(
-            '[+] Screen Capture Source Created.'
-        );
+                align: 'center',
+                valign: 'center',
 
-    } catch (e) {
+                outline: true,
+                outline_size: 4,
+                outline_color: 4278190080,
 
-        console.log(
-            `[⚠️] Screen source: ${e.message}`
-        );
-    }
+                extents: true,
+                extents_cx: 1000,
+                extents_cy: 180
+            },
 
+            sceneItemEnabled: true
+        });
 
-    // ---------------------------------------------------------------------
-    // TEXT OVERLAY
-    // ---------------------------------------------------------------------
-
-    try {
-
-        await obs.call(
-            'CreateInput',
-            {
-                sceneName,
-
-                inputName:
-                    'Official Watch Text',
-
-                inputKind:
-                    'text_ft2_source_v2',
-
-                inputSettings: {
-
-                    text:
-                        'Where to Watch Officially?\nsport4u.online',
-
-                    font: {
-                        face: 'Arial',
-                        size: 42,
-                        flags: 1
-                    },
-
-                    color1: 0xFFFFFFFF,
-
-                    outline: true,
-                    outline_size: 4,
-                    outline_color: 0x000000FF,
-
-                    align: 'center',
-                    valign: 'center'
-                },
-
-                sceneItemEnabled: true
-            }
-        );
-
-        console.log(
-            '[+] Center Text Source Created.'
-        );
-
-    } catch (e) {
-
-        console.log(
-            `[⚠️] Text source creation: ${e.message}`
-        );
-    }
-
-
-    // ---------------------------------------------------------------------
-    // GET TEXT ITEM
-    // ---------------------------------------------------------------------
-
-    try {
-
-        const items =
-            await obs.call(
-                'GetSceneItemList',
-                {
-                    sceneName
-                }
-            );
-
+        // Find source item
+        const sceneItems =
+            await obs.call('GetSceneItemList', {
+                sceneName: 'MainScene'
+            });
 
         const textItem =
-            items.sceneItems.find(
-                item =>
-                    item.sourceName ===
-                    'Official Watch Text'
+            sceneItems.sceneItems.find(
+                item => item.sourceName === 'OfficialWatchText'
             );
-
 
         if (textItem) {
 
-            /*
-             * Center the text source.
-             */
+            await obs.call('SetSceneItemTransform', {
+                sceneName: 'MainScene',
+                sceneItemId: textItem.sceneItemId,
 
-            await obs.call(
-                'SetSceneItemTransform',
-                {
-                    sceneName,
+                sceneItemTransform: {
+                    alignment: 0,
+                    positionX: RES_W / 2,
+                    positionY: RES_H / 2,
 
-                    sceneItemId:
-                        textItem.sceneItemId,
+                    rotation: 0,
 
-                    sceneItemTransform: {
+                    scaleX: 1,
+                    scaleY: 1,
 
-                        alignment: 0,
+                    width: 1000,
+                    height: 180,
 
-                        positionX:
-                            RES_W / 2,
+                    cropLeft: 0,
+                    cropRight: 0,
+                    cropTop: 0,
+                    cropBottom: 0,
 
-                        positionY:
-                            RES_H / 2,
-
-                        boundsType:
-                            'OBS_BOUNDS_NONE',
-
-                        rotation: 0,
-
-                        scaleX: 1,
-                        scaleY: 1,
-
-                        cropLeft: 0,
-                        cropRight: 0,
-                        cropTop: 0,
-                        cropBottom: 0
-                    }
+                    boundsType: 'OBS_BOUNDS_SCALE_INNER',
+                    boundsAlignment: 0,
+                    boundsWidth: 1000,
+                    boundsHeight: 180
                 }
-            );
-
-            console.log(
-                '[+] Text positioned at CENTER.'
-            );
+            });
         }
+
+        console.log(
+            `[✅] OBS CENTER TEXT ENABLED`
+        );
 
     } catch (e) {
 
         console.log(
-            `[⚠️] Text positioning: ${e.message}`
+            `[⚠️] OBS text overlay error: ${e.message}`
         );
     }
-
-
-    // ---------------------------------------------------------------------
-    // PROGRAM SCENE
-    // ---------------------------------------------------------------------
-
-    await obs.call(
-        'SetCurrentProgramScene',
-        {
-            sceneName
-        }
-    );
-
-
-    console.log(
-        '[+] OBS MainScene activated.'
-    );
 }
 
+// ============================================================
+// START
+// ============================================================
+async function startDirectStreaming() {
 
-// =========================================================================================
-// START OBS
-// =========================================================================================
-
-async function startOBS() {
-
-    console.log(
-        '[*] Preparing OBS configuration...'
-    );
+    console.log(`[🎬] Starting OBS...`);
 
     setupOBSConfig();
-
-
-    console.log(
-        '[*] Starting OBS...'
-    );
 
     obsProcess = spawn(
         'obs',
@@ -749,110 +468,131 @@ async function startOBS() {
         }
     );
 
+    obsProcess.stdout.on('data', data => {
+        console.log(`[OBS] ${data.toString().trim()}`);
+    });
 
-    obsProcess.stdout?.on(
-        'data',
-        data =>
-            console.log(
-                `[OBS] ${data.toString().trim()}`
-            )
-    );
+    obsProcess.stderr.on('data', data => {
+        const msg = data.toString().trim();
 
-
-    obsProcess.stderr?.on(
-        'data',
-        data => {
-
-            const msg =
-                data.toString().trim();
-
-            if (
-                msg.toLowerCase().includes('error') ||
-                msg.toLowerCase().includes('fail')
-            ) {
-
-                console.log(
-                    `[OBS ERROR] ${msg}`
-                );
-            }
+        if (
+            msg.toLowerCase().includes('error') ||
+            msg.toLowerCase().includes('fail')
+        ) {
+            console.log(`[OBS ERROR] ${msg}`);
         }
+    });
+
+    // --------------------------------------------------------
+    // WAIT FOR OBS
+    // --------------------------------------------------------
+    console.log(`[⏳] Waiting for OBS...`);
+
+    await new Promise(
+        resolve => setTimeout(resolve, 6000)
     );
 
+    // --------------------------------------------------------
+    // CONNECT OBS WEBSOCKET
+    // --------------------------------------------------------
+    let connected = false;
 
-    await sleep(6000);
+    for (let attempt = 1; attempt <= 15; attempt++) {
 
-    await connectOBS();
+        try {
 
-    await configureOBSVideo();
+            await Promise.race([
+                obs.connect(
+                    'ws://127.0.0.1:4455',
+                    'secret'
+                ),
 
-    await setupOBSScene();
+                new Promise(
+                    (_, reject) =>
+                        setTimeout(
+                            () =>
+                                reject(
+                                    new Error('OBS timeout')
+                                ),
+                            3000
+                        )
+                )
+            ]);
 
+            connected = true;
 
-    // Start streaming after scene is ready
+            console.log(
+                `[✅] OBS WebSocket Connected`
+            );
 
-    try {
+            break;
 
-        await obs.call(
-            'StartStream'
-        );
+        } catch (e) {
 
-        console.log(
-            '[🔴] OBS LIVE STREAM STARTED.'
-        );
+            console.log(
+                `[⏳] OBS not ready (${attempt}/15)`
+            );
 
-    } catch (e) {
+            await new Promise(
+                resolve => setTimeout(resolve, 2000)
+            );
+        }
+    }
 
-        console.log(
-            `[⚠️] StartStream: ${e.message}`
+    if (!connected) {
+        throw new Error(
+            'Could not connect to OBS WebSocket.'
         );
     }
-}
 
+    // --------------------------------------------------------
+    // ENSURE MAIN SCENE
+    // --------------------------------------------------------
+    try {
+        await obs.call(
+            'SetCurrentProgramScene',
+            {
+                sceneName: 'MainScene'
+            }
+        );
+    } catch (_) {}
 
-// =========================================================================================
-// BROWSER
-// =========================================================================================
+    // --------------------------------------------------------
+    // ADD TEXT
+    // --------------------------------------------------------
+    await setupOBSTextOverlay();
 
-async function startBrowser() {
-
+    // ========================================================
+    // CHROME
+    // ========================================================
     const browserArgs = [
-
         '--no-sandbox',
-
         '--disable-setuid-sandbox',
 
         `--window-size=${RES_W},${RES_H}`,
-
         '--window-position=0,0',
+
+        '--kiosk',
+        '--start-fullscreen',
 
         '--autoplay-policy=no-user-gesture-required',
 
         '--disable-dev-shm-usage',
-
         '--ignore-certificate-errors',
 
-        '--ignore-gpu-blocklist',
-
-        '--disable-smooth-scrolling',
+        // Keep normal browser/network behavior
+        // Do NOT manipulate video/iframe/fullscreen.
 
         '--disable-background-timer-throttling',
-
         '--disable-backgrounding-occluded-windows',
-
-        '--disable-renderer-backgrounding',
-
-        '--disable-blink-features=AutomationControlled'
+        '--disable-renderer-backgrounding'
     ];
 
-
-    // ---------------------------------------------------------------------
+    // --------------------------------------------------------
     // CLOUDFLARE WARP
-    // ---------------------------------------------------------------------
-
+    // --------------------------------------------------------
     if (
-        PROXY_ENGINE
-            .toLowerCase()
-            .includes('cloudflare')
+        PROXY_ENGINE.includes('Cloudflare')
     ) {
 
         browserArgs.push(
@@ -860,17 +600,19 @@ async function startBrowser() {
         );
 
         console.log(
-            '[🌐] Cloudflare WARP proxy ENABLED.'
+            `[🌐] Cloudflare WARP proxy enabled`
         );
 
     } else {
 
         console.log(
-            '[🌐] Direct connection selected.'
+            `[🌐] Direct connection enabled`
         );
     }
 
-
+    // --------------------------------------------------------
+    // LAUNCH BROWSER
+    // --------------------------------------------------------
     browser = await puppeteer.launch({
 
         headless: false,
@@ -887,208 +629,243 @@ async function startBrowser() {
         args: browserArgs
     });
 
-
-    page =
-        (await browser.pages())[0];
-
-
-    if (!page) {
-
-        page =
-            await browser.newPage();
-    }
-
-
-    // ---------------------------------------------------------------------
-    // AD BLOCKER
-    // ---------------------------------------------------------------------
-
-    await setupNetworkAdBlocker(page);
-
-    await setupPopupProtection(page);
-
-
-    // ---------------------------------------------------------------------
-    // POPUP TARGET PROTECTION
-    // ---------------------------------------------------------------------
-
+    // --------------------------------------------------------
+    // POPUP PROTECTION
+    // --------------------------------------------------------
     browser.on(
         'targetcreated',
         async target => {
 
+            if (target.type() !== 'page')
+                return;
+
             try {
-
-                if (
-                    target.type() !== 'page'
-                ) return;
-
 
                 const newPage =
                     await target.page();
 
+                setTimeout(
+                    async () => {
 
-                if (
-                    !newPage ||
-                    newPage === page
-                ) return;
+                        if (
+                            newPage &&
+                            newPage !== activePage
+                        ) {
 
+                            console.log(
+                                `[🛡️] Popup blocked`
+                            );
 
-                console.log(
-                    '[🛡️] Closing unwanted popup tab.'
+                            try {
+                                await newPage.close();
+                            } catch (_) {}
+                        }
+
+                    },
+                    700
                 );
-
-                await newPage.close()
-                    .catch(() => {});
 
             } catch (_) {}
         }
     );
 
+    // --------------------------------------------------------
+    // MAIN PAGE
+    // --------------------------------------------------------
+    const pages =
+        await browser.pages();
 
-    // ---------------------------------------------------------------------
-    // OPEN ONLY THE PROVIDED URL
-    // ---------------------------------------------------------------------
+    activePage = pages[0];
 
-    console.log(
-        `[*] Opening URL normally:\n${TARGET_URL}`
+    await setupNetworkAdBlocker(
+        activePage
     );
 
-
-    try {
-
-        await page.goto(
-            TARGET_URL,
-            {
-                waitUntil:
-                    'domcontentloaded',
-
-                timeout: 60000
-            }
-        );
-
-    } catch (e) {
-
-        console.log(
-            `[⚠️] Navigation completed/handled: ${e.message}`
-        );
-    }
-
-
-    console.log(
-        '[+] URL opened.'
+    attachPopupProtection(
+        activePage
     );
 
+    await activePage.bringToFront();
+
+    // ========================================================
+    // IMPORTANT:
+    // ONLY OPEN URL.
+    //
+    // NO:
+    // - server button click
+    // - force play
+    // - fullscreen injection
+    // - iframe manipulation
+    // - video CSS
+    // - mute/unmute
+    // - page.evaluate()
+    // ========================================================
     console.log(
-        '[+] Browser page is NOT being modified.'
+        `\n[🌐] Opening URL exactly as provided...`
     );
 
     console.log(
-        '[+] No forced fullscreen.'
+        `[🌐] ${targetUrl}`
+    );
+
+    await activePage.goto(
+        targetUrl,
+        {
+            waitUntil: 'domcontentloaded',
+            timeout: 60000
+        }
+    );
+
+    await activePage.bringToFront();
+
+    console.log(
+        `\n==================================================`
     );
 
     console.log(
-        '[+] No video manipulation.'
+        `[✅] URL LOADED`
     );
 
     console.log(
-        '[+] OBS is capturing the screen.'
+        `[🎥] Browser page is being captured by OBS`
     );
 
+    console.log(
+        `[📝] Center overlay:`
+    );
 
-    try {
+    console.log(
+        `    Where to Watch Officially?`
+    );
 
-        await page.bringToFront();
+    console.log(
+        `    sport4u.online`
+    );
 
-    } catch (_) {}
+    console.log(
+        `[📡] BROADCAST IS LIVE`
+    );
+
+    console.log(
+        `==================================================\n`
+    );
+
+    // ========================================================
+    // KEEP RUNNING
+    // ========================================================
+    await new Promise(
+        () => {}
+    );
 }
 
-
-// =========================================================================================
-// UTILITY
-// =========================================================================================
-
-function sleep(ms) {
-
-    return new Promise(
-        resolve =>
-            setTimeout(resolve, ms)
-    );
-}
-
-
-// =========================================================================================
+// ============================================================
 // CLEANUP
-// =========================================================================================
-
+// ============================================================
 async function cleanup() {
 
     console.log(
-        '[*] Cleaning up...'
+        `[*] Cleaning up...`
     );
 
-
     try {
-
-        if (obsConnected) {
-
-            try {
-
-                const status =
-                    await obs.call(
-                        'GetStreamStatus'
-                    );
-
-                if (
-                    status &&
-                    status.outputActive
-                ) {
-
-                    await obs.call(
-                        'StopStream'
-                    );
-                }
-
-            } catch (_) {}
-
-
-            try {
-                await obs.disconnect();
-            } catch (_) {}
-
-            obsConnected = false;
-        }
-
+        await obs.disconnect();
     } catch (_) {}
 
-
     if (browser) {
-
         try {
             await browser.close();
         } catch (_) {}
 
         browser = null;
-        page = null;
     }
-
 
     if (obsProcess) {
 
         try {
-            obsProcess.kill(
-                'SIGKILL'
-            );
+            obsProcess.kill('SIGKILL');
         } catch (_) {}
 
         obsProcess = null;
     }
+
+    try {
+        execSync(
+            'pkill -9 obs || true',
+            { stdio: 'ignore' }
+        );
+
+        execSync(
+            'pkill -9 chrome || true',
+            { stdio: 'ignore' }
+        );
+
+    } catch (_) {}
 }
 
+// ============================================================
+// DURATION
+// ============================================================
+function parseDurationToMs(str) {
 
-// =========================================================================================
+    if (
+        !str ||
+        str.toLowerCase() === 'none'
+    ) {
+        return null;
+    }
+
+    let ms = 0;
+
+    const h =
+        str.match(/(\d+)\s*h/i);
+
+    const m =
+        str.match(/(\d+)\s*m/i);
+
+    if (h) {
+        ms +=
+            parseInt(h[1]) *
+            60 *
+            60 *
+            1000;
+    }
+
+    if (m) {
+        ms +=
+            parseInt(m[1]) *
+            60 *
+            1000;
+    }
+
+    return ms > 0 ? ms : null;
+}
+
+const durationMs =
+    parseDurationToMs(
+        CUSTOM_DURATION
+    );
+
+if (durationMs) {
+
+    setTimeout(
+        async () => {
+
+            console.log(
+                `\n[🛑] Duration completed: ${CUSTOM_DURATION}`
+            );
+
+            await cleanup();
+
+            process.exit(0);
+
+        },
+        durationMs
+    );
+}
+
+// ============================================================
 // SIGNAL
-// =========================================================================================
-
+// ============================================================
 process.on(
     'SIGINT',
     async () => {
@@ -1099,147 +876,27 @@ process.on(
     }
 );
 
-process.on(
-    'SIGTERM',
-    async () => {
-
-        await cleanup();
-
-        process.exit(0);
-    }
-);
-
-
-// =========================================================================================
+// ============================================================
 // MAIN
-// =========================================================================================
-
-async function main() {
-
-    console.log('');
-    console.log(
-        '=================================================='
-    );
-    console.log(
-        '      SIMPLE STREAM CAPTURE + BROADCAST ENGINE'
-    );
-    console.log(
-        '=================================================='
-    );
-
-    console.log(
-        `[🌐] URL      : ${TARGET_URL}`
-    );
-
-    console.log(
-        `[🛡️] AD BLOCK : ENABLED`
-    );
-
-    console.log(
-        `[🌐] PROXY    : ${PROXY_ENGINE}`
-    );
-
-    console.log(
-        `[📺] OUTPUT   : ${RES_W}x${RES_H}`
-    );
-
-    console.log(
-        `[📝] OVERLAY  : Where to Watch Officially?`
-    );
-
-    console.log(
-        `[📝] OVERLAY  : sport4u.online`
-    );
-
-    console.log(
-        '=================================================='
-    );
-
+// ============================================================
+(async () => {
 
     try {
 
-        /*
-         * OBS first, then browser.
-         */
-
-        await startOBS();
-
-        await sleep(2000);
-
-        await startBrowser();
-
-
-        console.log('');
-        console.log(
-            '=================================================='
-        );
-
-        console.log(
-            '[🔴] BROADCAST ENGINE RUNNING'
-        );
-
-        console.log(
-            `[🌐] SOURCE: ${TARGET_URL}`
-        );
-
-        console.log(
-            '[📝] CENTER OVERLAY ENABLED'
-        );
-
-        console.log(
-            '[🛡️] AD BLOCKER ENABLED'
-        );
-
-        console.log(
-            '[🌐] CLOUDFLARE/WARP ENABLED WHEN SELECTED'
-        );
-
-        console.log(
-            '=================================================='
-        );
-
-
-        /*
-         * Keep process alive.
-         * No watchdog.
-         * No refresh.
-         * No hot swap.
-         * No player manipulation.
-         */
-
-        while (true) {
-
-            await sleep(30000);
-
-            if (
-                browser &&
-                !browser.isConnected()
-            ) {
-
-                throw new Error(
-                    'Browser disconnected.'
-                );
-            }
-        }
+        await startDirectStreaming();
 
     } catch (error) {
 
         console.error(
-            `[❌] ENGINE ERROR: ${error.message}`
+            `[❌] FATAL ERROR: ${error.message}`
         );
 
         await cleanup();
 
         process.exit(1);
     }
-}
 
-
-// =========================================================================================
-// RUN
-// =========================================================================================
-
-main();
+})();
 
 
 
