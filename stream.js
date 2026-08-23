@@ -102,6 +102,10 @@ let uploadCycleCount = 0;
 // =========================================================================================
 // 🎨 OFFICIAL WATERMARK INJECTION
 // =========================================================================================
+
+// =========================================================================================
+// 🎨 OFFICIAL WATERMARK INJECTION (BIG SIZE UPDATE)
+// =========================================================================================
 async function injectOfficialWatermark(page) {
     if (!page) return;
     try {
@@ -111,34 +115,72 @@ async function injectOfficialWatermark(page) {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
-                        overlay.innerHTML = 'Where to watch Officially ?<br><span style="color: #ff4d4d; font-size: 32px;">sport4u.online</span>';
+                        // 🔥 Yahan niche 56px kar diya hai website ke naam ke liye
+                        overlay.innerHTML = 'Where to watch Officially ? Google 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
                         overlay.style.cssText = `
                             position: fixed !important;
-                            top: 30px !important;
+                            top: 40px !important;
                             left: 50% !important;
                             transform: translateX(-50%) !important;
                             z-index: 2147483647 !important;
-                            background-color: rgba(0, 0, 0, 0.75) !important;
+                            background-color: rgba(0, 0, 0, 0.8) !important;
                             color: #ffffff !important;
-                            padding: 15px 35px !important;
-                            border-radius: 12px !important;
+                            padding: 20px 50px !important; /* 🔥 Padding barha di taake box bara ho */
+                            border-radius: 16px !important;
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-                            font-size: 22px !important;
+                            font-size: 36px !important; /* 🔥 Top text ka size 22px se 36px kar diya */
                             font-weight: bold !important;
                             text-align: center !important;
-                            border: 2px solid #e50914 !important;
+                            border: 3px solid #e50914 !important;
                             pointer-events: none !important;
-                            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.8) !important;
-                            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
+                            box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.9) !important;
+                            text-shadow: 2px 2px 5px rgba(0, 0, 0, 1) !important;
                         `;
                         let target = document.body || document.documentElement;
                         if (target) target.appendChild(overlay);
                     }
                 } catch(e) {}
-            }, 1000); // Check and re-inject every second if page clears DOM
+            }, 1000); 
         });
     } catch (e) {}
 }
+// async function injectOfficialWatermark(page) {
+//     if (!page) return;
+//     try {
+//         await page.evaluate(() => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('sport4u-watermark')) {
+//                         const overlay = document.createElement('div');
+//                         overlay.id = 'sport4u-watermark';
+//                         overlay.innerHTML = 'Where to watch Officially ?<br><span style="color: #ff4d4d; font-size: 32px;">sport4u.online</span>';
+//                         overlay.style.cssText = `
+//                             position: fixed !important;
+//                             top: 30px !important;
+//                             left: 50% !important;
+//                             transform: translateX(-50%) !important;
+//                             z-index: 2147483647 !important;
+//                             background-color: rgba(0, 0, 0, 0.75) !important;
+//                             color: #ffffff !important;
+//                             padding: 15px 35px !important;
+//                             border-radius: 12px !important;
+//                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+//                             font-size: 22px !important;
+//                             font-weight: bold !important;
+//                             text-align: center !important;
+//                             border: 2px solid #e50914 !important;
+//                             pointer-events: none !important;
+//                             box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.8) !important;
+//                             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
+//                         `;
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(overlay);
+//                     }
+//                 } catch(e) {}
+//             }, 1000); // Check and re-inject every second if page clears DOM
+//         });
+//     } catch (e) {}
+// }
 
 async function setupNetworkAdBlocker(page) {
     if (!page) return;
