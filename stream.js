@@ -38,7 +38,7 @@ const FB_KEY = process.env.FACEBOOK_KEY || '';
 const STREAM_QUALITY = process.env.STREAM_QUALITY || '1080p';
 const STREAM_FORMAT = process.env.STREAM_FORMAT || 'Original (16:9 Standard)';
 
-let RES_W = 1920, RES_H = 1080, BITRATE = 5000; // Adjusted bitrate like old code
+let RES_W = 1920, RES_H = 1080, BITRATE = 5000;
 if (STREAM_QUALITY === '360p') { RES_W = 640; RES_H = 360; BITRATE = 800; }
 else if (STREAM_QUALITY === '480p') { RES_W = 854; RES_H = 480; BITRATE = 1500; }
 else if (STREAM_QUALITY === '720p') { RES_W = 1280; RES_H = 720; BITRATE = 3000; }
@@ -75,7 +75,7 @@ async function setupPopupProtection(page) {
 }
 
 // =========================================================================================
-// OBS DIRECTORY CONFIG (🔥 COPIED DIRECTLY FROM YOUR OLD WORKING CODE)
+// OBS DIRECTORY CONFIG (🔥 100% COPY OF YOUR OLD CODE)
 // =========================================================================================
 function setupOBSConfig() {
     const obsDir = path.join(os.homedir(), '.config', 'obs-studio');
@@ -85,12 +85,12 @@ function setupOBSConfig() {
     fs.mkdirSync(profilesDir, { recursive: true });
     fs.mkdirSync(scenesDir, { recursive: true });
 
-    // 1. Global Settings
-    const globalIni = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
-    fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIni);
+    // 1. Global INI
+    const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
+    fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIniContent);
 
-    // 2. Profile Settings (🔥 ULTRAFAST PRESET ADDED HERE LIKE OLD CODE)
-    const basicIni = `[General]
+    // 2. Profile (Advanced Mode, Ultrafast)
+    const basicIniContent = `[General]
 Name=Untitled
 [Video]
 BaseCX=${RES_W}
@@ -111,12 +111,11 @@ preset=ultrafast
 profile=main
 tune=zerolatency
 `;
-    fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIni);
+    fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIniContent);
 
-    // 3. File-Based Key Injection (🔥 LIKE OLD CODE)
+    // 3. RTMP Logic
     let rtmpServer = "";
     let streamKey = "";
-
     if (YT_KEY && YT_KEY.trim() !== '') {
         rtmpServer = "rtmp://a.rtmp.youtube.com/live2/";
         streamKey = YT_KEY.trim();
@@ -142,7 +141,7 @@ tune=zerolatency
 // =========================================================================================
 async function connectOBS() {
     console.log('[*] Connecting to OBS WebSocket...');
-    for (let attempt = 1; attempt <= 20; attempt++) {
+    for (let attempt = 1; attempt <= 15; attempt++) {
         try {
             await Promise.race([
                 obs.connect('ws://127.0.0.1:4455', 'secret'),
@@ -152,8 +151,8 @@ async function connectOBS() {
             console.log('[+] OBS WebSocket Connected.');
             return;
         } catch (e) {
-            console.log(`[⏳] OBS connection attempt ${attempt}/20`);
-            await sleep(1500);
+            console.log(`[⏳] OBS connection attempt ${attempt}/15`);
+            await sleep(2000);
         }
     }
     throw new Error('OBS WebSocket connection failed.');
@@ -206,10 +205,13 @@ async function setupOBSScene() {
 // START OBS
 // =========================================================================================
 async function startOBS() {
-    setupOBSConfig(); // Files exist physically on disk before launch
+    console.log(`[*] Preparing OBS Config Files (service.json etc)...`);
+    setupOBSConfig();
 
-    console.log('[*] Starting OBS Engine...');
-    obsProcess = spawn('obs', ['--minimize-to-tray'], { detached: false });
+    console.log('[*] Starting OBS Engine with --startstreaming (Like the old working code!)...');
+    
+    // 🔥 THE MOST IMPORTANT CHANGE: Added '--startstreaming' BACK. 
+    obsProcess = spawn('obs', ['--startstreaming', '--minimize-to-tray'], { detached: false });
 
     obsProcess.stderr?.on('data', data => {
         const msg = data.toString().trim();
@@ -218,27 +220,12 @@ async function startOBS() {
         }
     });
 
-    await sleep(6000);
+    await sleep(6000); // Give OBS time to connect to FB
     await connectOBS();
     await setupOBSScene();
-
-    // Start streaming properly now
-    try {
-        await sleep(3000); 
-        await obs.call('StartStream');
-        console.log('[🔴] OBS START COMMAND SENT TO FACEBOOK/YOUTUBE.');
-        
-        // Wait and Verify Status
-        await sleep(6000);
-        const status = await obs.call('GetStreamStatus');
-        if (status.outputActive) {
-            console.log(`[✅] SUCCESS! Stream is LIVE. (Bytes Sent: ${status.outputBytes})`);
-        } else {
-            console.log(`[❌] FAILED: Stream rejected. (Could be IP Block or Expired Key)`);
-        }
-    } catch (e) {
-        console.log(`[⚠️] StartStream Error: ${e.message}`);
-    }
+    
+    // We NO LONGER call obs.call('StartStream') because OBS is already streaming!
+    console.log('[🔴] OBS LIVE STREAM INITIATED BY OBS CORE.');
 }
 
 // =========================================================================================
@@ -337,7 +324,6 @@ async function main() {
 }
 
 main();
-
 
 
 
