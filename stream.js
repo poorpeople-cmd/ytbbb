@@ -102,6 +102,10 @@ async function setupPopupProtection(page) {
 // OBS CONFIG & PROFILES (Disk Level - Simple Mode Fix)
 // =========================================================================================
 
+// =========================================================================================
+// OBS CONFIG & PROFILES (Disk Level - Simple Mode Fix)
+// =========================================================================================
+
 function setupOBSConfig() {
     const obsDir = path.join(os.homedir(), '.config', 'obs-studio');
     const profilesDir = path.join(obsDir, 'basic', 'profiles', 'Untitled');
@@ -124,7 +128,7 @@ ServerPassword=secret
 `;
     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIni.trim());
 
-    // 2. Write Profile INI (Changed to Simple Mode to prevent silent encoder fail)
+    // 2. Write Profile INI (Force CPU Encoder obs_x264)
     const basicIni = `
 [General]
 Name=Untitled
@@ -139,10 +143,11 @@ Mode=Simple
 [SimpleOutput]
 VBitrate=${BITRATE}
 ABitrate=128
+StreamEncoder=obs_x264
 `;
     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIni.trim());
 
-    // 3. Write Stream Service (Directly injected into file before OBS starts)
+    // 3. Write Stream Service
     let streamServiceJson = { type: 'rtmp_custom', settings: { server: '', key: '' } };
     
     if (YT_KEY && YT_KEY.trim() !== '') {
@@ -159,6 +164,66 @@ ABitrate=128
 
     fs.writeFileSync(path.join(profilesDir, 'service.json'), JSON.stringify(streamServiceJson, null, 2));
 }
+
+
+
+// function setupOBSConfig() {
+//     const obsDir = path.join(os.homedir(), '.config', 'obs-studio');
+//     const profilesDir = path.join(obsDir, 'basic', 'profiles', 'Untitled');
+//     const scenesDir = path.join(obsDir, 'basic', 'scenes');
+
+//     fs.mkdirSync(profilesDir, { recursive: true });
+//     fs.mkdirSync(scenesDir, { recursive: true });
+
+//     // 1. Write Global INI
+//     const globalIni = `
+// [General]
+// LicenseAccepted=true
+// [BasicWindow]
+// ShowAutoConfig=false
+// Warned=true
+// [OBSWebSocket]
+// ServerEnabled=true
+// ServerPort=4455
+// ServerPassword=secret
+// `;
+//     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIni.trim());
+
+//     // 2. Write Profile INI (Changed to Simple Mode to prevent silent encoder fail)
+//     const basicIni = `
+// [General]
+// Name=Untitled
+// [Video]
+// BaseCX=${RES_W}
+// BaseCY=${RES_H}
+// OutputCX=${RES_W}
+// OutputCY=${RES_H}
+// FPSCommon=30
+// [Output]
+// Mode=Simple
+// [SimpleOutput]
+// VBitrate=${BITRATE}
+// ABitrate=128
+// `;
+//     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIni.trim());
+
+//     // 3. Write Stream Service (Directly injected into file before OBS starts)
+//     let streamServiceJson = { type: 'rtmp_custom', settings: { server: '', key: '' } };
+    
+//     if (YT_KEY && YT_KEY.trim() !== '') {
+//         streamServiceJson.settings.server = 'rtmp://a.rtmp.youtube.com/live2/';
+//         streamServiceJson.settings.key = YT_KEY.trim();
+//         console.log('[🚀] PLATFORM SELECTED: YOUTUBE');
+//     } else if (FB_KEY && FB_KEY.trim() !== '') {
+//         streamServiceJson.settings.server = 'rtmps://live-api-s.facebook.com:443/rtmp/';
+//         streamServiceJson.settings.key = FB_KEY.trim();
+//         console.log('[🚀] PLATFORM SELECTED: FACEBOOK');
+//     } else {
+//         throw new Error('❌ YouTube ya Facebook Stream Key required hai.');
+//     }
+
+//     fs.writeFileSync(path.join(profilesDir, 'service.json'), JSON.stringify(streamServiceJson, null, 2));
+// }
 
 
 // =========================================================================================
