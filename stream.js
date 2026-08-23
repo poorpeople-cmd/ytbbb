@@ -303,6 +303,9 @@ async function setupOBSScene() {
 // =========================================================================================
 // START OBS
 // =========================================================================================
+// =========================================================================================
+// START OBS
+// =========================================================================================
 
 async function startOBS() {
     setupOBSConfig();
@@ -310,16 +313,24 @@ async function startOBS() {
     console.log('[*] Starting OBS Engine...');
     obsProcess = spawn('obs', ['--minimize-to-tray'], { detached: false });
 
+    // 🚨 FULL LOGS ENABLED: Taake agar fail ho to reason pata chale!
+    obsProcess.stdout?.on('data', data => {
+        const msg = data.toString().trim();
+        if (msg.includes('error') || msg.includes('fail') || msg.includes('rtmp')) {
+            console.log(`[OBS SYSTEM] ${msg}`);
+        }
+    });
     obsProcess.stderr?.on('data', data => {
         const msg = data.toString().trim();
-        if (msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail')) {
-            // log quiet to avoid clutter
+        if (msg.includes('error') || msg.includes('fail') || msg.includes('rtmp')) {
+            console.log(`[OBS SYSTEM ERR] ${msg}`);
         }
     });
 
     await sleep(6000);
     await connectOBS();
     await setupOBSScene();
+    await configureOBSStreamService(); 
 
     // Start streaming properly now
     try {
@@ -328,17 +339,55 @@ async function startOBS() {
         console.log('[🔴] OBS START COMMAND SENT TO FACEBOOK/YOUTUBE.');
         
         // Wait and Verify Status
-        await sleep(5000);
+        await sleep(6000);
         const status = await obs.call('GetStreamStatus');
         if (status.outputActive) {
             console.log(`[✅] SUCCESS! Stream is LIVE. (Bytes Sent: ${status.outputBytes})`);
         } else {
-            console.log(`[❌] FAILED: OBS rejected the stream. Check your Facebook Stream Key.`);
+            console.log(`[❌] FAILED: OBS rejected the stream.`);
+            console.log(`[💡] Kripya upar [OBS SYSTEM] ke logs check karein ke kya error aaya hai!`);
         }
     } catch (e) {
         console.log(`[⚠️] StartStream Error: ${e.message}`);
     }
 }
+
+
+// async function startOBS() {
+//     setupOBSConfig();
+
+//     console.log('[*] Starting OBS Engine...');
+//     obsProcess = spawn('obs', ['--minimize-to-tray'], { detached: false });
+
+//     obsProcess.stderr?.on('data', data => {
+//         const msg = data.toString().trim();
+//         if (msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail')) {
+//             // log quiet to avoid clutter
+//         }
+//     });
+
+//     await sleep(6000);
+//     await connectOBS();
+//     await setupOBSScene();
+
+//     // Start streaming properly now
+//     try {
+//         await sleep(3000); 
+//         await obs.call('StartStream');
+//         console.log('[🔴] OBS START COMMAND SENT TO FACEBOOK/YOUTUBE.');
+        
+//         // Wait and Verify Status
+//         await sleep(5000);
+//         const status = await obs.call('GetStreamStatus');
+//         if (status.outputActive) {
+//             console.log(`[✅] SUCCESS! Stream is LIVE. (Bytes Sent: ${status.outputBytes})`);
+//         } else {
+//             console.log(`[❌] FAILED: OBS rejected the stream. Check your Facebook Stream Key.`);
+//         }
+//     } catch (e) {
+//         console.log(`[⚠️] StartStream Error: ${e.message}`);
+//     }
+// }
 
 
 // =========================================================================================
