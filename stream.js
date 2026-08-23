@@ -58,7 +58,6 @@ else if (selectedQuality === '720p') { RES_W = 1280; RES_H = 720; BITRATE = 3000
 else if (selectedQuality === '1080p') { RES_W = 1920; RES_H = 1080; BITRATE = 4500; }
 else { RES_W = 1920; RES_H = 1080; BITRATE = 6000; }
 
-// 🔥 NEW: Rotate resolution if Shorts is selected
 if (selectedFormat.includes('Shorts')) {
     let temp = RES_W;
     RES_W = RES_H;
@@ -69,7 +68,6 @@ if (selectedFormat.includes('Shorts')) {
 console.log(`[🚀] Smart Engine Locked to: ${RES_W}x${RES_H} @ ${BITRATE}kbps`);
 console.log(`[⏱️] Auto-Refresh Time Set To: ${FORCE_REFRESH_MINUTES} Minutes`);
 
-// 🔥 UPDATED: URL Parser for '!' mode (Static Broadcast)
 let rawUrls = (process.env.TARGET_URLS || '').trim();
 let urlList = rawUrls !== '' 
     ? rawUrls.split(',').map(u => {
@@ -87,7 +85,6 @@ let backupUrlIndex = urlList.length > 1 ? 1 : 0;
 const SERVER_SELECTION = process.env.SERVER_SELECTION || 'None'; 
 const PROXY_ENGINE = process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
 
-// 🔥 YOUTUBE & FACEBOOK KEYS
 const YT_KEY = process.env.YOUTUBE_KEY || '';
 const FB_KEY = process.env.FACEBOOK_KEY || '';
 
@@ -103,8 +100,46 @@ let pendingScreenshots = [];
 let uploadCycleCount = 0;
 
 // =========================================================================================
-// 🛡️ ADVANCED NETWORK INTELLIGENCE & NAVIGATION SHIELD
+// 🎨 OFFICIAL WATERMARK INJECTION
 // =========================================================================================
+async function injectOfficialWatermark(page) {
+    if (!page) return;
+    try {
+        await page.evaluate(() => {
+            setInterval(() => {
+                try {
+                    if (!document.getElementById('sport4u-watermark')) {
+                        const overlay = document.createElement('div');
+                        overlay.id = 'sport4u-watermark';
+                        overlay.innerHTML = 'Where to watch Officially ?<br><span style="color: #ff4d4d; font-size: 32px;">sport4u.online</span>';
+                        overlay.style.cssText = `
+                            position: fixed !important;
+                            top: 30px !important;
+                            left: 50% !important;
+                            transform: translateX(-50%) !important;
+                            z-index: 2147483647 !important;
+                            background-color: rgba(0, 0, 0, 0.75) !important;
+                            color: #ffffff !important;
+                            padding: 15px 35px !important;
+                            border-radius: 12px !important;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                            font-size: 22px !important;
+                            font-weight: bold !important;
+                            text-align: center !important;
+                            border: 2px solid #e50914 !important;
+                            pointer-events: none !important;
+                            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.8) !important;
+                            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
+                        `;
+                        let target = document.body || document.documentElement;
+                        if (target) target.appendChild(overlay);
+                    }
+                } catch(e) {}
+            }, 1000); // Check and re-inject every second if page clears DOM
+        });
+    } catch (e) {}
+}
+
 async function setupNetworkAdBlocker(page) {
     if (!page) return;
     try {
@@ -175,45 +210,8 @@ async function applyPreloadFirewall(page) {
             const style = document.createElement('style');
             style.textContent = `html, body { background-color: #000000 !important; overflow: hidden !important; }`;
             document.documentElement.appendChild(style);
-
-            const attachOverlay = () => {
-                let target = document.body || document.documentElement;
-                if (target && !document.getElementById('smart-stream-overlay')) {
-                    const overlay = document.createElement('div');
-                    overlay.id = 'smart-stream-overlay';
-                    overlay.innerHTML = `
-                        <style>
-                            #smart-stream-overlay {
-                                position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-                                width: 100vw !important; height: 100vh !important; background: #000000 !important;
-                                z-index: 2147483647 !important; display: flex !important; flex-direction: column !important;
-                                justify-content: center !important; align-items: center !important; color: #ffffff !important;
-                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-                                pointer-events: all !important;
-                            }
-                            .stream-spinner { width: 80px; height: 80px; border: 6px solid rgba(255, 255, 255, 0.1); border-top: 6px solid #e50914; border-radius: 50%; animation: spin-overlay 1s linear infinite; margin-bottom: 25px; box-shadow: 0 0 25px rgba(229, 9, 20, 0.4); }
-                            .progress-container { width: 300px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 30px; overflow: hidden; position: relative; }
-                            .progress-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e50914, #ff4d4d); position: absolute; left: -100%; animation: shift-progress 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-                            @keyframes spin-overlay { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                            @keyframes shift-progress { 0% { left: -100%; } 50% { left: 0; } 100% { left: 100%; } }
-                            .stream-title { font-size: 36px !important; font-weight: 800 !important; letter-spacing: 3px !important; margin-bottom: 15px !important; text-transform: uppercase !important; text-shadow: 0px 4px 10px rgba(0,0,0,0.8) !important; }
-                            .stream-sub { font-size: 20px !important; color: #cccccc !important; text-align: center !important; line-height: 1.6 !important; }
-                        </style>
-                        <div class="stream-spinner"></div>
-                        <div class="progress-container"><div class="progress-bar-fill"></div></div>
-                        <div class="stream-title">STREAM LOADING</div>
-                        <div class="stream-sub">Connecting to secure stream engine...</div>
-                    `;
-                    target.appendChild(overlay);
-                } else if (!target) {
-                    requestAnimationFrame(attachOverlay);
-                }
-            };
-            attachOverlay();
         });
-    } catch (e) {
-        console.log(`[🛡️] SYSTEM SHIELD: Preload firewall safe injection caught an error.`);
-    }
+    } catch (e) { }
 }
 
 async function takeAndBatchScreenshot(page, stepName) {
@@ -392,10 +390,8 @@ function attachAntiAdListeners(page) {
     });
 }
 
-// 🔥 UPDATED: Added 'urlStr' parameter to detect ! logic
 async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
     try {
-        // Checking Static Mode
         if (urlStr.startsWith('!')) {
             console.log(`[*] STATIC BROADCAST MODE (!): Skipping video finding, autoplay, and CSS injection. Broadcasting as-is.`);
             return;
@@ -464,31 +460,6 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                             break; 
                         }
                     }
-
-                    if (!isVideoPlaying && attempts > 5) {
-                        const forced = await frame.evaluate(async () => {
-                            let played = false;
-                            let vids = document.querySelectorAll('video');
-                            for(let v of vids) {
-                                if (v.clientWidth > 50) { 
-                                    v.muted = false; v.volume = 1.0; 
-                                    try { v.click(); } catch(e){}
-                                    try {
-                                        let p = v.play();
-                                        if (p !== undefined) p.catch(()=>{});
-                                        played = true;
-                                    } catch(e) {}
-                                }
-                            }
-                            return played;
-                        });
-
-                        if (forced) {
-                            await takeAndBatchScreenshot(page, `force-play-applied`);
-                            isVideoPlaying = true;
-                            break;
-                        }
-                    }
                 } catch (err) {}
             }
             if (!isVideoPlaying) await new Promise(r => setTimeout(r, 2000));
@@ -550,6 +521,7 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                         mainIframe.style.setProperty('left', '0px', 'important');
                         mainIframe.style.setProperty('width', '100vw', 'important');
                         mainIframe.style.setProperty('height', '100vh', 'important');
+                        // 🔥 Ensure iframe is behind the watermark
                         mainIframe.style.setProperty('z-index', '2147483645', 'important'); 
                         mainIframe.style.setProperty('background-color', 'black', 'important');
                         mainIframe.style.setProperty('border', 'none', 'important');
@@ -558,14 +530,15 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                         mainIframe.style.setProperty('visibility', 'visible', 'important');
                     }
 
-                    const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay), [id*="pop"], [class*="pop"], a[href*="extension"], [class*="notification"], [id*="notification"]';
+                    const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay):not(#sport4u-watermark), [id*="pop"], [class*="pop"], a[href*="extension"], [class*="notification"], [id*="notification"]';
                     document.querySelectorAll(junkClasses).forEach(el => { 
                         try { el.remove(); } catch(e){ el.style.setProperty('display', 'none', 'important'); } 
                     });
 
                     const adKeywords = ['jerk', 'mate', 'free', 'online', 'adult', 'dating', 'close', 'notification', 'justine', 'paying', 'job'];
                     document.querySelectorAll('div, section, span, a').forEach(el => {
-                        if (el.id === 'smart-stream-overlay') return;
+                        // 🔥 UPDATED: Protect watermark from AdBlocker engine
+                        if (el.id === 'smart-stream-overlay' || el.id === 'sport4u-watermark') return;
                         
                         const style = window.getComputedStyle(el);
                         const isFloating = style.position === 'fixed' || style.position === 'absolute';
@@ -597,7 +570,8 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                                 min-width: 100vw !important; min-height: 100vh !important;
                                 width: 100vw !important; height: 100vh !important;
                                 max-width: 100vw !important; max-height: 100vh !important;
-                                z-index: 2147483647 !important; background-color: #000000 !important;
+                                z-index: 2147483646 !important; /* 🔥 Slightly below max to keep watermark on top */
+                                background-color: #000000 !important;
                                 object-fit: contain !important; transform: none !important; margin: 0 !important; padding: 0 !important;
                             }
                             ytd-player, #ytd-player, .html5-video-container, .html5-video-player,
@@ -641,7 +615,8 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                         realVideo.style.setProperty('left', '0px', 'important');
                         realVideo.style.setProperty('width', '100vw', 'important');
                         realVideo.style.setProperty('height', '100vh', 'important');
-                        realVideo.style.setProperty('z-index', '2147483647', 'important'); 
+                        // 🔥 Video Layer below Watermark
+                        realVideo.style.setProperty('z-index', '2147483646', 'important'); 
                         realVideo.style.setProperty('background-color', 'black', 'important');
                         realVideo.style.setProperty('object-fit', 'contain', 'important');
                         realVideo.style.setProperty('opacity', '1', 'important');
@@ -657,11 +632,10 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
     await new Promise(r => setTimeout(r, 1000));
 }
 
-// 🔥 UPDATED: Added 'urlStr' to bypass video checks for Static pages
 async function checkPageStatus(page, urlStr = '') {
     if (!page) return { status: 'DEAD' };
     if (urlStr.startsWith('!')) {
-        return { status: 'HEALTHY', currentTime: Date.now(), decodedFrames: Date.now() }; // Fake moving frames to keep it alive
+        return { status: 'HEALTHY', currentTime: Date.now(), decodedFrames: Date.now() }; 
     }
 
     try {
@@ -736,7 +710,6 @@ async function startWatchdog() {
     while (true) {
         if (!browser || !browser.isConnected()) throw new Error("Browser closed.");
 
-        // 🔥 UPDATED: Pass url string for static check
         let activeStatus = await checkPageStatus(activePage, activeUrlStr);
 
         if (activeStatus.status === 'HEALTHY' && !isWarmupPhase) {
@@ -796,9 +769,7 @@ async function startWatchdog() {
         watchdogTicks++;
         
         if (watchdogTicks === 1 || watchdogTicks % 90 === 0) {
-            console.log(`\n[💓] WATCHDOG HEARTBEAT: Status is ${activeStatus.status} | Video Time: ${activeStatus.currentTime ? activeStatus.currentTime.toFixed(1) + 's' : 'N/A'}`);
-            console.log(`[▶️] CURRENTLY LIVE   : Server [${currentUrlIndex}] (Audio ON) -> ${activeUrlStr}`);
-            console.log(`[⏭️] NEXT IN QUEUE    : Server [${backupUrlIndex}] (Audio MUTED) -> ${backupUrlStr}`);
+            console.log(`\n[💓] WATCHDOG HEARTBEAT: Status is ${activeStatus.status}`);
         }
 
         if (watchdogTicks % 120 === 0) {
@@ -808,19 +779,16 @@ async function startWatchdog() {
         if (activeStatus.status === 'FROZEN' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH') {
             
             if (isWarmupPhase && (Date.now() - streamSetupTime < WARMUP_MAX_TIME)) { 
-                console.log(`[⏳] Watchdog detected '${activeStatus.status}', but stream is in WARM-UP phase. Waiting...`);
                 await new Promise(r => setTimeout(r, 2000));
                 continue; 
             }
 
             let isProactiveRefresh = (activeStatus.status === 'FORCE_REFRESH');
-            
             let cleanActiveUrl = activeUrlStr.replace(/^!/, '');
 
             if (isProactiveRefresh) {
                 console.log(`\n==================================================`);
                 console.log(`[!] 🔄 PROACTIVE REFRESH TRIGGERED`);
-                console.log(`[*] Preparing a FRESH copy of SAME Server [${currentUrlIndex}] in background...`);
                 console.log(`==================================================`);
                 
                 for (const frame of activePage.frames()) {
@@ -831,19 +799,14 @@ async function startWatchdog() {
                     await backupPage.goto('about:blank').catch(()=>{});
                     await applyPreloadFirewall(backupPage);
                     await backupPage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(()=>{});
-                } catch(e) {
-                    console.log(`[⏳] Proactive refresh buffer navigation handled safely.`);
-                }
+                } catch(e) {}
             } else {
                 console.log(`\n==================================================`);
                 console.log(`[!] ❌ WATCHDOG DETECTED ISSUE: ${activeStatus.status}`);
-                console.log(`[💀] FAILED STREAM: Server [${currentUrlIndex}] -> ${activeUrlStr}`);
                 console.log(`==================================================`);
                 await takeAndBatchScreenshot(activePage, `error-${activeStatus.status.toLowerCase()}`);
             }
             
-            console.log(`[*] Checking Backup Tab status before switching...`);
-            // 🔥 UPDATED: Pass url string to avoid falsely detecting 'DEAD' on static pages
             let backupStatus = await checkPageStatus(backupPage, backupUrlStr);
 
             if (backupStatus.status === 'HEALTHY' || backupStatus.status === 'DEAD') { 
@@ -860,9 +823,9 @@ async function startWatchdog() {
                 
                 try { await backupPage.mouse.click(10, 10); } catch(e){} 
 
-                console.log(`[*] Initializing Video on the newly active tab...`);
-                // 🔥 UPDATED: Pass correct backupUrlStr to skip logic if static
                 await initializeVideo(backupPage, false, true, backupUrlStr); 
+                // 🔥 Inject watermark immediately on the new active tab
+                await injectOfficialWatermark(backupPage);
                 await hideLoadingUI(backupPage);
 
                 let brokenPage = activePage; activePage = backupPage; backupPage = brokenPage;
@@ -873,31 +836,21 @@ async function startWatchdog() {
                     backupUrlIndex = (backupUrlIndex + 1) % urlList.length; backupUrlStr = urlList[backupUrlIndex]; 
                 } 
 
-                console.log(`\n==================================================`);
-                console.log(isProactiveRefresh ? `[🔄] SAME-SERVER FRESH SWAP EXECUTED SUCCESSFULLY` : `[🔄] SMART HOT-SWAP TO NEXT SERVER EXECUTED SUCCESSFULLY`);
-                console.log(`==================================================`);
-                console.log(`[📺] NEW ACTIVE STREAM : Server [${currentUrlIndex}] -> ${activeUrlStr}`);
-                console.log(`[🔊] LIVE AUDIO STATUS : ON (Unmuted & Forced)`);
-                console.log(`--------------------------------------------------`);
-                console.log(`[🛡️] NEXT BACKUP QUEUE : Server [${backupUrlIndex}] -> ${backupUrlStr}`);
-                console.log(`[🔇] BACKUP AUDIO      : MUTED (Background Loading)`);
-                console.log(`==================================================\n`);
+                console.log(`\n[🔄] SWAP EXECUTED SUCCESSFULLY`);
 
                 let cleanBackupUrl = backupUrlStr.replace(/^!/, '');
                 try {
                     await backupPage.goto('about:blank').catch(()=>{});
                     await applyPreloadFirewall(backupPage);
                     backupPage.goto(cleanBackupUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
-                } catch (e) {
-                    console.log(`[⏳] Background buffer navigation handled safely.`);
-                }
+                } catch (e) {}
                 
                 streamSetupTime = Date.now(); 
                 isWarmupPhase = true;
                 currentStreamStartTime = Date.now();
 
             } else {
-                console.error(`[!] ❌ Backup Tab is ALSO DEAD/FROZEN. Hard Restarting System...`);
+                console.error(`[!] ❌ Backup Tab failed. Hard Restarting System...`);
                 throw new Error("Both Active and Backup tabs failed.");
             }
         }
@@ -921,7 +874,6 @@ async function startDirectStreaming() {
     await new Promise(r => setTimeout(r, 6000));
 
     let isObsConnected = false;
-    console.log('[*] Attempting to connect to OBS WebSocket (Polling Engine Active)...');
     for (let attempt = 1; attempt <= 15; attempt++) {
         try {
             await Promise.race([
@@ -932,16 +884,12 @@ async function startDirectStreaming() {
             console.log('[+] OBS WebSocket Connected Successfully!');
             break;
         } catch (e) {
-            console.log(`[⏳] OBS Port 4455 not ready yet. Retrying (${attempt}/15)...`);
             await new Promise(r => setTimeout(r, 2000));
         }
     }
 
     if (isObsConnected) {
-        try {
-            await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' });
-            console.log('[+] Enforced WaitingScene (Loading Bar Buffer Active)');
-        } catch(e){}
+        try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){}
     }
 
     let browserArgs = [
@@ -968,9 +916,6 @@ async function startDirectStreaming() {
 
     if (PROXY_ENGINE.includes('Cloudflare')) {
         browserArgs.push('--proxy-server=socks5://127.0.0.1:40000');
-        console.log(`[*] Starting browser with EXACT viewport dimensions: ${RES_W}x${RES_H} and [CLOUDFLARE WARP] Proxy...`);
-    } else {
-        console.log(`[*] Starting browser with EXACT viewport dimensions: ${RES_W}x${RES_H} using [DIRECT GITHUB IP]...`);
     }
 
     browser = await puppeteer.launch({
@@ -985,7 +930,6 @@ async function startDirectStreaming() {
             const newPage = await target.page();
             setTimeout(async () => {
                 if (newPage && newPage !== activePage && newPage !== backupPage) {
-                    console.log(`[🛡️] AD-BLOCKER: Killed an unwanted pop-up tab!`);
                     try { await newPage.close(); } catch(e) {}
                 }
             }, 500);
@@ -1007,42 +951,30 @@ async function startDirectStreaming() {
 
     await activePage.bringToFront(); 
 
-    // 🔥 UPDATED: Strip '!' before navigating
     let cleanActiveUrl = urlList[currentUrlIndex].replace(/^!/, '');
-    console.log(`[*] STEP 1: Loading Server [${currentUrlIndex}] on Active Page: ${cleanActiveUrl}`);
+    console.log(`[*] Loading Active Page...`);
     await activePage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
     
     await showLoadingUI(activePage, "STREAM LOADING", "Optimizing live video connection <span class='stream-blink'>...</span>");
     
-    // 🔥 UPDATED: Pass full url to initializeVideo to skip logic if '!' is present
     await initializeVideo(activePage, false, true, urlList[currentUrlIndex]); 
+    // 🔥 Inject watermark on initial load
+    await injectOfficialWatermark(activePage);
     await hideLoadingUI(activePage); 
 
     if (isObsConnected) {
-        console.log('\n[*] Active Video is Ready! Shifting OBS from Animated Buffer to LIVE Video (MainScene)...');
         try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch (e) {}
     }
 
-    // 🔥 UPDATED: Strip '!' for backup navigation
     let cleanBackupUrl = urlList[backupUrlIndex].replace(/^!/, '');
-    console.log(`[*] STEP 2: Silently preparing Server [${backupUrlIndex}] on Backup Page: ${cleanBackupUrl}`);
     backupPage.goto(cleanBackupUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
     
     await activePage.bringToFront();
     try { await activePage.mouse.click(10, 10); } catch(e){} 
     await hideLoadingUI(activePage);
 
-    console.log(`\n==================================================`);
-    console.log(`[🎥] INITIAL CAPTURE STATUS: Ready to Broadcast`);
-    console.log(`==================================================`);
-    console.log(`[📺] CURRENT ACTIVE LIVE : Server [${currentUrlIndex}] -> ${urlList[currentUrlIndex]}`);
-    console.log(`[🔊] LIVE AUDIO STATUS   : ON (Unmuted)`);
-    console.log(`--------------------------------------------------`);
-    console.log(`[🛡️] NEXT BACKUP QUEUE   : Server [${backupUrlIndex}] -> ${urlList[backupUrlIndex]}`);
-    console.log(`[🔇] BACKUP AUDIO STATUS : MUTED (Background)`);
-    console.log(`==================================================\n`);
+    console.log(`\n[🎥] INITIAL CAPTURE STATUS: Ready to Broadcast`);
 
-    console.log('[*] Everything Setup! Dual-Tab Monitoring is Active.');
     await startWatchdog();
 }
 
@@ -1051,7 +983,6 @@ async function mainLoop() {
         try { await startDirectStreaming(); } 
         catch (error) {
             console.error(`\n[!] ALERT: ${error.message}`);
-            console.log('[*] 🔄 Hard Restarting everything in 3 seconds...');
             await cleanup();
             await new Promise(resolve => setTimeout(resolve, 3000));
         }
@@ -1059,7 +990,6 @@ async function mainLoop() {
 }
 
 async function cleanup() {
-    console.log('[*] Cleaning up resources...');
     try { await obs.disconnect(); } catch (e) { } 
     if (browser) { try { await browser.close(); } catch(e) { } browser = null; }
     if (obsProcess) { try { obsProcess.kill('SIGKILL'); } catch(e) { } obsProcess = null; }
@@ -1086,7 +1016,6 @@ function parseDurationToMs(str) {
 const exactDurationMs = parseDurationToMs(customDurationStr);
 if (exactDurationMs) {
     setTimeout(async () => {
-        console.log(`\n[*] 🛑 Time's up! The assigned duration (${customDurationStr}) is complete. Shutting down cleanly...`);
         await cleanup();
         process.exit(0);
     }, exactDurationMs);
