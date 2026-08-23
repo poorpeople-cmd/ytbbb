@@ -1,3 +1,8 @@
+
+
+
+
+
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -5,7 +10,7 @@ puppeteer.use(StealthPlugin());
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { spawn, execSync } = require('child_process');
+const { spawn } = require('child_process');
 const { OBSWebSocket } = require('obs-websocket-js');
 
 
@@ -39,74 +44,34 @@ let obsConnected = false;
 // =========================================================================================
 
 const TARGET_URLS = (process.env.TARGET_URLS || '').trim();
-
-const TARGET_URL = TARGET_URLS
-    ? TARGET_URLS
-        .split(',')
-        .map(u => u.trim())
-        .filter(Boolean)[0]
-    : 'https://example.com';
-
-const PROXY_ENGINE =
-    process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
-
-const YT_KEY =
-    process.env.YOUTUBE_KEY || '';
-
-const FB_KEY =
-    process.env.FACEBOOK_KEY || '';
-
-const STREAM_QUALITY =
-    process.env.STREAM_QUALITY || '1080p';
-
-const STREAM_FORMAT =
-    process.env.STREAM_FORMAT || 'Original (16:9 Standard)';
+const TARGET_URL = TARGET_URLS ? TARGET_URLS.split(',').map(u => u.trim()).filter(Boolean)[0] : 'https://example.com';
+const PROXY_ENGINE = process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
+const YT_KEY = process.env.YOUTUBE_KEY || '';
+const FB_KEY = process.env.FACEBOOK_KEY || '';
+const STREAM_QUALITY = process.env.STREAM_QUALITY || '1080p';
+const STREAM_FORMAT = process.env.STREAM_FORMAT || 'Original (16:9 Standard)';
 
 
 // =========================================================================================
-// RESOLUTION
+// RESOLUTION & BITRATE
 // =========================================================================================
 
-let RES_W = 1920;
-let RES_H = 1080;
-let BITRATE = 6000;
+let RES_W = 1920, RES_H = 1080, BITRATE = 6000;
 
-if (STREAM_QUALITY === '360p') {
-    RES_W = 640;
-    RES_H = 360;
-    BITRATE = 800;
-}
-else if (STREAM_QUALITY === '480p') {
-    RES_W = 854;
-    RES_H = 480;
-    BITRATE = 1500;
-}
-else if (STREAM_QUALITY === '720p') {
-    RES_W = 1280;
-    RES_H = 720;
-    BITRATE = 3000;
-}
-else if (STREAM_QUALITY === '1080p') {
-    RES_W = 1920;
-    RES_H = 1080;
-    BITRATE = 6000;
-}
-
+if (STREAM_QUALITY === '360p') { RES_W = 640; RES_H = 360; BITRATE = 800; }
+else if (STREAM_QUALITY === '480p') { RES_W = 854; RES_H = 480; BITRATE = 1500; }
+else if (STREAM_QUALITY === '720p') { RES_W = 1280; RES_H = 720; BITRATE = 3000; }
+else if (STREAM_QUALITY === '1080p') { RES_W = 1920; RES_H = 1080; BITRATE = 6000; }
 
 if (STREAM_FORMAT.toLowerCase().includes('shorts')) {
-    const temp = RES_W;
-    RES_W = RES_H;
-    RES_H = temp;
-
-    console.log(`[📱] SHORTS MODE: ${RES_W}x${RES_H}`);
+    const temp = RES_W; RES_W = RES_H; RES_H = temp;
 }
 
 console.log(`[🚀] OUTPUT: ${RES_W}x${RES_H} @ ${BITRATE} kbps`);
-console.log(`[🌐] TARGET URL: ${TARGET_URL}`);
 
 
 // =========================================================================================
-// 🛡️ AD BLOCKER & POPUP PROTECTION
+// 🛡️ AD BLOCKER & POPUPS
 // =========================================================================================
 
 async function setupNetworkAdBlocker(page) {
@@ -116,42 +81,25 @@ async function setupNetworkAdBlocker(page) {
         page.on('request', request => {
             try {
                 const url = request.url().toLowerCase();
-                const blockedDomains = [
-                    'popads', 'popcash', 'exoclick', 'adsterra', 'onclickads', 
-                    'juicyads', 'trafficjunky', 'doubleclick', 'googlesyndication', 
-                    'ad-delivery', 'adrevenue'
-                ];
-                if (blockedDomains.some(domain => url.includes(domain))) {
-                    request.abort().catch(() => {});
-                    return;
-                }
+                const blockedDomains = ['popads', 'popcash', 'exoclick', 'adsterra', 'onclickads', 'juicyads', 'trafficjunky', 'doubleclick', 'googlesyndication'];
+                if (blockedDomains.some(domain => url.includes(domain))) { request.abort().catch(() => {}); return; }
                 if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
-                    const suspicious = ['popads', 'popcash', 'exoclick', 'adsterra', 'onclickads', 'juicyads', 'trafficjunky'];
-                    if (suspicious.some(x => url.includes(x))) {
-                        request.abort().catch(() => {});
-                        return;
-                    }
+                    if (blockedDomains.some(x => url.includes(x))) { request.abort().catch(() => {}); return; }
                 }
                 request.continue().catch(() => {});
-            } catch (e) {
-                try { request.continue().catch(() => {}); } catch (_) {}
-            }
+            } catch (e) { try { request.continue().catch(() => {}); } catch (_) {} }
         });
-    } catch (e) {
-        console.log(`[⚠️] Ad blocker setup failed: ${e.message}`);
-    }
+    } catch (e) { console.log(`[⚠️] Ad blocker setup failed: ${e.message}`); }
 }
 
 async function setupPopupProtection(page) {
     if (!page) return;
-    page.on('dialog', async dialog => {
-        try { await dialog.dismiss(); } catch (_) {}
-    });
+    page.on('dialog', async dialog => { try { await dialog.dismiss(); } catch (_) {} });
 }
 
 
 // =========================================================================================
-// OBS CONFIG & PROFILES (Disk Level)
+// OBS CONFIG & PROFILES (Disk Level - Simple Mode Fix)
 // =========================================================================================
 
 function setupOBSConfig() {
@@ -162,6 +110,7 @@ function setupOBSConfig() {
     fs.mkdirSync(profilesDir, { recursive: true });
     fs.mkdirSync(scenesDir, { recursive: true });
 
+    // 1. Write Global INI
     const globalIni = `
 [General]
 LicenseAccepted=true
@@ -175,6 +124,7 @@ ServerPassword=secret
 `;
     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIni.trim());
 
+    // 2. Write Profile INI (Changed to Simple Mode to prevent silent encoder fail)
     const basicIni = `
 [General]
 Name=Untitled
@@ -185,19 +135,29 @@ OutputCX=${RES_W}
 OutputCY=${RES_H}
 FPSCommon=30
 [Output]
-Mode=Advanced
-[AdvOut]
-TrackIndex=1
-RecType=Standard
-Encoder=obs_x264
-[obs_x264]
-bitrate=${BITRATE}
-keyint_sec=2
-preset=veryfast
-profile=main
-tune=zerolatency
+Mode=Simple
+[SimpleOutput]
+VBitrate=${BITRATE}
+ABitrate=128
 `;
     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIni.trim());
+
+    // 3. Write Stream Service (Directly injected into file before OBS starts)
+    let streamServiceJson = { type: 'rtmp_custom', settings: { server: '', key: '' } };
+    
+    if (YT_KEY && YT_KEY.trim() !== '') {
+        streamServiceJson.settings.server = 'rtmp://a.rtmp.youtube.com/live2/';
+        streamServiceJson.settings.key = YT_KEY.trim();
+        console.log('[🚀] PLATFORM SELECTED: YOUTUBE');
+    } else if (FB_KEY && FB_KEY.trim() !== '') {
+        streamServiceJson.settings.server = 'rtmps://live-api-s.facebook.com:443/rtmp/';
+        streamServiceJson.settings.key = FB_KEY.trim();
+        console.log('[🚀] PLATFORM SELECTED: FACEBOOK');
+    } else {
+        throw new Error('❌ YouTube ya Facebook Stream Key required hai.');
+    }
+
+    fs.writeFileSync(path.join(profilesDir, 'service.json'), JSON.stringify(streamServiceJson, null, 2));
 }
 
 
@@ -215,6 +175,11 @@ async function connectOBS() {
             ]);
             obsConnected = true;
             console.log('[+] OBS WebSocket Connected.');
+            
+            // Add Stream Event Listener for live tracking
+            obs.on('StreamStateChanged', data => {
+                console.log(`[OBS STREAM EVENT] 📡 Status changed to: ${data.outputState}`);
+            });
             return;
         } catch (e) {
             console.log(`[⏳] OBS connection attempt ${attempt}/20`);
@@ -226,57 +191,8 @@ async function connectOBS() {
 
 
 // =========================================================================================
-// INJECT STREAM KEY VIA WEBSOCKET (THE FIX!)
+// OBS SCENE SETUP
 // =========================================================================================
-
-async function configureOBSStreamService() {
-    let rtmpServer = '';
-    let streamKey = '';
-
-    if (YT_KEY && YT_KEY.trim() !== '') {
-        rtmpServer = 'rtmp://a.rtmp.youtube.com/live2/';
-        streamKey = YT_KEY.trim();
-        console.log('[🚀] PLATFORM: YOUTUBE');
-    } else if (FB_KEY && FB_KEY.trim() !== '') {
-        rtmpServer = 'rtmps://live-api-s.facebook.com:443/rtmp/';
-        streamKey = FB_KEY.trim();
-        console.log('[🚀] PLATFORM: FACEBOOK');
-    } else {
-        throw new Error('YouTube ya Facebook Stream Key required hai.');
-    }
-
-    try {
-        await obs.call('SetStreamServiceSettings', {
-            streamServiceType: 'rtmp_custom',
-            streamServiceSettings: {
-                server: rtmpServer,
-                key: streamKey,
-                use_auth: false
-            }
-        });
-        console.log('[+] Stream Service Settings Injected (Key applied successfully).');
-    } catch (e) {
-        console.log(`[⚠️] Failed to inject stream settings: ${e.message}`);
-    }
-}
-
-
-// =========================================================================================
-// OBS VIDEO & SCENE SETTINGS
-// =========================================================================================
-
-async function configureOBSVideo() {
-    try {
-        await obs.call('SetVideoSettings', {
-            baseWidth: RES_W, baseHeight: RES_H,
-            outputWidth: RES_W, outputHeight: RES_H,
-            fpsNumerator: 30, fpsDenominator: 1
-        });
-        console.log(`[+] OBS Canvas: ${RES_W}x${RES_H}`);
-    } catch (e) {
-        console.log(`[⚠️] OBS video settings: ${e.message}`);
-    }
-}
 
 async function setupOBSScene() {
     const sceneName = 'MainScene';
@@ -288,10 +204,7 @@ async function setupOBSScene() {
             sceneName, inputName: 'Browser Screen', inputKind: 'xshm_input',
             inputSettings: { screen: 0, show_cursor: false }, sceneItemEnabled: true
         });
-        console.log('[+] Screen Capture Source Created.');
-    } catch (e) {
-        console.log(`[⚠️] Screen source: ${e.message}`);
-    }
+    } catch (e) { console.log(`[⚠️] Screen source: ${e.message}`); }
 
     try {
         await obs.call('CreateInput', {
@@ -301,31 +214,21 @@ async function setupOBSScene() {
                 font: { face: 'Liberation Sans', size: 42, flags: 1 },
                 color1: 0xFFFFFFFF, outline: true, outline_size: 4, outline_color: 0x000000FF,
                 align: 'center', valign: 'center'
-            },
-            sceneItemEnabled: true
+            }, sceneItemEnabled: true
         });
-        console.log('[+] Center Text Source Created.');
-    } catch (e) {
-        console.log(`[⚠️] Text source creation: ${e.message}`);
-    }
-
-    try {
+        
         const items = await obs.call('GetSceneItemList', { sceneName });
         const textItem = items.sceneItems.find(item => item.sourceName === 'Official Watch Text');
         if (textItem) {
             await obs.call('SetSceneItemTransform', {
                 sceneName, sceneItemId: textItem.sceneItemId,
                 sceneItemTransform: {
-                    alignment: 0, positionX: RES_W / 2, positionY: RES_H / 2,
-                    boundsType: 'OBS_BOUNDS_NONE', rotation: 0, scaleX: 1, scaleY: 1,
-                    cropLeft: 0, cropRight: 0, cropTop: 0, cropBottom: 0
+                    alignment: 0, positionX: RES_W / 2, positionY: RES_H / 2, boundsType: 'OBS_BOUNDS_NONE',
+                    rotation: 0, scaleX: 1, scaleY: 1, cropLeft: 0, cropRight: 0, cropTop: 0, cropBottom: 0
                 }
             });
-            console.log('[+] Text positioned at CENTER.');
         }
-    } catch (e) {
-        console.log(`[⚠️] Text positioning: ${e.message}`);
-    }
+    } catch (e) { console.log(`[⚠️] Text positioning: ${e.message}`); }
 
     await obs.call('SetCurrentProgramScene', { sceneName });
     console.log('[+] OBS MainScene activated.');
@@ -337,34 +240,38 @@ async function setupOBSScene() {
 // =========================================================================================
 
 async function startOBS() {
-    console.log('[*] Preparing OBS configuration...');
     setupOBSConfig();
 
-    console.log('[*] Starting OBS...');
-    // Dhyan de: Yahan se --startstreaming hata diya gaya hai!
+    console.log('[*] Starting OBS Engine...');
     obsProcess = spawn('obs', ['--minimize-to-tray'], { detached: false });
 
-    obsProcess.stdout?.on('data', data => console.log(`[OBS] ${data.toString().trim()}`));
     obsProcess.stderr?.on('data', data => {
         const msg = data.toString().trim();
         if (msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail')) {
-            console.log(`[OBS ERROR] ${msg}`);
+            // log quiet to avoid clutter
         }
     });
 
     await sleep(6000);
     await connectOBS();
-    await configureOBSVideo();
-    await configureOBSStreamService(); // 👈 Inject stream key before starting!
     await setupOBSScene();
 
     // Start streaming properly now
     try {
-        await sleep(2000); // Wait a little for scene to settle
+        await sleep(3000); 
         await obs.call('StartStream');
-        console.log('[🔴] OBS LIVE STREAM STARTED.');
+        console.log('[🔴] OBS START COMMAND SENT TO FACEBOOK/YOUTUBE.');
+        
+        // Wait and Verify Status
+        await sleep(5000);
+        const status = await obs.call('GetStreamStatus');
+        if (status.outputActive) {
+            console.log(`[✅] SUCCESS! Stream is LIVE. (Bytes Sent: ${status.outputBytes})`);
+        } else {
+            console.log(`[❌] FAILED: OBS rejected the stream. Check your Facebook Stream Key.`);
+        }
     } catch (e) {
-        console.log(`[⚠️] StartStream Failed: ${e.message}`);
+        console.log(`[⚠️] StartStream Error: ${e.message}`);
     }
 }
 
@@ -375,20 +282,15 @@ async function startOBS() {
 
 async function startBrowser() {
     const browserArgs = [
-        '--no-sandbox', '--disable-setuid-sandbox',
-        `--window-size=${RES_W},${RES_H}`, '--window-position=0,0',
-        '--autoplay-policy=no-user-gesture-required', '--disable-dev-shm-usage',
-        '--ignore-certificate-errors', '--ignore-gpu-blocklist',
-        '--disable-smooth-scrolling', '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
-        '--disable-blink-features=AutomationControlled'
+        '--no-sandbox', '--disable-setuid-sandbox', `--window-size=${RES_W},${RES_H}`, '--window-position=0,0',
+        '--autoplay-policy=no-user-gesture-required', '--disable-dev-shm-usage', '--ignore-certificate-errors',
+        '--ignore-gpu-blocklist', '--disable-smooth-scrolling', '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-blink-features=AutomationControlled'
     ];
 
     if (PROXY_ENGINE.toLowerCase().includes('cloudflare')) {
         browserArgs.push('--proxy-server=socks5://127.0.0.1:40000');
         console.log('[🌐] Cloudflare WARP proxy ENABLED.');
-    } else {
-        console.log('[🌐] Direct connection selected.');
     }
 
     browser = await puppeteer.launch({
@@ -409,22 +311,13 @@ async function startBrowser() {
             if (target.type() !== 'page') return;
             const newPage = await target.page();
             if (!newPage || newPage === page) return;
-            console.log('[🛡️] Closing unwanted popup tab.');
             await newPage.close().catch(() => {});
         } catch (_) {}
     });
 
-    console.log(`[*] Opening URL normally:\n${TARGET_URL}`);
-
-    try {
-        await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    } catch (e) {
-        console.log(`[⚠️] Navigation completed/handled: ${e.message}`);
-    }
-
-    console.log('[+] URL opened.');
-    console.log('[+] OBS is capturing the screen.');
-    try { await page.bringToFront(); } catch (_) {}
+    console.log(`[*] Opening Target URL: ${TARGET_URL}`);
+    try { await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 }); } catch (e) {}
+    console.log('[+] URL Displayed - Capture started.');
 }
 
 
@@ -432,9 +325,7 @@ async function startBrowser() {
 // UTILITY & CLEANUP
 // =========================================================================================
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 async function cleanup() {
     console.log('[*] Cleaning up...');
@@ -448,16 +339,8 @@ async function cleanup() {
             obsConnected = false;
         }
     } catch (_) {}
-
-    if (browser) {
-        try { await browser.close(); } catch (_) {}
-        browser = null; page = null;
-    }
-
-    if (obsProcess) {
-        try { obsProcess.kill('SIGKILL'); } catch (_) {}
-        obsProcess = null;
-    }
+    if (browser) { try { await browser.close(); } catch (_) {} browser = null; page = null; }
+    if (obsProcess) { try { obsProcess.kill('SIGKILL'); } catch (_) {} obsProcess = null; }
 }
 
 process.on('SIGINT', async () => { await cleanup(); process.exit(0); });
@@ -465,17 +348,12 @@ process.on('SIGTERM', async () => { await cleanup(); process.exit(0); });
 
 
 // =========================================================================================
-// MAIN
+// MAIN RUN
 // =========================================================================================
 
 async function main() {
     console.log('\n==================================================');
-    console.log('     SIMPLE STREAM CAPTURE + BROADCAST ENGINE');
-    console.log('==================================================');
-    console.log(`[🌐] URL      : ${TARGET_URL}`);
-    console.log(`[🛡️] AD BLOCK : ENABLED`);
-    console.log(`[🌐] PROXY    : ${PROXY_ENGINE}`);
-    console.log(`[📺] OUTPUT   : ${RES_W}x${RES_H}`);
+    console.log('     STREAM CAPTURE ENGINE STARTED');
     console.log('==================================================\n');
 
     try {
@@ -499,12 +377,6 @@ async function main() {
 }
 
 main();
-
-
-
-
-
-
 
 
 
