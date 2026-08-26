@@ -118,7 +118,7 @@
 //                         const overlay = document.createElement('div');
 //                         overlay.id = 'sport4u-watermark';
 //                         // 🔥 Yahan niche 56px kar diya hai website ke naam ke liye
-//                         overlay.innerHTML = 'Where to watch Officially ? Google 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
+                        // overlay.innerHTML = 'Where to watch Officially ? Google 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
 //                         overlay.style.cssText = `
 //                             position: fixed !important;
 //                             top: 40px !important;
@@ -1361,7 +1361,9 @@ async function injectOfficialWatermark(page) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
                         // 🔥 Yahan niche 56px kar diya hai website ke naam ke liye
-                        overlay.innerHTML = 'Where to watch Officially ? Google 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
+                        // overlay.innerHTML = 'Where to watch Officially ? Google 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
+                        overlay.innerHTML = 'Watch Live Officially on Google 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Check Comment if you Interested !</span>';
+                                
                         overlay.style.cssText = `
                             position: fixed !important;
                             top: 40px !important;
