@@ -80,14 +80,39 @@ jobs:
           sudo apt-get install -y xvfb pulseaudio dbus-x11 obs-studio mesa-utils libgl1-mesa-dri libnss3 libatk-bridge2.0-0 libgbm1 fonts-liberation
           npm install
 
-        # 👇 YEH NAYA STEP ADD KAREIN 👇
-      - name: Download Official Allow CORS Extension
+      - name: Create Custom CORS Extension
         run: |
           mkdir -p allow-cors-ext
-          # Chrome Web Store API se direct extension download kar rahe hain
-          curl -L "https://clients2.google.com/service/update2/crx?response=redirect&prodversion=114.0&acceptformat=crx2,crx3&x=id%3Dlhobafahddgcelbhekmfgngdnagcgibe%26uc" -o cors.zip
-          unzip -q cors.zip -d allow-cors-ext || true
-          echo "[+] Allow CORS Extension downloaded successfully!"
+          
+          # Extension ki manifest file bana rahe hain
+          cat << 'EOF' > allow-cors-ext/manifest.json
+          {
+            "manifest_version": 2,
+            "name": "Custom Allow CORS",
+            "version": "1.0",
+            "description": "Bypasses CORS restrictions automatically",
+            "permissions": ["webRequest", "webRequestBlocking", "<all_urls>"],
+            "background": {
+              "scripts": ["background.js"]
+            }
+          }
+          EOF
+          
+          # Extension ki main script jo CORS headers add karegi
+          cat << 'EOF' > allow-cors-ext/background.js
+          chrome.webRequest.onHeadersReceived.addListener(
+            function(details) {
+              let headers = details.responseHeaders || [];
+              headers.push({name: 'Access-Control-Allow-Origin', value: '*'});
+              headers.push({name: 'Access-Control-Allow-Methods', value: 'GET, PUT, POST, DELETE, HEAD, OPTIONS'});
+              return {responseHeaders: headers};
+            },
+            {urls: ["<all_urls>"]},
+            ["blocking", "responseHeaders", "extraHeaders"]
+          );
+          EOF
+          
+          echo "[+] Custom Allow CORS Extension Created Successfully!"
 
 
 
