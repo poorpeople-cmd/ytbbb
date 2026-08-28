@@ -352,15 +352,26 @@
 
 
 
+# Match Scheduler (Phase System) Implementation
 
+# Bohot zabardast idea hai! GitHub Action ko baar baar band karke chalane ke bajaye, hum ek hi Action ke andar "Match Scheduler" bana rahe hain.
 
+# Aapke bataye hue , (commas) wale format mein ghalti hone ka chance zyada tha (jaise ,,, mix ho jana). Isko asaan aur error-free banane ke liye maine ek behtareen format set kiya hai:
 
+# Naya Format (Is tarah likhna hoga):
+# url1,url2::2h 20m | url3,url4,url5::1h | url6::None
 
+# , (Comma): Ek hi match ki multiple URLs (jaise server 1, server 2) ko alag karne ke liye.
 
+# :: (Double Colon): URLs aur uske Time ko alag karne ke liye.
 
+# | (Pipe): Naye Match (ya Phase) ko shuru karne ke liye.
 
+# None: Aakhri match jiska time fix na ho aur usay hamesha chalana ho.
 
+# Jab ek match ka time poora hoga, system khud screen par "SWITCHING MATCH - Connecting to the next scheduled event..." ka black loading overlay lagayega, nayi URLs load karega, aur agle match par shift ho jayega bina stream rokay.
 
+# Neechay dono files ka mukammal code diya gaya hai. Inko copy karke replace kar lein:
 
 
 
