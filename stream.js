@@ -1327,7 +1327,9 @@ async function injectOfficialWatermark(page) {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
-                        overlay.innerHTML = 'Check Comment 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
+                        // overlay.innerHTML = 'Check Comment 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
+                        overlay.innerHTML = 'Check Comment Todat Schedule : 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">laliga,england premier league,bundesliga,france ligue 1,itally serie A!</span>';
+                      
                                 
                         overlay.style.cssText = `
                             position: fixed !important;
