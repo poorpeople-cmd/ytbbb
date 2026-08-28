@@ -1285,6 +1285,54 @@ let uploadCycleCount = 0;
 // =========================================================================================
 // ⬛ BLACK SCREEN OVERLAY (DYNAMIC HIDDEN BORDERS)
 // =========================================================================================
+
+// this overlay 20 top and bottom . and leftand right 0%.
+// async function injectBlackOverlay(page) {
+//     if (!page || !ENABLE_BLACK_OVERLAY) return;
+//     try {
+//         await page.evaluate(() => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('sport4u-black-overlay')) {
+//                         const container = document.createElement('div');
+//                         container.id = 'sport4u-black-overlay';
+//                         container.style.cssText = `
+//                             position: fixed !important; top: 0 !important; left: 0 !important;
+//                             width: 100vw !important; height: 100vh !important;
+//                             pointer-events: none !important; z-index: 2147483646 !important;
+//                         `;
+
+//                         const topBlock = document.createElement('div');
+//                         topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 20% !important; background-color: #000000 !important;`;
+                        
+//                         const bottomBlock = document.createElement('div');
+//                         bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 20% !important; background-color: #000000 !important;`;
+                        
+//                         const leftBlock = document.createElement('div');
+//                         leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+                        
+//                         const rightBlock = document.createElement('div');
+//                         rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+
+//                         container.appendChild(topBlock);
+//                         container.appendChild(bottomBlock);
+//                         container.appendChild(leftBlock);
+//                         container.appendChild(rightBlock);
+
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(container);
+//                     }
+//                 } catch(e) {}
+//             }, 1000); 
+//         });
+//     } catch (e) {}
+// }
+
+
+
+
+// this overlay left and right also presen . pakistan vs england live match
+
 async function injectBlackOverlay(page) {
     if (!page || !ENABLE_BLACK_OVERLAY) return;
     try {
@@ -1301,16 +1349,16 @@ async function injectBlackOverlay(page) {
                         `;
 
                         const topBlock = document.createElement('div');
-                        topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 20% !important; background-color: #000000 !important;`;
+                        topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 40% !important; background-color: #000000 !important;`;
                         
                         const bottomBlock = document.createElement('div');
-                        bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 20% !important; background-color: #000000 !important;`;
+                        bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 30% !important; background-color: #000000 !important;`;
                         
                         const leftBlock = document.createElement('div');
-                        leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+                        leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 20% !important; height: 100% !important; background-color: #000000 !important;`;
                         
                         const rightBlock = document.createElement('div');
-                        rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+                        rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 40% !important; height: 100% !important; background-color: #000000 !important;`;
 
                         container.appendChild(topBlock);
                         container.appendChild(bottomBlock);
@@ -1325,6 +1373,7 @@ async function injectBlackOverlay(page) {
         });
     } catch (e) {}
 }
+
 
 async function injectOfficialWatermark(page) {
     if (!page) return;
