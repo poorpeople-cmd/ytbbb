@@ -1385,7 +1385,7 @@ async function injectOfficialWatermark(page) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
                         // overlay.innerHTML = 'Check Comment Matches  👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
-                        overlay.innerHTML = 'Check Comment Liverpool and nottm forest here   👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
+                        overlay.innerHTML = 'Check Comment laliga,bundesliga,england league etc   👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
                       
                                 
                         overlay.style.cssText = `
