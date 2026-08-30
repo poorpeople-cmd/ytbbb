@@ -1385,7 +1385,7 @@ async function injectOfficialWatermark(page) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
                         // overlay.innerHTML = 'Check Comment Matches  👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
-                        overlay.innerHTML = 'Check Comment Today Top teams Matches realmadrid,chelse,manunity,leeds  Live on  👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
+                        overlay.innerHTML = 'Check Comment Today Top  Matches Real Madrid , chelse , manunity , leeds , Man City , France Ligue 1 , laliga, bundesliga,   👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;"> Live on sport4u.online</span>';
                       
                                 
                         overlay.style.cssText = `
