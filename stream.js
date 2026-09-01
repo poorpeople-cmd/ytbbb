@@ -1420,7 +1420,8 @@ async function injectOfficialWatermark(page) {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
-                        overlay.innerHTML = 'Check Comment 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
+                        // overlay.innerHTML = 'Check Comment 👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
+                      overlay.innerHTML = 'Check Comment Today Top Matches Parma,cremonese,Dortmund,Monza,Torino,Italy-Coppa italia,Germany DFB Pokal . You come here means you wanat to watch so please watch here without any issue  👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
                                 
                         overlay.style.cssText = `
                             position: fixed !important;
