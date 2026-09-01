@@ -1446,7 +1446,7 @@ async function injectBlackOverlay(page) {
 
 
 // =========================================================================================
-// 🎨 OFFICIAL WATERMARK INJECTION (RESPONSIVE UPDATE)
+// 🎨 OFFICIAL WATERMARK INJECTION (RESPONSIVE & PADDING UPDATE)
 // =========================================================================================
 async function injectOfficialWatermark(page) {
     if (!page) return;
@@ -1458,27 +1458,25 @@ async function injectOfficialWatermark(page) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
                         
-                        // Aap apni pasand ka koi bhi text yahan uncomment kar sakte hain
                         overlay.innerHTML = 'DFB Pokal,Italy-Coppa-Italia . Please Watch here on Google 👉<br><span style="color: #ff4d4d; font-size: 48px; line-height: 1.2;">sport4u.online</span>';
                                 
                         overlay.style.cssText = `
                             position: fixed !important;
-                            top: 15% !important; /* Top se thora neechay se start hoga */
+                            top: 20px !important; /* 🔥 Screen ke bilkul top se shuru hoga sirf thore gap ke sath */
                             left: 50% !important;
                             transform: translateX(-50%) !important;
-                            width: 90vw !important; /* Screen ka 90% hissa lega, left/right se bahar nahi jayega */
-                            max-width: 1200px !important; /* Bohat badi screen par bhi normal rahega */
-                            max-height: 50vh !important; /* Screen ki 50% height se zyada lamba nahi hoga */
+                            width: 90vw !important;
+                            max-width: 1200px !important;
+                            /* 🔥 max-height aur overflow hata diya taake bottom se text cut na ho */
                             box-sizing: border-box !important;
-                            word-wrap: break-word !important; /* Lambay text ko automatically nayi line par layega */
-                            overflow: hidden !important;
+                            word-wrap: break-word !important; 
                             z-index: 2147483647 !important;
                             background-color: rgba(0, 0, 0, 0.8) !important;
                             color: #ffffff !important;
-                            padding: 20px 40px !important;
+                            padding: 30px 40px 40px 40px !important; /* 🔥 Bottom padding zyada kar di hai (Top Right Bottom Left) */
                             border-radius: 16px !important;
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-                            font-size: 32px !important; /* Font thora adjust kiya taake fit ho jaye */
+                            font-size: 32px !important; 
                             font-weight: bold !important;
                             text-align: center !important;
                             border: 3px solid #e50914 !important;
