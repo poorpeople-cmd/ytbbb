@@ -1458,7 +1458,7 @@ async function injectOfficialWatermark(page) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
                         
-                        overlay.innerHTML = 'DFB Pokal,Italy-Coppa-Italia . Please Watch here on Google 👉<br><span style="color: #ff4d4d; font-size: 48px; line-height: 1.2;">sport4u.online</span>';
+                        overlay.innerHTML = 'DFB Pokal,Italy-Coppa-Italia . Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 48px; line-height: 1.2;">sport4u.online</span>';
                                 
                         overlay.style.cssText = `
                             position: fixed !important;
