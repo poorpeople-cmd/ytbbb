@@ -1446,7 +1446,7 @@ async function injectBlackOverlay(page) {
 
 
 // =========================================================================================
-// 🎨 OFFICIAL WATERMARK INJECTION (RESPONSIVE & PADDING UPDATE)
+// 🎨 OFFICIAL WATERMARK INJECTION (COMPACT BOX UPDATE)
 // =========================================================================================
 async function injectOfficialWatermark(page) {
     if (!page) return;
@@ -1462,18 +1462,18 @@ async function injectOfficialWatermark(page) {
                                 
                         overlay.style.cssText = `
                             position: fixed !important;
-                            top: 20px !important; /* 🔥 Screen ke bilkul top se shuru hoga sirf thore gap ke sath */
+                            top: 20px !important;
                             left: 50% !important;
                             transform: translateX(-50%) !important;
-                            width: 90vw !important;
-                            max-width: 1200px !important;
-                            /* 🔥 max-height aur overflow hata diya taake bottom se text cut na ho */
+                            width: max-content !important; /* 🔥 AB YEH POORI SCREEN PAR NAHI PHAILEGA, SIRF TEXT JITNA HOGA */
+                            max-width: 90vw !important; /* 🔥 Text lamba hone par 90% se bahar overflow nahi karega */
                             box-sizing: border-box !important;
                             word-wrap: break-word !important; 
+                            white-space: normal !important;
                             z-index: 2147483647 !important;
                             background-color: rgba(0, 0, 0, 0.8) !important;
                             color: #ffffff !important;
-                            padding: 30px 40px 40px 40px !important; /* 🔥 Bottom padding zyada kar di hai (Top Right Bottom Left) */
+                            padding: 10px 25px 20px 25px !important; /* 🔥 PADDING KAM KAR DI: Top(10px), Right(25px), Bottom(20px), Left(25px) */
                             border-radius: 16px !important;
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
                             font-size: 32px !important; 
@@ -1492,6 +1492,8 @@ async function injectOfficialWatermark(page) {
         });
     } catch (e) {}
 }
+
+
 
 async function setupNetworkAdBlocker(page) {
     if (!page) return;
