@@ -2899,7 +2899,7 @@ async function injectOfficialWatermark(page) {
 
                         // test2
                         // overlay.innerHTML = 'Check Comment Today Top  Matches Real Madrid , chelse , manunity , leeds etc   👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;"> Live on sport4u.online</span>';
-                        overlay.innerHTML = 'DFB Pokal,Italy-Coppa-Italia . Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;">sport4u.online</span>';
+                        overlay.innerHTML = 'DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;">sport4u.online</span>';
                     
                       
                                 
