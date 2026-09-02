@@ -2920,8 +2920,56 @@ let pendingScreenshots = [];
 let uploadCycleCount = 0;
 
 // =========================================================================================
-// ⬛ BLACK SCREEN OVERLAY
+// ⬛ BLACK SCREEN OVERLAY (DYNAMIC HIDDEN BORDERS)
 // =========================================================================================
+
+// this overlay 20 top and bottom . and leftand right 0%.
+// async function injectBlackOverlay(page) {
+//     if (!page || !ENABLE_BLACK_OVERLAY) return;
+//     try {
+//         await page.evaluate(() => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('sport4u-black-overlay')) {
+//                         const container = document.createElement('div');
+//                         container.id = 'sport4u-black-overlay';
+//                         container.style.cssText = `
+//                             position: fixed !important; top: 0 !important; left: 0 !important;
+//                             width: 100vw !important; height: 100vh !important;
+//                             pointer-events: none !important; z-index: 2147483646 !important;
+//                         `;
+
+//                         const topBlock = document.createElement('div');
+//                         topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 20% !important; background-color: #000000 !important;`;
+                        
+//                         const bottomBlock = document.createElement('div');
+//                         bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 20% !important; background-color: #000000 !important;`;
+                        
+//                         const leftBlock = document.createElement('div');
+//                         leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+                        
+//                         const rightBlock = document.createElement('div');
+//                         rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+
+//                         container.appendChild(topBlock);
+//                         container.appendChild(bottomBlock);
+//                         container.appendChild(leftBlock);
+//                         container.appendChild(rightBlock);
+
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(container);
+//                     }
+//                 } catch(e) {}
+//             }, 1000); 
+//         });
+//     } catch (e) {}
+// }
+
+
+
+
+// this overlay left and right also presen . pakistan vs england live match
+
 async function injectBlackOverlay(page) {
     if (!page || !ENABLE_BLACK_OVERLAY) return;
     try {
@@ -2973,7 +3021,18 @@ async function injectOfficialWatermark(page) {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
+                      
+                        // test1
+                        // overlay.innerHTML = 'Check Comment Matches  👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
+                        // overlay.innerHTML = 'DFB Pokal,Italy-Coppa-Italia . Please Watch here on Google   👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
+                      
+
+                        // test2
+                        // overlay.innerHTML = 'Check Comment Today Top  Matches Real Madrid , chelse , manunity , leeds etc   👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;"> Live on sport4u.online</span>';
                         overlay.innerHTML = 'DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;">sport4u.online</span>';
+                    
+                      
+                                
                         overlay.style.cssText = `
                             position: fixed !important;
                             top: 40px !important;
@@ -3001,6 +3060,8 @@ async function injectOfficialWatermark(page) {
         });
     } catch (e) {}
 }
+
+
 
 async function injectRandomPicOverlay(page) {
     if (!page || !ENABLE_PIC_OVERLAY || !pic804Base64) return;
@@ -3035,7 +3096,7 @@ async function injectRandomPicOverlay(page) {
                                     img.style.setProperty('display', 'block', 'important');
                                     setTimeout(() => {
                                         if (img) img.style.setProperty('display', 'none', 'important');
-                                        triggerRandomShow();
+                                        triggerRandomShow(); // Loop cycle
                                     }, 1000); // 1 sec display
                                 }
                             }, nextShowDelay);
@@ -3047,6 +3108,8 @@ async function injectRandomPicOverlay(page) {
         }, pic804Base64);
     } catch (e) {}
 }
+
+
 
 async function setupNetworkAdBlocker(page) {
     if (!page) return;
@@ -3759,7 +3822,7 @@ async function startWatchdog() {
 
                 await initializeVideo(backupPage, !ENABLE_STREAM_AUDIO, true, checkUrlStr); 
                 
-                await injectBlackOverlay(backupPage);
+               await injectBlackOverlay(backupPage);
                 await injectOfficialWatermark(backupPage);
                 await injectRandomPicOverlay(backupPage);
                 await hideLoadingUI(backupPage);
@@ -3821,7 +3884,7 @@ async function startDirectStreaming() {
             const rawVolume = process.env.BACKGROUND_AUDIO_VOLUME || '100';
             let volNumber = parseInt(rawVolume, 10);
             if (isNaN(volNumber)) volNumber = 100;
-            let ffplayVolume = volNumber / 100; 
+            let ffplayVolume = volNumber / 100; // 50 ko 0.5 mein convert karega
             
             console.log(`[🎶] Background Audio found: ${foundAudioPath}`);
             console.log(`[🎶] Starting Audio in INFINITE LOOP at ${volNumber}% volume...`);
@@ -3830,7 +3893,7 @@ async function startDirectStreaming() {
                 audioProcess = spawn('ffplay', [
                     '-nodisp', 
                     '-loop', '0', 
-                    '-loglevel', 'warning', 
+                    '-loglevel', 'warning', // Error dekhne ke liye quiet ki jagah warning
                     '-af', `volume=${ffplayVolume}`, 
                     foundAudioPath
                 ]);
@@ -4010,7 +4073,7 @@ if (exactDurationMs) {
             const server = process.env.SERVER_SELECTION || 'None';
             const format = process.env.STREAM_FORMAT || 'Original (16:9 Standard)'; 
             const blackOverlayStatus = process.env.ENABLE_BLACK_OVERLAY || 'OFF'; 
-            const streamAudioStatus = process.env.ENABLE_STREAM_AUDIO || 'ON'; 
+          const streamAudioStatus = process.env.ENABLE_STREAM_AUDIO || 'ON'; 
             const bgAudioStatus = process.env.ENABLE_BACKGROUND_AUDIO || 'ON'; 
             const bgAudioVolumeStatus = process.env.BACKGROUND_AUDIO_VOLUME || '100'; 
             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
@@ -4026,7 +4089,6 @@ if (exactDurationMs) {
 }
 
 mainLoop();
-
 
 
 
