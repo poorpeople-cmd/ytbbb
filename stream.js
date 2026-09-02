@@ -14,7 +14,7 @@
 // // 🛡️ GLOBAL CRASH PREVENTION SHIELD (2026 LATEST FIX)
 // // =========================================================================================
 // process.on('uncaughtException', (err) => {
-//     if (err.message && err.message.includes('Requesting main frame too early')) {
+//     if (err.message && err.message.includes('Requesting main frame too early')) {F
 //         console.log(`[🛡️] SYSTEM SHIELD: Ignored stealth plugin background frame error.`);
 //     } else {
 //         console.log(`[⚠️] IGNORED UNCAUGHT EXCEPTION: ${err.message}`);
@@ -3029,7 +3029,7 @@ async function injectOfficialWatermark(page) {
 
                         // test2
                         // overlay.innerHTML = 'Check Comment Today Top  Matches Real Madrid , chelse , manunity , leeds etc   👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;"> Live on sport4u.online</span>';
-                        overlay.innerHTML = 'Bayern,Udinese,DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;">sport4u.online</span>';
+                        overlay.innerHTML = 'Bayern,Udinese,DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉sport4u.online.';
                     
                       
                                 
