@@ -3122,7 +3122,10 @@ async function injectOfficialWatermark(page) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
 
-                        overlay.innerHTML = 'DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
+                        // overlay.innerHTML = 'DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
+
+                        overlay.innerHTML = 'RealSociedad,Palermo,Laliga,FranceLigue1,CoppaItaliad,etc.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
+                      
                                 
                         overlay.style.cssText = `
                             position: fixed !important;
