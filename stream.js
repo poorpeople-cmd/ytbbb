@@ -3112,52 +3112,41 @@ async function injectBlackOverlay(page) {
 //     } catch (e) {}
 // }
 
-async function injectOfficialWatermark(page) {
-    if (!page) return;
+async function injectBlackOverlay(page) {
+    if (!page || !ENABLE_BLACK_OVERLAY) return;
     try {
         await page.evaluate(() => {
             setInterval(() => {
                 try {
-                    if (!document.getElementById('sport4u-watermark')) {
-                        const overlay = document.createElement('div');
-                        overlay.id = 'sport4u-watermark';
-
-                        overlay.innerHTML = 'DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
-                                
-                        overlay.style.cssText = `
-                            position: fixed !important;
-                            top: 40vh !important; /* Video ke theek upar se shuru hoga */
-                            left: 0 !important;
-                            transform: none !important;
-                            z-index: 2147483647 !important;
-                            background-color: rgba(0, 0, 0, 0.85) !important;
-                            color: #ffffff !important;
-                            padding: 1vh 2vw !important; 
-                            border-radius: 0px !important;
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-                            font-size: 3vmin !important; 
-                            font-weight: bold !important;
-                            text-align: center !important;
-                            border-top: 0.3vmin solid #e50914 !important;
-                            border-bottom: 0.3vmin solid #e50914 !important;
-                            pointer-events: none !important;
-                            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.9) !important;
-                            text-shadow: 0.2vmin 0.2vmin 0.4vmin rgba(0, 0, 0, 1) !important;
-                            
-                            /* 20% Height by 100% Width Fix */
-                            width: 100vw !important; /* 100% Screen Width */
-                            height: 20vh !important; /* 20% Screen Height */
-                            max-height: 20vh !important;
-                            overflow: hidden !important;
-                            
-                            box-sizing: border-box !important;
-                            display: flex !important;
-                            flex-direction: column !important;
-                            justify-content: center !important;
-                            align-items: center !important;
+                    if (!document.getElementById('sport4u-black-overlay')) {
+                        const container = document.createElement('div');
+                        container.id = 'sport4u-black-overlay';
+                        container.style.cssText = `
+                            position: fixed !important; top: 0 !important; left: 0 !important;
+                            width: 100vw !important; height: 100vh !important;
+                            pointer-events: none !important; z-index: 2147483646 !important;
                         `;
+
+                        const topBlock = document.createElement('div');
+                        topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 40% !important; background-color: #000000 !important;`;
+                        
+                        const bottomBlock = document.createElement('div');
+                        bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 30% !important; background-color: #000000 !important;`;
+                        
+                        // Left aur Right width ko 0% kar diya gaya hai taake video apni full width le sakay
+                        const leftBlock = document.createElement('div');
+                        leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+                        
+                        const rightBlock = document.createElement('div');
+                        rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+
+                        container.appendChild(topBlock);
+                        container.appendChild(bottomBlock);
+                        container.appendChild(leftBlock);
+                        container.appendChild(rightBlock);
+
                         let target = document.body || document.documentElement;
-                        if (target) target.appendChild(overlay);
+                        if (target) target.appendChild(container);
                     }
                 } catch(e) {}
             }, 1000); 
