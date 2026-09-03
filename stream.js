@@ -3130,7 +3130,9 @@ async function injectOfficialWatermark(page) {
                             left: 0 !important;
                             transform: none !important;
                             z-index: 2147483647 !important;
-                            background-color: rgba(0, 0, 0, 0.85) !important;
+                            // background-color: rgba(0, 0, 0, 0.85) !important;
+                            background-color: rgba(0, 0, 0, 0.70) !important;
+
                             color: #ffffff !important;
                             padding: 1vh 2vw !important; 
                             border-radius: 0px !important;
