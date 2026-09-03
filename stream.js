@@ -3133,12 +3133,11 @@ async function injectBlackOverlay(page) {
                         const bottomBlock = document.createElement('div');
                         bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 30% !important; background-color: #000000 !important;`;
                         
-                        // Left aur Right width ko 0% kar diya gaya hai taake video apni full width le sakay
                         const leftBlock = document.createElement('div');
-                        leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+                        leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 20% !important; height: 100% !important; background-color: #000000 !important;`;
                         
                         const rightBlock = document.createElement('div');
-                        rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 0% !important; height: 100% !important; background-color: #000000 !important;`;
+                        rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 40% !important; height: 100% !important; background-color: #000000 !important;`;
 
                         container.appendChild(topBlock);
                         container.appendChild(bottomBlock);
