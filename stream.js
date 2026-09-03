@@ -3011,6 +3011,57 @@ async function injectBlackOverlay(page) {
     } catch (e) {}
 }
 
+// agar kaam nakrey tuu iss comment waley ko pher se uncomment kardoo
+
+// async function injectOfficialWatermark(page) {
+//     if (!page) return;
+//     try {
+//         await page.evaluate(() => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('sport4u-watermark')) {
+//                         const overlay = document.createElement('div');
+//                         overlay.id = 'sport4u-watermark';
+                      
+//                         // test1
+//                         // overlay.innerHTML = 'Check Comment Matches  👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
+//                         // overlay.innerHTML = 'Bayern,Udinese,DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
+                      
+
+//                         // test2
+//                         overlay.innerHTML = 'Check Comment Today Top  Matches Real Madrid , chelse , manunity , leeds etc   👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;"> Live on sport4u.online</span>';
+//                         // overlay.innerHTML = 'Bayern,Udinese,DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉sport4u.online.';
+                    
+                      
+                                
+//                         overlay.style.cssText = `
+//                             position: fixed !important;
+//                             top: 40px !important;
+//                             left: 50% !important;
+//                             transform: translateX(-50%) !important;
+//                             z-index: 2147483647 !important;
+//                             background-color: rgba(0, 0, 0, 0.8) !important;
+//                             color: #ffffff !important;
+//                             padding: 20px 50px !important;
+//                             border-radius: 16px !important;
+//                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+//                             font-size: 36px !important;
+//                             font-weight: bold !important;
+//                             text-align: center !important;
+//                             border: 3px solid #e50914 !important;
+//                             pointer-events: none !important;
+//                             box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.9) !important;
+//                             text-shadow: 2px 2px 5px rgba(0, 0, 0, 1) !important;
+//                         `;
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(overlay);
+//                     }
+//                 } catch(e) {}
+//             }, 1000); 
+//         });
+//     } catch (e) {}
+// }
+
 
 async function injectOfficialWatermark(page) {
     if (!page) return;
@@ -3021,15 +3072,15 @@ async function injectOfficialWatermark(page) {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div');
                         overlay.id = 'sport4u-watermark';
-                      
+                        
                         // test1
                         // overlay.innerHTML = 'Check Comment Matches  👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">Just ONE Time for Humanity or Hard Work Please!</span>';
-                        // overlay.innerHTML = 'Bayern,Udinese,DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
-                      
+                        // overlay.innerHTML = 'DFB Pokal,Italy-Coppa-Italia . Please Watch here on Google   👉<br><span style="color: #ff4d4d; font-size: 56px; line-height: 1.2;">sport4u.online</span>';
+                        
 
                         // test2
-                        overlay.innerHTML = 'Check Comment Today Top  Matches Real Madrid , chelse , manunity , leeds etc   👉<br><span style="color: #ff4d4d; font-size: 52px; line-height: 1.2;"> Live on sport4u.online</span>';
-                        // overlay.innerHTML = 'Bayern,Udinese,DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉sport4u.online.';
+                        // overlay.innerHTML = 'Check Comment Today Top  Matches Real Madrid , chelse , manunity , leeds etc   👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;"> Live on sport4u.online</span>';
+                        overlay.innerHTML = 'DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 24px; line-height: 1.2;">sport4u.online</span>';
                     
                       
                                 
@@ -3060,7 +3111,6 @@ async function injectOfficialWatermark(page) {
         });
     } catch (e) {}
 }
-
 
 
 async function injectRandomPicOverlay(page) {
