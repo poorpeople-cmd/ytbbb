@@ -3133,7 +3133,8 @@ async function injectOfficialWatermark(page) {
 
                         // overlay.innerHTML = 'DFBPokal,ItalyCoppaItalia.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
 
-                        overlay.innerHTML = 'Real Madrid,Liverpool,Real Betis,Laliga,FranceLigue1,EnglandPremierLeague,Bundesliga etc.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
+                        // overlay.innerHTML = 'Real Madrid,Liverpool,Real Betis,Laliga,FranceLigue1,EnglandPremierLeague,Bundesliga etc.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
+                      overlay.innerHTML = 'Watch All Football here on Google 👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span><br><span style="font-size: 3vmin;">Guys, please support me ❤️🙏<br>I work hard to bring you All Football here.<br>Please share your feedback & experience ❤️</span>';
                         // overlay.innerHTML = 'Women,India,AsiaCUp.Please Watch here on Google👉<br><span style="color: #ff4d4d; font-size: 4vmin; line-height: 1.2;">sport4u.online</span>';
                       
                       
