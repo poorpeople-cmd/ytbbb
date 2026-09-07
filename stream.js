@@ -2984,13 +2984,16 @@ async function injectBlackOverlay(page) {
                     if (!document.getElementById('sport4u-black-overlay')) {
                         const container = document.createElement('div');
                         container.id = 'sport4u-black-overlay';
-                        container.style.cssText = `
+                        
+                        // Base styles (full screen, on top)
+                        let baseCss = `
                             position: fixed !important; top: 0 !important; left: 0 !important;
                             width: 100vw !important; height: 100vh !important;
                             pointer-events: none !important; z-index: 2147483646 !important;
                         `;
 
                         if (overlayMode.includes('Borders')) {
+                            container.style.cssText = baseCss;
                             const topBlock = document.createElement('div');
                             topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 40% !important; background-color: #000000 !important;`;
                             const bottomBlock = document.createElement('div');
@@ -3005,13 +3008,15 @@ async function injectBlackOverlay(page) {
                             container.appendChild(rightBlock);
                         } 
                         else if (overlayMode.includes('Full Black')) {
-                            container.style.backgroundColor = '#000000';
+                            container.style.cssText = baseCss + `background-color: #000000 !important;`;
                         } 
                         else if (overlayMode.includes('Tiny Holes')) {
-                            // Creates a mesh of 1px transparent holes on a black background
-                            container.style.background = 'radial-gradient(circle, transparent 1px, #000000 1.5px) !important';
-                            container.style.backgroundSize = '8px 8px !important';
-                            container.style.backgroundColor = 'transparent !important';
+                            // 100% Black Background aur 1px ke chhote transparent holes
+                            container.style.cssText = baseCss + `
+                                background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important;
+                                background-size: 6px 6px !important;
+                                background-color: transparent !important;
+                            `;
                         }
 
                         let target = document.body || document.documentElement;
@@ -3022,6 +3027,7 @@ async function injectBlackOverlay(page) {
         }, ENABLE_BLACK_OVERLAY);
     } catch (e) {}
 }
+
 
 // agar kaam nakrey tuu iss comment waley ko pher se uncomment kardoo
 
