@@ -2787,6 +2787,7 @@ const ENABLE_BACKGROUND_AUDIO = process.env.ENABLE_BACKGROUND_AUDIO === 'ON';
 const ENABLE_PIC_OVERLAY = process.env.ENABLE_PIC_OVERLAY === 'ON';
 const ENABLE_TEXT_OVERLAY = process.env.ENABLE_TEXT_OVERLAY === 'ON';
 const ENABLE_TOP_MEDIA = process.env.ENABLE_TOP_MEDIA === 'ON';
+const TOP_MEDIA_SLOTS = process.env.TOP_MEDIA_SLOTS || '1,2,3,4'; // Naya input
 // =========================================================================================
 // 🖼️ PIC OVERLAY PRELOAD (Base64)
 // =========================================================================================
@@ -2828,9 +2829,43 @@ let topMediaArray = [];
 if (ENABLE_TOP_MEDIA) {
     const assetsDir = path.join(process.cwd(), 'assets');
     if (fs.existsSync(assetsDir)) {
+        // =========================================================================================
+// 🎞️ TOP MEDIA PRELOAD (Dynamically Chosen from Workflow)
+// =========================================================================================
+let topMediaArray = [];
+if (ENABLE_TOP_MEDIA) {
+    const assetsDir = path.join(process.cwd(), 'assets');
+    if (fs.existsSync(assetsDir)) {
         const possibleExts = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.mp4', '.webm'];
-        for (let i = 1; i <= 4; i++) {
+        // Jaise '1,3,4' ko split karke array banayega
+        const slots = TOP_MEDIA_SLOTS.split(',').map(s => s.trim()).filter(s => s !== '');
+        
+        for (let num of slots) {
             let found = false;
+            for (let ext of possibleExts) {
+                let tempPath = path.join(assetsDir, `top${num}${ext}`);
+                if (fs.existsSync(tempPath)) {
+                    let isVideo = ext === '.mp4' || ext === '.webm';
+                    let extName = ext.replace('.', '');
+                    if (extName === 'jpg') extName = 'jpeg';
+                    let mime = isVideo ? `video/${extName}` : `image/${extName}`;
+                    
+                    const base64Data = fs.readFileSync(tempPath).toString('base64');
+                    topMediaArray.push({ type: isVideo ? 'video' : 'image', src: `data:${mime};base64,${base64Data}` });
+                    console.log(`[🎞️] Found Top Media ${num}: assets/top${num}${ext}`);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                console.log(`[⚠️] Missing Top Media for slot ${num}`);
+                topMediaArray.push(null); // Maintain layout grid even if file is missing
+            }
+        }
+    } else {
+        console.log(`[⚠️] 'assets' folder not found for Top Media.`);
+    }
+}
             for (let ext of possibleExts) {
                 let tempPath = path.join(assetsDir, `top${i}${ext}`);
                 if (fs.existsSync(tempPath)) {
@@ -3245,14 +3280,17 @@ async function injectTopMedia(page) {
                                     el = document.createElement('img');
                                     el.src = media.src;
                                 }
+                                // Auto calculate width based on total selected slots
+                                let widthPercent = 100 / mediaArray.length;
                                 el.style.cssText = `
-                                    height: 100% !important; max-width: 25vw !important;
+                                    height: 100% !important; max-width: ${widthPercent}vw !important;
                                     object-fit: contain !important; margin: 0 !important; padding: 0 !important;
                                 `;
                                 container.appendChild(el);
                             } else {
+                                let widthPercent = 100 / mediaArray.length;
                                 const empty = document.createElement('div');
-                                empty.style.cssText = `width: 25vw !important; height: 100% !important;`;
+                                empty.style.cssText = `width: ${widthPercent}vw !important; height: 100% !important;`;
                                 container.appendChild(empty);
                             }
                         });
@@ -4294,8 +4332,9 @@ if (exactDurationMs) {
             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
             const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
             const topMediaStatus = process.env.ENABLE_TOP_MEDIA || 'OFF';
+            const topMediaSlots = process.env.TOP_MEDIA_SLOTS || '1,2,3,4';
             
-            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f enable_text_overlay="${textOverlayStatus}" -f enable_top_media="${topMediaStatus}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
+            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f enable_text_overlay="${textOverlayStatus}" -f enable_top_media="${topMediaStatus}" -f top_media_slots="${topMediaSlots}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
             execSync(cmd, { stdio: 'inherit' });
             setTimeout(async () => {
                 await cleanup(); 
