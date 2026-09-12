@@ -2866,27 +2866,27 @@ if (ENABLE_TOP_MEDIA) {
         console.log(`[⚠️] 'assets' folder not found for Top Media.`);
     }
 }
-            for (let ext of possibleExts) {
-                let tempPath = path.join(assetsDir, `top${i}${ext}`);
-                if (fs.existsSync(tempPath)) {
-                    let isVideo = ext === '.mp4' || ext === '.webm';
-                    let extName = ext.replace('.', '');
-                    if (extName === 'jpg') extName = 'jpeg';
-                    let mime = isVideo ? `video/${extName}` : `image/${extName}`;
+//             for (let ext of possibleExts) {
+//                 let tempPath = path.join(assetsDir, `top${i}${ext}`);
+//                 if (fs.existsSync(tempPath)) {
+//                     let isVideo = ext === '.mp4' || ext === '.webm';
+//                     let extName = ext.replace('.', '');
+//                     if (extName === 'jpg') extName = 'jpeg';
+//                     let mime = isVideo ? `video/${extName}` : `image/${extName}`;
                     
-                    const base64Data = fs.readFileSync(tempPath).toString('base64');
-                    topMediaArray.push({ type: isVideo ? 'video' : 'image', src: `data:${mime};base64,${base64Data}` });
-                    console.log(`[🎞️] Found Top Media ${i}: assets/top${i}${ext}`);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) topMediaArray.push(null); // Keep grid spacing if a slot is missing
-        }
-    } else {
-        console.log(`[⚠️] 'assets' folder not found for Top Media.`);
-    }
-}
+//                     const base64Data = fs.readFileSync(tempPath).toString('base64');
+//                     topMediaArray.push({ type: isVideo ? 'video' : 'image', src: `data:${mime};base64,${base64Data}` });
+//                     console.log(`[🎞️] Found Top Media ${i}: assets/top${i}${ext}`);
+//                     found = true;
+//                     break;
+//                 }
+//             }
+//             if (!found) topMediaArray.push(null); // Keep grid spacing if a slot is missing
+//         }
+//     } else {
+//         console.log(`[⚠️] 'assets' folder not found for Top Media.`);
+//     }
+// }
 
 let RES_W = 1920, RES_H = 1080, BITRATE = 5000;
 
