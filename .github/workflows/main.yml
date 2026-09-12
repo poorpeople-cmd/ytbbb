@@ -839,13 +839,18 @@ on:
           - 'OFF'
         default: 'ON'
       enable_top_media:
-        description: 'Enable 4 Top Assets (from assets/ folder)'
+        description: 'Enable Top Assets (from assets/ folder)'
         required: true
         type: choice
         options:
           - 'ON'
           - 'OFF'
         default: 'OFF'
+      top_media_slots:
+        description: 'Select Media Numbers (e.g., 1,2,3,4 or 1,3 or 2)'
+        required: true
+        type: string
+        default: '1,2,3,4'
       proxy_engine:
         description: 'Network Proxy Engine (Bypass Blocking)'
         required: true
@@ -917,6 +922,7 @@ jobs:
           ENABLE_PIC_OVERLAY: ${{ github.event.inputs.enable_pic_overlay }}
           ENABLE_TEXT_OVERLAY: ${{ github.event.inputs.enable_text_overlay }}
           ENABLE_TOP_MEDIA: ${{ github.event.inputs.enable_top_media }}
+          TOP_MEDIA_SLOTS: ${{ github.event.inputs.top_media_slots }}
           CUSTOM_DURATION: ${{ github.event.inputs.custom_duration }}
         run: |
           pulseaudio -D --exit-idle-time=-1
