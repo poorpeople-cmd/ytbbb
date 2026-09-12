@@ -2825,11 +2825,11 @@ if (ENABLE_PIC_OVERLAY) {
 // =========================================================================================
 // 🎞️ TOP 4 MEDIA PRELOAD (Images/Videos from "assets" folder)
 // =========================================================================================
-let topMediaArray = [];
-if (ENABLE_TOP_MEDIA) {
-    const assetsDir = path.join(process.cwd(), 'assets');
-    if (fs.existsSync(assetsDir)) {
-        // =========================================================================================
+// let topMediaArray = [];
+// if (ENABLE_TOP_MEDIA) {
+//     const assetsDir = path.join(process.cwd(), 'assets');
+//     if (fs.existsSync(assetsDir)) {
+//         // =========================================================================================
 // 🎞️ TOP MEDIA PRELOAD (Dynamically Chosen from Workflow)
 // =========================================================================================
 let topMediaArray = [];
