@@ -2769,32 +2769,31 @@ const ENABLE_BLACK_OVERLAY = process.env.ENABLE_BLACK_OVERLAY || 'OFF';
 const ENABLE_STREAM_AUDIO = process.env.ENABLE_STREAM_AUDIO !== 'OFF'; 
 const ENABLE_BACKGROUND_AUDIO = process.env.ENABLE_BACKGROUND_AUDIO === 'ON'; 
 const ENABLE_PIC_OVERLAY = process.env.ENABLE_PIC_OVERLAY === 'ON';
-const PIC_SEQUENCE_SLOTS = process.env.PIC_SEQUENCE_SLOTS || '1,2,3,4,5'; // Naya input for pic sequences
 const ENABLE_TEXT_OVERLAY = process.env.ENABLE_TEXT_OVERLAY === 'ON';
 const ENABLE_TOP_MEDIA = process.env.ENABLE_TOP_MEDIA === 'ON';
-const TOP_MEDIA_SLOTS = process.env.TOP_MEDIA_SLOTS || '1,2,3,4'; // Naya input
+const TOP_MEDIA_SLOTS = process.env.TOP_MEDIA_SLOTS || '1,2,3,4';
+const PIC_SEQUENCE_SLOTS = process.env.PIC_SEQUENCE_SLOTS || '1,2,3,4,5'; // Manual Control 
 
 // =========================================================================================
 // 🖼️ SEQUENTIAL PIC/VIDEO OVERLAY PRELOAD (Base64)
 // =========================================================================================
 let picSequenceBase64Array = [];
 if (ENABLE_PIC_OVERLAY && PIC_SEQUENCE_SLOTS.toLowerCase() !== 'none') {
-    const possiblePicExts = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.webm'];
-    // User ke input ko split kar ke array banayega
-    const seqSlots = PIC_SEQUENCE_SLOTS.split(',').map(s => s.trim()).filter(s => s !== '');
+    const possibleExts = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.webm']; // Videos Add Kar Di
+    const slots = PIC_SEQUENCE_SLOTS.split(',').map(s => s.trim()).filter(s => s !== '');
     
-    for (let num of seqSlots) {
+    for (let num of slots) {
         let found = false;
-        for (let ext of possiblePicExts) {
+        for (let ext of possibleExts) {
             let tempPath = path.join(process.cwd(), `picSequence${num}${ext}`);
             if (fs.existsSync(tempPath)) {
                 let isVideo = ext === '.mp4' || ext === '.webm';
                 let extName = ext.replace('.', '');
                 if (extName === 'jpg') extName = 'jpeg';
-                
                 let mime = isVideo ? `video/${extName}` : `image/${extName}`;
-                const base64Data = fs.readFileSync(tempPath).toString('base64');
                 
+                const base64Data = fs.readFileSync(tempPath).toString('base64');
+                // Object mein save kar rahe hain taakey pata ho Image hai ya Video
                 picSequenceBase64Array.push({ type: isVideo ? 'video' : 'image', src: `data:${mime};base64,${base64Data}` });
                 console.log(`[🖼️] Found Sequence Media: picSequence${num}${ext}`);
                 found = true;
@@ -2805,11 +2804,10 @@ if (ENABLE_PIC_OVERLAY && PIC_SEQUENCE_SLOTS.toLowerCase() !== 'none') {
             console.log(`[⚠️] Missing Sequence Media for slot ${num}`);
         }
     }
-    
     if(picSequenceBase64Array.length > 0) {
-        console.log(`[🖼️] Total Sequence Media Loaded: ${picSequenceBase64Array.length} based on slots: ${PIC_SEQUENCE_SLOTS}`);
+        console.log(`[🖼️] Total Sequence Media Loaded: ${picSequenceBase64Array.length}`);
     } else {
-        console.log(`[⚠️] Sequence Media Enabled but NO valid picSequence files found for slots: ${PIC_SEQUENCE_SLOTS}.`);
+        console.log(`[⚠️] NO picSequence files found for slots: ${PIC_SEQUENCE_SLOTS}`);
     }
 }
 
@@ -3299,122 +3297,6 @@ async function injectTopMedia(page) {
     } catch (e) {}
 }
 
-// async function injectRandomPicOverlay(page) {
-//     try {
-//         await page.evaluate((mediaArray) => {
-//             setInterval(() => {
-//                 try {
-//                     if (!document.getElementById('sport4u-random-pic-container')) {
-//                         const container = document.createElement('div');
-//                         container.id = 'sport4u-random-pic-container';
-//                         container.style.cssText = `
-//                             position: fixed !important; top: 0 !important; left: 0 !important;
-//                             width: 100vw !important; height: 100vh !important;
-//                             z-index: 2147483647 !important;
-//                             pointer-events: none !important;
-//                             display: none !important;
-//                             background-color: transparent !important;
-//                         `;
-                        
-//                         const imgOverlay = document.createElement('img');
-//                         imgOverlay.id = 'sport4u-seq-img';
-//                         imgOverlay.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important; display: none !important;';
-
-//                         const vidOverlay = document.createElement('video');
-//                         vidOverlay.id = 'sport4u-seq-vid';
-//                         vidOverlay.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important; display: none !important;';
-//                         vidOverlay.muted = true;
-//                         vidOverlay.autoplay = true;
-//                         vidOverlay.loop = false; // 👈 Yeh zaroori hai taake video repeat na ho aur end ho sake
-//                         vidOverlay.setAttribute('playsinline', 'true');
-
-//                         container.appendChild(imgOverlay);
-//                         container.appendChild(vidOverlay);
-//                         let target = document.body || document.documentElement;
-//                         if (target) target.appendChild(container);
-
-//                         // Random Timer Logic (5 to 15 sec wait before showing sequence again)
-//                         function triggerRandomShow() {
-//                             if (!document.getElementById('sport4u-random-pic-container')) return; 
-//                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
-                            
-//                             setTimeout(() => {
-//                                 const wrap = document.getElementById('sport4u-random-pic-container');
-//                                 const iTag = document.getElementById('sport4u-seq-img');
-//                                 const vTag = document.getElementById('sport4u-seq-vid');
-                                
-//                                 if (wrap && iTag && vTag) {
-//                                     wrap.style.setProperty('display', 'block', 'important');
-//                                     let currentSeqIndex = 0;
-                                    
-//                                     // Yeh smart function khud decide karega kab next file par jana hai
-//                                     function displayNextMedia() {
-//                                         // Agar array khatam ho gaya hai tou container hide kar do
-//                                         if (currentSeqIndex >= mediaArray.length) {
-//                                             wrap.style.setProperty('display', 'none', 'important');
-//                                             vTag.pause();
-//                                             triggerRandomShow(); // Naya cycle shuru karne ke liye wait karo
-//                                             return;
-//                                         }
-
-//                                         let media = mediaArray[currentSeqIndex];
-                                        
-//                                         if (media.type === 'video') {
-//                                             // 🎥 VIDEO LOGIC
-//                                             iTag.style.setProperty('display', 'none', 'important');
-//                                             vTag.style.setProperty('display', 'block', 'important');
-//                                             vTag.src = media.src;
-                                            
-//                                             // Jaise hi video mukammal play ho kar end hogi, yeh event chalega
-//                                             vTag.onended = () => {
-//                                                 currentSeqIndex++;
-//                                                 displayNextMedia(); // Next file chalao
-//                                             };
-                                            
-//                                             // Agar video load hone mein error aaye tou skip kardo (fail-safe)
-//                                             vTag.onerror = () => {
-//                                                 currentSeqIndex++;
-//                                                 displayNextMedia();
-//                                             };
-
-//                                             let playPromise = vTag.play();
-//                                             if (playPromise !== undefined) {
-//                                                 playPromise.catch(() => {
-//                                                     // Browser ne autoplay block kiya tou fallback 2s timer
-//                                                     setTimeout(() => {
-//                                                         currentSeqIndex++;
-//                                                         displayNextMedia();
-//                                                     }, 2000);
-//                                                 });
-//                                             }
-//                                         } else {
-//                                             // 🖼️ IMAGE LOGIC
-//                                             vTag.style.setProperty('display', 'none', 'important');
-//                                             vTag.pause();
-//                                             iTag.style.setProperty('display', 'block', 'important');
-//                                             iTag.src = media.src;
-                                            
-//                                             // Image ko hamesha 2 seconds ke liye dikhao
-//                                             setTimeout(() => {
-//                                                 currentSeqIndex++;
-//                                                 displayNextMedia(); // Next file chalao
-//                                             }, 2000); 
-//                                         }
-//                                     }
-
-//                                     // Sequence ko start karo
-//                                     displayNextMedia(); 
-//                                 }
-//                             }, nextShowDelay);
-//                         }
-//                         triggerRandomShow();
-//                     }
-//                 } catch(e) {}
-//             }, 2000); 
-//         }, picSequenceBase64Array);
-//     } catch (e) {}
-// }
-
 async function injectRandomPicOverlay(page) {
     if (!page || picSequenceBase64Array.length === 0) return;
     try {
@@ -3423,7 +3305,7 @@ async function injectRandomPicOverlay(page) {
                 try {
                     if (!document.getElementById('sport4u-random-pic')) {
                         const container = document.createElement('div');
-                        container.id = 'sport4u-random-pic'; 
+                        container.id = 'sport4u-random-pic';
                         container.style.cssText = `
                             position: fixed !important; top: 0 !important; left: 0 !important;
                             width: 100vw !important; height: 100vh !important;
@@ -3442,9 +3324,9 @@ async function injectRandomPicOverlay(page) {
                         vidOverlay.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important; display: none !important;';
                         vidOverlay.muted = true;
                         vidOverlay.autoplay = true;
-                        vidOverlay.loop = false;
+                        vidOverlay.loop = true; 
                         vidOverlay.setAttribute('playsinline', 'true');
-                        vidOverlay.setAttribute('muted', 'true'); 
+                        vidOverlay.setAttribute('muted', 'true');
 
                         container.appendChild(imgOverlay);
                         container.appendChild(vidOverlay);
@@ -3452,13 +3334,13 @@ async function injectRandomPicOverlay(page) {
                         if (target) target.appendChild(container);
 
                         function triggerRandomShow() {
-                            if (!document.getElementById('sport4u-random-pic')) return; 
+                            if (!document.getElementById('sport4u-random-pic')) return;
                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
                             
                             setTimeout(() => {
-                                // 🛡️ NEW FIX: Agar page background mein chupa hai (Backup Tab), tou media mat chalao
+                                // Agar Backup/Hidden tab hai tou sequence mat chalao
                                 if (document.hidden) {
-                                    triggerRandomShow(); // Wait karo jab tak tab screen par na aaye
+                                    triggerRandomShow();
                                     return;
                                 }
 
@@ -3474,7 +3356,7 @@ async function injectRandomPicOverlay(page) {
                                         if (currentSeqIndex >= mediaArray.length) {
                                             wrap.style.setProperty('display', 'none', 'important');
                                             vTag.pause();
-                                            triggerRandomShow(); 
+                                            triggerRandomShow();
                                             return;
                                         }
 
@@ -3489,40 +3371,16 @@ async function injectRandomPicOverlay(page) {
                                                 vTag.load();
                                             }
                                             
-                                            vTag.onended = () => {
+                                            vTag.muted = true;
+                                            let p = vTag.play();
+                                            if(p !== undefined) p.catch(()=>{});
+                                            
+                                            // STRICTLY 4 SECONDS FOR VIDEO
+                                            setTimeout(() => {
+                                                vTag.pause();
                                                 currentSeqIndex++;
                                                 displayNextMedia();
-                                            };
-                                            
-                                            vTag.onerror = () => {
-                                                console.log('[!] Video Playback Error - Codec issue (Use .webm instead of .mp4)');
-                                                // Foran skip karne ke bajaye 3 second rukay taake video failure ka pata chale
-                                                setTimeout(() => {
-                                                    currentSeqIndex++;
-                                                    displayNextMedia();
-                                                }, 3000);
-                                            };
-
-                                            let playAttempts = 0;
-                                            function attemptPlay() {
-                                                vTag.muted = true; // 🛡️ EXTRA PROTECTION: Play se theek pehle dobara mute confirm karein
-                                                let playPromise = vTag.play();
-                                                if (playPromise !== undefined) {
-                                                    playPromise.catch(() => {
-                                                        playAttempts++;
-                                                        if (playAttempts < 3) {
-                                                            setTimeout(attemptPlay, 1000); 
-                                                        } else {
-                                                            // Fail hone par bhi 3 second screen par ruke
-                                                            setTimeout(() => {
-                                                                currentSeqIndex++;
-                                                                displayNextMedia();
-                                                            }, 3000); 
-                                                        }
-                                                    });
-                                                }
-                                            }
-                                            attemptPlay();
+                                            }, 4000);
 
                                         } else {
                                             vTag.style.setProperty('display', 'none', 'important');
@@ -3530,23 +3388,25 @@ async function injectRandomPicOverlay(page) {
                                             iTag.style.setProperty('display', 'block', 'important');
                                             iTag.src = media.src;
                                             
+                                            // STRICTLY 2 SECONDS FOR IMAGE
                                             setTimeout(() => {
                                                 currentSeqIndex++;
-                                                displayNextMedia(); 
-                                            }, 2000); 
+                                                displayNextMedia();
+                                            }, 2000);
                                         }
                                     }
-                                    displayNextMedia(); 
+                                    displayNextMedia();
                                 }
                             }, nextShowDelay);
                         }
                         triggerRandomShow();
                     }
                 } catch(e) {}
-            }, 2000); 
+            }, 2000);
         }, picSequenceBase64Array);
     } catch (e) {}
 }
+
 
 async function setupNetworkAdBlocker(page) {
     if (!page) return;
@@ -4511,12 +4371,12 @@ if (exactDurationMs) {
             const quality = process.env.STREAM_QUALITY || '110KBps (Balanced 480p)';
             const server = process.env.SERVER_SELECTION || 'None';
             const format = process.env.STREAM_FORMAT || 'Original (16:9 Standard)'; 
-           const blackOverlayStatus = process.env.ENABLE_BLACK_OVERLAY || 'OFF'; 
-            const streamAudioStatus = process.env.ENABLE_STREAM_AUDIO || 'ON'; 
+            const blackOverlayStatus = process.env.ENABLE_BLACK_OVERLAY || 'OFF'; 
+          const streamAudioStatus = process.env.ENABLE_STREAM_AUDIO || 'ON'; 
             const bgAudioStatus = process.env.ENABLE_BACKGROUND_AUDIO || 'ON'; 
             const bgAudioVolumeStatus = process.env.BACKGROUND_AUDIO_VOLUME || '100'; 
             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
-            const picSequenceSlots = process.env.PIC_SEQUENCE_SLOTS || '1,2,3,4,5'; 
+            const picSequenceSlots = process.env.PIC_SEQUENCE_SLOTS || '1,2,3,4,5'; // Naya variable
             const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
             const topMediaStatus = process.env.ENABLE_TOP_MEDIA || 'OFF';
             const topMediaSlots = process.env.TOP_MEDIA_SLOTS || '1,2,3,4';
