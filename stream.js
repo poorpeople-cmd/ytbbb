@@ -6798,7 +6798,8 @@ function setupOBSConfig() {
     fs.mkdirSync(profilesDir, { recursive: true });
     fs.mkdirSync(scenesDir, { recursive: true });
 
-    const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
+    // const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
+  const globalIniContent = `[General]\nLicenseAccepted=true\nFirstRun=false\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIniContent);
     
     const basicIniContent = `[General]
@@ -7013,7 +7014,8 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                         mainIframe.style.setProperty('visibility', 'visible', 'important');
                     }
 
-                    const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay):not(#sport4u-watermark):not(#sport4u-black-overlay):not(#sport4u-random-pic), [id*="pop"], [class*="pop"], a[href*="extension"], [class*="notification"], [id*="notification"]';
+                    // const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay):not(#sport4u-watermark):not(#sport4u-black-overlay):not(#sport4u-random-pic), [id*="pop"], [class*="pop"], a[href*="extension"], [class*="notification"], [id*="notification"]';
+const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay):not(#sport4u-watermark):not(#sport4u-black-overlay):not(#sport4u-random-pic), [id*="pop"], [class*="pop"], a[href*="extension"], [class*="notification"], [id*="notification"], [class*="mini"], [id*="mini"], [class*="float"], [id*="float"], [class*="pip"]';
                     document.querySelectorAll(junkClasses).forEach(el => { 
                         try { el.remove(); } catch(e){ el.style.setProperty('display', 'none', 'important'); } 
                     });
@@ -7092,6 +7094,7 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                     }
 
                     if (realVideo) { 
+                        realVideo.disablePictureInPicture = true; // Yeh video ko right bottom me chota hone se rokega
                         realVideo.style.setProperty('position', 'fixed', 'important');
                         realVideo.style.setProperty('top', '0px', 'important');
                         realVideo.style.setProperty('left', '0px', 'important');
