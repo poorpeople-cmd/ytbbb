@@ -3456,6 +3456,12 @@ async function injectRandomPicOverlay(page) {
                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
                             
                             setTimeout(() => {
+                                // 🛡️ NEW FIX: Agar page background mein chupa hai (Backup Tab), tou media mat chalao
+                                if (document.hidden) {
+                                    triggerRandomShow(); // Wait karo jab tak tab screen par na aaye
+                                    return;
+                                }
+
                                 const wrap = document.getElementById('sport4u-random-pic');
                                 const iTag = document.getElementById('sport4u-seq-img');
                                 const vTag = document.getElementById('sport4u-seq-vid');
@@ -3499,6 +3505,7 @@ async function injectRandomPicOverlay(page) {
 
                                             let playAttempts = 0;
                                             function attemptPlay() {
+                                                vTag.muted = true; // 🛡️ EXTRA PROTECTION: Play se theek pehle dobara mute confirm karein
                                                 let playPromise = vTag.play();
                                                 if (playPromise !== undefined) {
                                                     playPromise.catch(() => {
