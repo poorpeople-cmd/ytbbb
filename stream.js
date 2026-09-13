@@ -3307,7 +3307,6 @@ async function injectRandomPicOverlay(page) {
             setInterval(() => {
                 try {
                     if (!document.getElementById('sport4u-random-pic-container')) {
-                        // Ek container banaya jayega jisme img aur video dono tags honge
                         const container = document.createElement('div');
                         container.id = 'sport4u-random-pic-container';
                         container.style.cssText = `
@@ -3328,7 +3327,7 @@ async function injectRandomPicOverlay(page) {
                         vidOverlay.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important; display: none !important;';
                         vidOverlay.muted = true;
                         vidOverlay.autoplay = true;
-                        vidOverlay.loop = true;
+                        vidOverlay.loop = false; // 👈 Yeh zaroori hai taake video repeat na ho aur end ho sake
                         vidOverlay.setAttribute('playsinline', 'true');
 
                         container.appendChild(imgOverlay);
@@ -3336,7 +3335,7 @@ async function injectRandomPicOverlay(page) {
                         let target = document.body || document.documentElement;
                         if (target) target.appendChild(container);
 
-                        // Random Timer Logic (5 to 15 sec)
+                        // Random Timer Logic (5 to 15 sec wait before showing sequence again)
                         function triggerRandomShow() {
                             if (!document.getElementById('sport4u-random-pic-container')) return; 
                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
@@ -3350,37 +3349,63 @@ async function injectRandomPicOverlay(page) {
                                     wrap.style.setProperty('display', 'block', 'important');
                                     let currentSeqIndex = 0;
                                     
-                                    function displayCurrentMedia() {
+                                    // Yeh smart function khud decide karega kab next file par jana hai
+                                    function displayNextMedia() {
+                                        // Agar array khatam ho gaya hai tou container hide kar do
+                                        if (currentSeqIndex >= mediaArray.length) {
+                                            wrap.style.setProperty('display', 'none', 'important');
+                                            vTag.pause();
+                                            triggerRandomShow(); // Naya cycle shuru karne ke liye wait karo
+                                            return;
+                                        }
+
                                         let media = mediaArray[currentSeqIndex];
+                                        
                                         if (media.type === 'video') {
+                                            // 🎥 VIDEO LOGIC
                                             iTag.style.setProperty('display', 'none', 'important');
                                             vTag.style.setProperty('display', 'block', 'important');
                                             vTag.src = media.src;
-                                            vTag.play().catch(()=>{});
+                                            
+                                            // Jaise hi video mukammal play ho kar end hogi, yeh event chalega
+                                            vTag.onended = () => {
+                                                currentSeqIndex++;
+                                                displayNextMedia(); // Next file chalao
+                                            };
+                                            
+                                            // Agar video load hone mein error aaye tou skip kardo (fail-safe)
+                                            vTag.onerror = () => {
+                                                currentSeqIndex++;
+                                                displayNextMedia();
+                                            };
+
+                                            let playPromise = vTag.play();
+                                            if (playPromise !== undefined) {
+                                                playPromise.catch(() => {
+                                                    // Browser ne autoplay block kiya tou fallback 2s timer
+                                                    setTimeout(() => {
+                                                        currentSeqIndex++;
+                                                        displayNextMedia();
+                                                    }, 2000);
+                                                });
+                                            }
                                         } else {
+                                            // 🖼️ IMAGE LOGIC
                                             vTag.style.setProperty('display', 'none', 'important');
                                             vTag.pause();
                                             iTag.style.setProperty('display', 'block', 'important');
                                             iTag.src = media.src;
+                                            
+                                            // Image ko hamesha 2 seconds ke liye dikhao
+                                            setTimeout(() => {
+                                                currentSeqIndex++;
+                                                displayNextMedia(); // Next file chalao
+                                            }, 2000); 
                                         }
                                     }
 
-                                    displayCurrentMedia(); // Show first media
-                                    
-                                    // Switch media every 2 seconds
-                                    let seqInterval = setInterval(() => {
-                                        currentSeqIndex++;
-                                        if(currentSeqIndex >= mediaArray.length) {
-                                            // Sequence finished
-                                            clearInterval(seqInterval);
-                                            wrap.style.setProperty('display', 'none', 'important');
-                                            vTag.pause();
-                                            triggerRandomShow(); // Start waiting for next random cycle
-                                        } else {
-                                            // Move to next media
-                                            displayCurrentMedia();
-                                        }
-                                    }, 2000); 
+                                    // Sequence ko start karo
+                                    displayNextMedia(); 
                                 }
                             }, nextShowDelay);
                         }
