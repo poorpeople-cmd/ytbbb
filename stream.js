@@ -8047,41 +8047,73 @@ async function injectOfficialWatermark(page) {
                       
                       
                                 
-                        overlay.style.cssText = `
-                            position: fixed !important;
-                            top: 40vh !important; /* Video ke theek upar se shuru hoga */
-                            left: 0 !important;
-                            transform: none !important;
-                            z-index: 2147483647 !important;
-                            // background-color: rgba(0, 0, 0, 0.85) !important;
-                            background-color: rgba(0, 0, 0, 0.70) !important;
+                        // overlay.style.cssText = `
+                        //     position: fixed !important;
+                        //     top: 40vh !important; /* Video ke theek upar se shuru hoga */
+                        //     left: 0 !important;
+                        //     transform: none !important;
+                        //     z-index: 2147483647 !important;
+                        //     // background-color: rgba(0, 0, 0, 0.85) !important;
+                        //     background-color: rgba(0, 0, 0, 0.70) !important;
 
-                            color: #ffffff !important;
-                            padding: 1vh 2vw !important; 
-                            border-radius: 0px !important;
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-                            // font-size: 3vmin !important; 
-                            font-size: 4vmin !important;
-                            font-weight: bold !important;
-                            text-align: center !important;
-                            border-top: 0.3vmin solid #e50914 !important;
-                            border-bottom: 0.3vmin solid #e50914 !important;
-                            pointer-events: none !important;
-                            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.9) !important;
-                            text-shadow: 0.2vmin 0.2vmin 0.4vmin rgba(0, 0, 0, 1) !important;
+                        //     color: #ffffff !important;
+                        //     padding: 1vh 2vw !important; 
+                        //     border-radius: 0px !important;
+                        //     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                        //     // font-size: 3vmin !important; 
+                        //     font-size: 4vmin !important;
+                        //     font-weight: bold !important;
+                        //     text-align: center !important;
+                        //     border-top: 0.3vmin solid #e50914 !important;
+                        //     border-bottom: 0.3vmin solid #e50914 !important;
+                        //     pointer-events: none !important;
+                        //     box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.9) !important;
+                        //     text-shadow: 0.2vmin 0.2vmin 0.4vmin rgba(0, 0, 0, 1) !important;
                             
-                            /* 20% Height by 100% Width Fix */
-                            width: 100vw !important; /* 100% Screen Width */
-                            height: 20vh !important; /* 20% Screen Height */
-                            max-height: 20vh !important;
-                            overflow: hidden !important;
+                        //     /* 20% Height by 100% Width Fix */
+                        //     width: 100vw !important; /* 100% Screen Width */
+                        //     height: 20vh !important; /* 20% Screen Height */
+                        //     max-height: 20vh !important;
+                        //     overflow: hidden !important;
                             
-                            box-sizing: border-box !important;
-                            display: flex !important;
-                            flex-direction: column !important;
-                            justify-content: center !important;
-                            align-items: center !important;
-                        `;
+                        //     box-sizing: border-box !important;
+                        //     display: flex !important;
+                        //     flex-direction: column !important;
+                        //     justify-content: center !important;
+                        //     align-items: center !important;
+                        // `;
+                      overlay.style.cssText = `
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 2147483647 !important;
+
+    background-color: rgba(0, 0, 0, 0.70) !important;
+    color: #ffffff !important;
+
+    padding: 1vh 2vw !important;
+
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 4vmin !important;
+    font-weight: bold !important;
+    text-align: center !important;
+
+    border-top: 0.3vmin solid #e50914 !important;
+    border-bottom: 0.3vmin solid #e50914 !important;
+
+    width: 100vw !important;
+
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+
+    box-sizing: border-box !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+`;
                         let target = document.body || document.documentElement;
                         if (target) target.appendChild(overlay);
                     }
