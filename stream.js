@@ -6139,7 +6139,6 @@ function parseDurationToMs(str) {
 }
 
 const obs = new OBSWebSocket(); 
-const STREAM_SOURCE = process.env.STREAM_SOURCE || 'Live URL';
 const FORCE_REFRESH_MINUTES = 9; 
 const FORCE_REFRESH_MS = FORCE_REFRESH_MINUTES * 60 * 1000;
 
