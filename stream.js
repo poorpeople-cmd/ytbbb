@@ -3421,7 +3421,6 @@ async function injectRandomPicOverlay(page) {
         await page.evaluate((mediaArray) => {
             setInterval(() => {
                 try {
-                    // Yahan ID correct kardi gayi hai taake ad-blocker isko delete na kare
                     if (!document.getElementById('sport4u-random-pic')) {
                         const container = document.createElement('div');
                         container.id = 'sport4u-random-pic'; 
@@ -3445,14 +3444,13 @@ async function injectRandomPicOverlay(page) {
                         vidOverlay.autoplay = true;
                         vidOverlay.loop = false;
                         vidOverlay.setAttribute('playsinline', 'true');
-                        vidOverlay.setAttribute('muted', 'true'); // Autoplay protection
+                        vidOverlay.setAttribute('muted', 'true'); 
 
                         container.appendChild(imgOverlay);
                         container.appendChild(vidOverlay);
                         let target = document.body || document.documentElement;
                         if (target) target.appendChild(container);
 
-                        // Random Timer Logic (5 to 15 sec wait)
                         function triggerRandomShow() {
                             if (!document.getElementById('sport4u-random-pic')) return; 
                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
@@ -3477,7 +3475,6 @@ async function injectRandomPicOverlay(page) {
                                         let media = mediaArray[currentSeqIndex];
                                         
                                         if (media.type === 'video') {
-                                            // 🎥 VIDEO LOGIC
                                             iTag.style.setProperty('display', 'none', 'important');
                                             vTag.style.setProperty('display', 'block', 'important');
                                             
@@ -3492,11 +3489,14 @@ async function injectRandomPicOverlay(page) {
                                             };
                                             
                                             vTag.onerror = () => {
-                                                currentSeqIndex++;
-                                                displayNextMedia();
+                                                console.log('[!] Video Playback Error - Codec issue (Use .webm instead of .mp4)');
+                                                // Foran skip karne ke bajaye 3 second rukay taake video failure ka pata chale
+                                                setTimeout(() => {
+                                                    currentSeqIndex++;
+                                                    displayNextMedia();
+                                                }, 3000);
                                             };
 
-                                            // Robust Retry Play Logic (Agar browser delay kare tou bar bar koshish kare)
                                             let playAttempts = 0;
                                             function attemptPlay() {
                                                 let playPromise = vTag.play();
@@ -3504,12 +3504,13 @@ async function injectRandomPicOverlay(page) {
                                                     playPromise.catch(() => {
                                                         playAttempts++;
                                                         if (playAttempts < 3) {
-                                                            setTimeout(attemptPlay, 1000); // 1 second baad phir try karega
+                                                            setTimeout(attemptPlay, 1000); 
                                                         } else {
+                                                            // Fail hone par bhi 3 second screen par ruke
                                                             setTimeout(() => {
                                                                 currentSeqIndex++;
                                                                 displayNextMedia();
-                                                            }, 2000); // Haar maan kar next pic pe chala jayega
+                                                            }, 3000); 
                                                         }
                                                     });
                                                 }
@@ -3517,7 +3518,6 @@ async function injectRandomPicOverlay(page) {
                                             attemptPlay();
 
                                         } else {
-                                            // 🖼️ IMAGE LOGIC
                                             vTag.style.setProperty('display', 'none', 'important');
                                             vTag.pause();
                                             iTag.style.setProperty('display', 'block', 'important');
