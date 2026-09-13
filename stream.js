@@ -6091,6 +6091,9 @@
 
 
 
+// # ==================================================
+// # ======================================
+// # ================================================
 
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
@@ -6133,6 +6136,7 @@ function parseDurationToMs(str) {
 }
 
 const obs = new OBSWebSocket(); 
+const STREAM_SOURCE = process.env.STREAM_SOURCE || 'Live URL';
 const FORCE_REFRESH_MINUTES = 9; 
 const FORCE_REFRESH_MS = FORCE_REFRESH_MINUTES * 60 * 1000;
 
@@ -6322,11 +6326,11 @@ async function injectBlackOverlay(page) {
         await page.evaluate((overlayMode) => {
             setInterval(() => {
                 try {
-                    // 1️⃣ EXISTING STATIC OVERLAY (Jo default kaam kar raha tha)
                     if (!document.getElementById('sport4u-black-overlay')) {
                         const container = document.createElement('div');
                         container.id = 'sport4u-black-overlay';
-
+                        
+                        // Base styles (full screen, on top)
                         let baseCss = `
                             position: fixed !important; top: 0 !important; left: 0 !important;
                             width: 100vw !important; height: 100vh !important;
@@ -6347,101 +6351,22 @@ async function injectBlackOverlay(page) {
                             container.appendChild(bottomBlock);
                             container.appendChild(leftBlock);
                             container.appendChild(rightBlock);
-                        }
+                        } 
                         else if (overlayMode.includes('Full Black')) {
                             container.style.cssText = baseCss + `background-color: #000000 !important;`;
-                        }
+                        } 
                         else if (overlayMode.includes('Tiny Holes')) {
+                            // 100% Black Background aur 1px ke chhote transparent holes
                             container.style.cssText = baseCss + `
                                 background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important;
                                 background-size: 6px 6px !important;
                                 background-color: transparent !important;
                             `;
                         }
+
                         let target = document.body || document.documentElement;
                         if (target) target.appendChild(container);
                     }
-
-                    // 2️⃣ NEW: 70% HEIGHT ANIMATED BLINKING PANEL WITH LUXURY TEXT
-                    if (!document.getElementById('sport4u-animated-70-panel')) {
-                        const animatedPanel = document.createElement('div');
-                        animatedPanel.id = 'sport4u-animated-70-panel';
-
-                        // Panel Background inherit based on selection
-                        let panelBgStyle = "background-color: #000000 !important;";
-                        if (overlayMode.includes('Tiny Holes')) {
-                            panelBgStyle = `
-                                background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important;
-                                background-size: 6px 6px !important;
-                                background-color: transparent !important;
-                            `;
-                        }
-
-                        // Premium Luxury Text UI
-                        animatedPanel.innerHTML = `
-                            <div style="
-                                position: absolute !important;
-                                bottom: 15% !important;
-                                width: 100% !important;
-                                text-align: center !important;
-                            ">
-                                <span style="
-                                    font-family: 'Cinzel', 'Georgia', 'Times New Roman', serif !important;
-                                    font-size: 5vmin !important;
-                                    font-weight: 900 !important;
-                                    text-transform: uppercase !important;
-                                    letter-spacing: 0.4vmin !important;
-                                    background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) !important;
-                                    -webkit-background-clip: text !important;
-                                    -webkit-text-fill-color: transparent !important;
-                                    text-shadow: 0px 4px 15px rgba(255, 215, 0, 0.4) !important;
-                                    display: inline-block !important;
-                                    animation: floatAndGlowText 2s ease-in-out infinite alternate !important;
-                                ">
-                                    Please read the center text
-                                </span>
-                            </div>
-                        `;
-
-                        // 70% Height CSS + Animation Blinker (3s OFF, 2s ON)
-                        animatedPanel.style.cssText = `
-                            position: fixed !important;
-                            bottom: 0 !important;
-                            left: 0 !important;
-                            width: 100vw !important;
-                            height: 70vh !important;
-                            pointer-events: none !important;
-                            z-index: 2147483648 !important; /* Extremely high z-index */
-                            display: block !important;
-                            opacity: 0;
-                            animation: togglePanelVisibility 5s infinite !important; /* 5s Total Cycle */
-                            ${panelBgStyle}
-                        `;
-
-                        // Inject CSS Keyframes for Animations
-                        if (!document.getElementById('sport4u-luxury-animations')) {
-                            const style = document.createElement('style');
-                            style.id = 'sport4u-luxury-animations';
-                            style.innerHTML = `
-                                @keyframes togglePanelVisibility {
-                                    0% { opacity: 0; }
-                                    60% { opacity: 0; } /* 0 to 3 seconds (OFF) */
-                                    65% { opacity: 1; } /* Fade IN */
-                                    95% { opacity: 1; } /* 3 to 5 seconds (ON) */
-                                    100% { opacity: 0; } /* Fade OUT */
-                                }
-                                @keyframes floatAndGlowText {
-                                    0% { transform: translateY(0px) scale(1); filter: drop-shadow(0 0 5px rgba(255,215,0,0.3)); }
-                                    100% { transform: translateY(-15px) scale(1.05); filter: drop-shadow(0 0 25px rgba(255,215,0,0.8)); }
-                                }
-                            `;
-                            document.head.appendChild(style);
-                        }
-
-                        let target = document.body || document.documentElement;
-                        if (target) target.appendChild(animatedPanel);
-                    }
-
                 } catch(e) {}
             }, 1000); 
         }, ENABLE_BLACK_OVERLAY);
@@ -7497,8 +7422,31 @@ async function startDirectStreaming() {
         }
     }
 
-    if (isObsConnected) {
+if (isObsConnected) {
         try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){}
+    }
+
+    if (STREAM_SOURCE.includes('Local Video')) {
+        console.log(`[🎬] LOCAL VIDEO MODE: Playing video/video1.mp4 in a loop...`);
+        const videoPath = path.join(process.cwd(), 'video', 'video1.mp4');
+        if (fs.existsSync(videoPath)) {
+            const localVideoProcess = spawn('ffplay', ['-fs', '-loop', '0', '-loglevel', 'warning', videoPath]);
+            localVideoProcess.stderr.on('data', d => console.log(`[Local Video]: ${d.toString().trim()}`));
+            
+            if (isObsConnected) {
+                try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch (e) {}
+            }
+            console.log(`[🎥] STREAMING LOCAL VIDEO: ${videoPath}`);
+            
+            // Script ko zinda rakhne ke liye infinite loop
+            while (true) {
+                await new Promise(r => setTimeout(r, 60000));
+            }
+        } else {
+            console.log(`[❌] ERROR: Local video file not found at ${videoPath}`);
+            process.exit(1);
+        }
+        return; // Browser/URL wala hissa skip kar dein
     }
 
     let browserArgs = [
@@ -7638,9 +7586,10 @@ if (exactDurationMs) {
             const bgAudioStatus = process.env.ENABLE_BACKGROUND_AUDIO || 'ON'; 
             const bgAudioVolumeStatus = process.env.BACKGROUND_AUDIO_VOLUME || '100'; 
             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
-            const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
+           const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
+            const streamSource = process.env.STREAM_SOURCE || 'Live URL';
             
-            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f enable_text_overlay="${textOverlayStatus}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
+            const cmd = `gh workflow run main.yml -f stream_source="${streamSource}" -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f enable_text_overlay="${textOverlayStatus}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
             execSync(cmd, { stdio: 'inherit' });
             setTimeout(async () => {
                 await cleanup(); 
@@ -7651,7 +7600,6 @@ if (exactDurationMs) {
 }
 
 mainLoop();
-
 
 
 
