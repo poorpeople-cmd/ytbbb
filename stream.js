@@ -3319,17 +3319,8 @@ async function injectRandomPicOverlay(page) {
                         imgOverlay.id = 'sport4u-seq-img';
                         imgOverlay.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important; display: none !important;';
 
-                        const vidOverlay = document.createElement('video');
-                        vidOverlay.id = 'sport4u-seq-vid';
-                        vidOverlay.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important; display: none !important;';
-                        vidOverlay.muted = true;
-                        vidOverlay.autoplay = true;
-                        vidOverlay.loop = true; 
-                        vidOverlay.setAttribute('playsinline', 'true');
-                        vidOverlay.setAttribute('muted', 'true');
-
+                        // Humne yahan se fixed video tag hata diya hai, ab wo fresh banega.
                         container.appendChild(imgOverlay);
-                        container.appendChild(vidOverlay);
                         let target = document.body || document.documentElement;
                         if (target) target.appendChild(container);
 
@@ -3338,7 +3329,7 @@ async function injectRandomPicOverlay(page) {
                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
                             
                             setTimeout(() => {
-                                // Agar Backup/Hidden tab hai tou sequence mat chalao
+                                // Agar tab chupa hua hai tou sequence hold par rakhein
                                 if (document.hidden) {
                                     triggerRandomShow();
                                     return;
@@ -3346,16 +3337,18 @@ async function injectRandomPicOverlay(page) {
 
                                 const wrap = document.getElementById('sport4u-random-pic');
                                 const iTag = document.getElementById('sport4u-seq-img');
-                                const vTag = document.getElementById('sport4u-seq-vid');
                                 
-                                if (wrap && iTag && vTag) {
+                                if (wrap && iTag) {
                                     wrap.style.setProperty('display', 'block', 'important');
                                     let currentSeqIndex = 0;
                                     
                                     function displayNextMedia() {
                                         if (currentSeqIndex >= mediaArray.length) {
                                             wrap.style.setProperty('display', 'none', 'important');
-                                            vTag.pause();
+                                            // Safai: Koi purani video bachi ho tou delete kar do
+                                            const oldVids = wrap.querySelectorAll('video');
+                                            oldVids.forEach(v => v.remove());
+                                            
                                             triggerRandomShow();
                                             return;
                                         }
@@ -3364,27 +3357,39 @@ async function injectRandomPicOverlay(page) {
                                         
                                         if (media.type === 'video') {
                                             iTag.style.setProperty('display', 'none', 'important');
-                                            vTag.style.setProperty('display', 'block', 'important');
                                             
-                                            if (vTag.src !== media.src) {
-                                                vTag.src = media.src;
-                                                vTag.load();
-                                            }
+                                            // 🛡️ FRESH ELEMENT HACK: Har dafa naya dabba banao taakey freeze na ho
+                                            let oldVids = wrap.querySelectorAll('video');
+                                            oldVids.forEach(v => v.remove()); // Purane ko ura do
+
+                                            const freshVTag = document.createElement('video');
+                                            freshVTag.id = 'sport4u-seq-vid';
+                                            freshVTag.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important; display: block !important;';
+                                            freshVTag.muted = true;
+                                            freshVTag.autoplay = true;
+                                            freshVTag.loop = true; 
+                                            freshVTag.setAttribute('playsinline', 'true');
+                                            freshVTag.setAttribute('muted', 'true');
+                                            freshVTag.src = media.src;
                                             
-                                            vTag.muted = true;
-                                            let p = vTag.play();
+                                            wrap.appendChild(freshVTag);
+
+                                            let p = freshVTag.play();
                                             if(p !== undefined) p.catch(()=>{});
                                             
                                             // STRICTLY 4 SECONDS FOR VIDEO
                                             setTimeout(() => {
-                                                vTag.pause();
+                                                freshVTag.pause();
+                                                freshVTag.remove(); // 4 second baad dabba delete
                                                 currentSeqIndex++;
                                                 displayNextMedia();
                                             }, 4000);
 
                                         } else {
-                                            vTag.style.setProperty('display', 'none', 'important');
-                                            vTag.pause();
+                                            // Image show karne se pehle agar koi video hai tou hata do
+                                            let oldVids = wrap.querySelectorAll('video');
+                                            oldVids.forEach(v => { v.pause(); v.remove(); });
+
                                             iTag.style.setProperty('display', 'block', 'important');
                                             iTag.src = media.src;
                                             
@@ -3406,7 +3411,6 @@ async function injectRandomPicOverlay(page) {
         }, picSequenceBase64Array);
     } catch (e) {}
 }
-
 
 async function setupNetworkAdBlocker(page) {
     if (!page) return;
