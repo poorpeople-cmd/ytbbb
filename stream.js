@@ -2769,27 +2769,24 @@ const ENABLE_BLACK_OVERLAY = process.env.ENABLE_BLACK_OVERLAY || 'OFF';
 const ENABLE_STREAM_AUDIO = process.env.ENABLE_STREAM_AUDIO !== 'OFF'; 
 const ENABLE_BACKGROUND_AUDIO = process.env.ENABLE_BACKGROUND_AUDIO === 'ON'; 
 const ENABLE_PIC_OVERLAY = process.env.ENABLE_PIC_OVERLAY === 'ON';
+const PIC_SEQUENCE_SLOTS = process.env.PIC_SEQUENCE_SLOTS || '1,2,3,4,5'; // Naya input for pic sequences
 const ENABLE_TEXT_OVERLAY = process.env.ENABLE_TEXT_OVERLAY === 'ON';
 const ENABLE_TOP_MEDIA = process.env.ENABLE_TOP_MEDIA === 'ON';
 const TOP_MEDIA_SLOTS = process.env.TOP_MEDIA_SLOTS || '1,2,3,4'; // Naya input
-// =========================================================================================
-// 🖼️ PIC OVERLAY PRELOAD (Base64)
-// =========================================================================================
-// =========================================================================================
-// 🖼️ SEQUENTIAL PIC OVERLAY PRELOAD (Base64)
-// =========================================================================================
+
 // =========================================================================================
 // 🖼️ SEQUENTIAL PIC/VIDEO OVERLAY PRELOAD (Base64)
 // =========================================================================================
 let picSequenceBase64Array = [];
-if (ENABLE_PIC_OVERLAY) {
-    // Isme .mp4 aur .webm ka izafa kiya gaya hai
+if (ENABLE_PIC_OVERLAY && PIC_SEQUENCE_SLOTS.toLowerCase() !== 'none') {
     const possiblePicExts = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.webm'];
-    let seqIndex = 1;
-    while(true) {
+    // User ke input ko split kar ke array banayega
+    const seqSlots = PIC_SEQUENCE_SLOTS.split(',').map(s => s.trim()).filter(s => s !== '');
+    
+    for (let num of seqSlots) {
         let found = false;
         for (let ext of possiblePicExts) {
-            let tempPath = path.join(process.cwd(), `picSequence${seqIndex}${ext}`);
+            let tempPath = path.join(process.cwd(), `picSequence${num}${ext}`);
             if (fs.existsSync(tempPath)) {
                 let isVideo = ext === '.mp4' || ext === '.webm';
                 let extName = ext.replace('.', '');
@@ -2798,20 +2795,21 @@ if (ENABLE_PIC_OVERLAY) {
                 let mime = isVideo ? `video/${extName}` : `image/${extName}`;
                 const base64Data = fs.readFileSync(tempPath).toString('base64');
                 
-                // Array mein ab object save hoga jisme type (image ya video) hogi
                 picSequenceBase64Array.push({ type: isVideo ? 'video' : 'image', src: `data:${mime};base64,${base64Data}` });
-                console.log(`[🖼️] Found Sequence Media: picSequence${seqIndex}${ext}`);
+                console.log(`[🖼️] Found Sequence Media: picSequence${num}${ext}`);
                 found = true;
                 break;
             }
         }
-        if (!found) break; // Agar agla number na milay tou loop stop
-        seqIndex++;
+        if (!found) {
+            console.log(`[⚠️] Missing Sequence Media for slot ${num}`);
+        }
     }
+    
     if(picSequenceBase64Array.length > 0) {
-        console.log(`[🖼️] Total Sequence Media Loaded: ${picSequenceBase64Array.length}`);
+        console.log(`[🖼️] Total Sequence Media Loaded: ${picSequenceBase64Array.length} based on slots: ${PIC_SEQUENCE_SLOTS}`);
     } else {
-        console.log(`[⚠️] Sequence Media Enabled but NO picSequence files found.`);
+        console.log(`[⚠️] Sequence Media Enabled but NO valid picSequence files found for slots: ${PIC_SEQUENCE_SLOTS}.`);
     }
 }
 
@@ -4381,16 +4379,17 @@ if (exactDurationMs) {
             const quality = process.env.STREAM_QUALITY || '110KBps (Balanced 480p)';
             const server = process.env.SERVER_SELECTION || 'None';
             const format = process.env.STREAM_FORMAT || 'Original (16:9 Standard)'; 
-            const blackOverlayStatus = process.env.ENABLE_BLACK_OVERLAY || 'OFF'; 
-          const streamAudioStatus = process.env.ENABLE_STREAM_AUDIO || 'ON'; 
+           const blackOverlayStatus = process.env.ENABLE_BLACK_OVERLAY || 'OFF'; 
+            const streamAudioStatus = process.env.ENABLE_STREAM_AUDIO || 'ON'; 
             const bgAudioStatus = process.env.ENABLE_BACKGROUND_AUDIO || 'ON'; 
             const bgAudioVolumeStatus = process.env.BACKGROUND_AUDIO_VOLUME || '100'; 
             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
+            const picSequenceSlots = process.env.PIC_SEQUENCE_SLOTS || '1,2,3,4,5'; 
             const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
             const topMediaStatus = process.env.ENABLE_TOP_MEDIA || 'OFF';
             const topMediaSlots = process.env.TOP_MEDIA_SLOTS || '1,2,3,4';
             
-            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f enable_text_overlay="${textOverlayStatus}" -f enable_top_media="${topMediaStatus}" -f top_media_slots="${topMediaSlots}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
+            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f pic_sequence_slots="${picSequenceSlots}" -f enable_text_overlay="${textOverlayStatus}" -f enable_top_media="${topMediaStatus}" -f top_media_slots="${topMediaSlots}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
             execSync(cmd, { stdio: 'inherit' });
             setTimeout(async () => {
                 await cleanup(); 
