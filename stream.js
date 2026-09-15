@@ -8958,8 +8958,41 @@ async function startWatchdog() {
                 currentStreamStartTime = Date.now();
 
             } else {
-                console.error(`[!] ❌ Backup Tab failed. Hard Restarting System...`);
-                throw new Error("Both Active and Backup tabs failed.");
+                console.error(`[!] ❌ Backup Tab also failed. Restarting Browser Tabs only (OBS stays LIVE!)...`);
+                
+                // 1. OBS ko Waiting Scene par le jao taakey Facebook stream disconnect na ho
+                try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){}
+
+                try {
+                    await showLoadingUI(activePage, "CONNECTION ERROR", "Trying to reconnect to the stream...");
+                    await activePage.bringToFront();
+                    
+                    // 2. Tabs ko blank kar ke naye siray se reload karo
+                    await activePage.goto('about:blank').catch(()=>{});
+                    await backupPage.goto('about:blank').catch(()=>{});
+                    
+                    let cleanActiveUrl = activeUrlStr.replace(/^!/, '');
+                    await activePage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(()=>{});
+                    
+                    await initializeVideo(activePage, !ENABLE_STREAM_AUDIO, true, activeUrlStr); 
+                    
+                    // 3. Overlays wapas lagao
+                    await injectBlackOverlay(activePage);
+                    await injectOfficialWatermark(activePage);
+                    await injectRandomPicOverlay(activePage);
+                    await injectVideoOverlay(activePage);
+                    await hideLoadingUI(activePage);
+                    
+                    // 4. Sab theek hone ke baad wapas match wali screen (MainScene) par le aao
+                    try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch(e){}
+                } catch(e) {
+                    console.log(`[!] Tab recovery attempt failed, will retry in next loop.`);
+                }
+                
+                // 5. Timers ko reset karo taakey loop smoothly chalta rahe
+                streamSetupTime = Date.now(); 
+                isWarmupPhase = true;
+                currentStreamStartTime = Date.now();
             }
         }
 
