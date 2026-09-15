@@ -7909,7 +7909,8 @@ if (ENABLE_PIC_OVERLAY) {
 // =========================================================================================
 let videoOverlayBase64 = null;
 if (ENABLE_VIDEO_OVERLAY) {
-    const videoOverlayPath = path.join(process.cwd(), 'video1.mp4');
+    // const videoOverlayPath = path.join(process.cwd(), 'video1.mp4');
+  const videoOverlayPath = path.join(process.cwd(), 'video', 'video1.mp4');
     if (fs.existsSync(videoOverlayPath)) {
         const base64Data = fs.readFileSync(videoOverlayPath).toString('base64');
         videoOverlayBase64 = `data:video/mp4;base64,${base64Data}`;
