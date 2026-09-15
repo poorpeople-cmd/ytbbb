@@ -1631,12 +1631,13 @@ on:
           - 'ON'
         default: 'OFF'
       enable_video_overlay:
-        description: 'Enable 4s Video Overlay (video1.mp4 in center)'
+        description: 'Video Overlay Mode (video1.mp4)'
         required: true
         type: choice
         options:
+          - 'Always ON'
+          - 'Loop (10s Show / 5s Hide)'
           - 'OFF'
-          - 'ON'
         default: 'OFF'
       enable_text_overlay:
         description: 'Enable Text Watermark Overlay'
