@@ -780,15 +780,34 @@ async function startWatchdog() {
             
             currentUrlStr = urlList[currentUrlIndex].url;
 
-            try { await page.goto('about:blank'); } catch(e) {}
+            // try { await page.goto('about:blank'); } catch(e) {}
+            
+            // try {
+            //     await page.goto(currentUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            //     await initializeVideo(page, false); 
+            //     const activeVisualReady = await waitForActiveVisualReady(page);
+            //     if (activeVisualReady) await hideLoadingUI(page);
+            // } catch(e) { console.log(`[❌] Navigation Failed. Retrying next tick.`); }
+
+            try { 
+                await page.goto('about:blank'); 
+                // Jaise hi stream mari, screen ko black loading state mein daal do
+                await showLoadingUI(page, "SWITCHING SERVER", "Connecting to a new stream...");
+            } catch(e) {}
             
             try {
                 await page.goto(currentUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 });
+                // Naya URL khulte hi sabse pehle Loading Screen wapas laga do taaki website na dikhe
+                await showLoadingUI(page, "STREAM LOADING", "Optimizing live video connection...");
+                
                 await initializeVideo(page, false); 
+                
+                // Jab tak video asal mein chalna shuru na ho, loading screen mat hatao
                 const activeVisualReady = await waitForActiveVisualReady(page);
                 if (activeVisualReady) await hideLoadingUI(page);
             } catch(e) { console.log(`[❌] Navigation Failed. Retrying next tick.`); }
 
+            
             setupTime = Date.now(); isWarmup = true; streamStartTime = Date.now(); 
             lastTime = -1; frozenTimestamp = Date.now();
 
