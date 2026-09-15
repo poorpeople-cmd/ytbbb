@@ -7871,7 +7871,7 @@ const ENABLE_STREAM_AUDIO = process.env.ENABLE_STREAM_AUDIO !== 'OFF';
 const ENABLE_BACKGROUND_AUDIO = process.env.ENABLE_BACKGROUND_AUDIO === 'ON'; 
 const ENABLE_PIC_OVERLAY = process.env.ENABLE_PIC_OVERLAY === 'ON';
 const ENABLE_TEXT_OVERLAY = process.env.ENABLE_TEXT_OVERLAY === 'ON';
-const ENABLE_VIDEO_OVERLAY = process.env.ENABLE_VIDEO_OVERLAY === 'ON'; // NAYA FEATURE
+const VIDEO_OVERLAY_MODE = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; // NAYA DROPDOWN FEATURE
 
 // =========================================================================================
 // 🖼️ SEQUENTIAL PIC OVERLAY PRELOAD (Base64)
@@ -8152,10 +8152,13 @@ async function injectRandomPicOverlay(page) {
 // =========================================================================================
 // 🎬 NAYA FEATURE: BULLETPROOF VIDEO OVERLAY FUNCTION
 // =========================================================================================
+// =========================================================================================
+// 🎬 NAYA FEATURE: SMART VIDEO OVERLAY FUNCTION (ALWAYS ON & LOOP MODE)
+// =========================================================================================
 async function injectVideoOverlay(page) {
-    if (!page || !videoOverlayBase64 || !ENABLE_VIDEO_OVERLAY) return;
+    if (!page || !videoOverlayBase64 || VIDEO_OVERLAY_MODE === 'OFF') return;
     try {
-        await page.evaluate((base64Video) => {
+        await page.evaluate((base64Video, mode) => {
             let videoState = 'waiting'; 
             let secondsCounter = 0;
 
@@ -8167,14 +8170,14 @@ async function injectVideoOverlay(page) {
                         vid = document.createElement('video');
                         vid.id = 'sport4u-video-overlay';
                         vid.src = base64Video;
-                        vid.muted = true; // Browser policy ke mutabiq mute hona zaroori hai autoplay ke liye
+                        vid.muted = true;
                         vid.playsInline = true;
+                        vid.loop = true; // Video khud ba khud repeat hoti rahegi
                         vid.style.cssText = `
                             position: fixed !important; 
-                            top: -100vh !important; /* Start mein screen ke top se bahar */
                             left: 50% !important;
                             transform: translate(-50%, -50%) !important;
-                            width: 30vw !important; /* Video ka size */
+                            width: 30vw !important;
                             z-index: 2147483648 !important; 
                             pointer-events: none !important;
                             background-color: transparent !important;
@@ -8182,17 +8185,35 @@ async function injectVideoOverlay(page) {
                             border-radius: 12px !important;
                             box-shadow: 0px 10px 30px rgba(0,0,0,0.8) !important;
                         `;
+                        
+                        // Agar "Always ON" hai toh start se hi center mein rakho
+                        if (mode.includes('Always ON')) {
+                            vid.style.setProperty('top', '50vh', 'important');
+                        } else {
+                            vid.style.setProperty('top', '-100vh', 'important'); // Loop mode ke liye chhupa do
+                        }
+
                         let target = document.body || document.documentElement;
                         if (target) target.appendChild(vid);
+                        
+                        if (mode.includes('Always ON')) {
+                            vid.play().catch(()=>{});
+                        }
                         
                         videoState = 'waiting';
                         secondsCounter = 0;
                     }
 
-                    // Smart State-Machine Timer (Swap/Refresh par crash nahi hoga)
+                    // 1. ALWAYS ON MODE LOGIC
+                    if (mode.includes('Always ON')) {
+                        if (vid.paused) vid.play().catch(()=>{});
+                        return; // Loop logic par nahi jayega
+                    }
+
+                    // 2. LOOP MODE LOGIC (10s Show / 5s Hide)
                     if (videoState === 'waiting') {
                         secondsCounter++;
-                        if (secondsCounter >= 5) { // 5 second ka wait
+                        if (secondsCounter >= 5) { // 5 second chupne ke baad
                             vid.style.setProperty('top', '50vh', 'important');
                             vid.currentTime = 0;
                             vid.play().catch(()=>{});
@@ -8202,7 +8223,7 @@ async function injectVideoOverlay(page) {
                         }
                     } else if (videoState === 'playing') {
                         secondsCounter++;
-                        if (secondsCounter >= 4) { // 4 second ka play
+                        if (secondsCounter >= 10) { // 10 second chalne ke baad
                             vid.style.setProperty('top', '-100vh', 'important'); // Wapas Oopar
                             vid.pause();
                             
@@ -8212,7 +8233,7 @@ async function injectVideoOverlay(page) {
                     }
                 } catch(e) {}
             }, 1000); 
-        }, videoOverlayBase64);
+        }, videoOverlayBase64, VIDEO_OVERLAY_MODE);
     } catch (e) {}
 }
 // =========================================================================================
