@@ -7769,50 +7769,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -7824,46 +7780,41 @@ const { spawn, execSync, exec } = require('child_process');
 const { OBSWebSocket } = require('obs-websocket-js'); 
 
 // =========================================================================================
-// 🛡️ GLOBAL CRASH PREVENTION SHIELD (2026 LATEST FIX)
+// 🛡️ GLOBAL CRASH PREVENTION SHIELD (DEBUGGING MODE)
 // =========================================================================================
 process.on('uncaughtException', (err) => {
-    if (err.message && err.message.includes('Requesting main frame too early')) {
-        console.log(`[🛡️] SYSTEM SHIELD: Ignored stealth plugin background frame error.`);
-    } else {
-        console.log(`[⚠️] IGNORED UNCAUGHT EXCEPTION: ${err.message}`);
-    }
+    console.error('\n========================================');
+    console.error('[💥] UNCAUGHT EXCEPTION');
+    console.error(err);
+    console.error('========================================\n');
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-    let msg = reason && reason.message ? reason.message : reason;
-    if (msg && msg.includes('Protocol error')) {
-        console.log(`[🛡️] SYSTEM SHIELD: Ignored detached frame protocol error.`);
-    } else {
-        console.log(`[⚠️] IGNORED UNHANDLED REJECTION: ${msg}`);
-    }
+process.on('unhandledRejection', (reason) => {
+    console.error('\n========================================');
+    console.error('[💥] UNHANDLED REJECTION');
+    console.error(reason);
+    console.error('========================================\n');
 });
-
-function parseDurationToMs(str) {
-    if (!str || str.toLowerCase() === 'none') return null;
-    let ms = 0;
-    const hMatch = str.match(/(\d+)\s*h/i);
-    const mMatch = str.match(/(\d+)\s*m/i);
-    if (hMatch) ms += parseInt(hMatch[1], 10) * 60 * 60 * 1000;
-    if (mMatch) ms += parseInt(mMatch[1], 10) * 60 * 1000;
-    return ms > 0 ? ms : null;
-}
 
 const obs = new OBSWebSocket(); 
-const FORCE_REFRESH_MINUTES = 9; 
+
+// =========================================================================================
+// ⏱️ BIG VARIABLE: FORCE AUTO-REFRESH TIME (IN MINUTES)
+// =========================================================================================
+const FORCE_REFRESH_MINUTES = 9; // Reset to 9 for testing, as per your previous logic
 const FORCE_REFRESH_MS = FORCE_REFRESH_MINUTES * 60 * 1000;
 
+// =========================================================================================
+// 🛡️ NO-REFRESH WHITELIST (CONTINUOUS PLAY DOMAINS)
+// =========================================================================================
 const NO_REFRESH_DOMAINS = [
-    'youtube.com',
-    'facebook.com',
-    'streamed.pk',
-    'websitestream.netlify.app/?ch=Channel%20HD%2071'
+    'youtube.com', 'facebook.com', 'streamed.pk', 'cricstreams.', 
+    'sport4u.online', 'website-vercel-helper-d-jaja-3-2.vercel.app', 'websitestream.netlify.app'
 ];
 
+// =========================================================================================
+// 🛠️ OUR CUSTOM OVERLAY ENV VARIABLES
+// =========================================================================================
 const selectedQuality = process.env.STREAM_QUALITY || 'Original (1080p Max)';
 const selectedFormat = process.env.STREAM_FORMAT || 'Original (16:9 Standard)'; 
 const ENABLE_BLACK_OVERLAY = process.env.ENABLE_BLACK_OVERLAY || 'OFF';
@@ -7871,10 +7822,16 @@ const ENABLE_STREAM_AUDIO = process.env.ENABLE_STREAM_AUDIO !== 'OFF';
 const ENABLE_BACKGROUND_AUDIO = process.env.ENABLE_BACKGROUND_AUDIO === 'ON'; 
 const ENABLE_PIC_OVERLAY = process.env.ENABLE_PIC_OVERLAY === 'ON';
 const ENABLE_TEXT_OVERLAY = process.env.ENABLE_TEXT_OVERLAY === 'ON';
-const VIDEO_OVERLAY_MODE = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; // NAYA DROPDOWN FEATURE
+const VIDEO_OVERLAY_MODE = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; 
+
+const SERVER_SELECTION = process.env.SERVER_SELECTION || 'None'; 
+const PROXY_ENGINE = process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
+
+const YT_KEY = process.env.YOUTUBE_KEY || '';
+const FB_KEY = process.env.FACEBOOK_KEY || '';
 
 // =========================================================================================
-// 🖼️ SEQUENTIAL PIC OVERLAY PRELOAD (Base64)
+// 🖼️ PIC OVERLAY PRELOAD (Base64)
 // =========================================================================================
 let picSequenceBase64Array = [];
 if (ENABLE_PIC_OVERLAY) {
@@ -7897,26 +7854,20 @@ if (ENABLE_PIC_OVERLAY) {
         if (!found) break; 
         seqIndex++;
     }
-    if(picSequenceBase64Array.length > 0) {
-        console.log(`[🖼️] Total Sequence Pics Loaded: ${picSequenceBase64Array.length}`);
-    } else {
-        console.log(`[⚠️] Sequence Pics Enabled but NO picSequence images found.`);
-    }
 }
 
 // =========================================================================================
-// 🎬 VIDEO OVERLAY PRELOAD (Base64) - FOR video1.mp4 (NAYA FEATURE)
+// 🎬 VIDEO OVERLAY PRELOAD (Base64)
 // =========================================================================================
 let videoOverlayBase64 = null;
 if (VIDEO_OVERLAY_MODE !== 'OFF') {
-    // const videoOverlayPath = path.join(process.cwd(), 'video1.mp4');
-  const videoOverlayPath = path.join(process.cwd(), 'video', 'video1.mp4');
+    const videoOverlayPath = path.join(process.cwd(), 'video', 'video1.mp4'); // Changed path to include 'video' folder
     if (fs.existsSync(videoOverlayPath)) {
         const base64Data = fs.readFileSync(videoOverlayPath).toString('base64');
         videoOverlayBase64 = `data:video/mp4;base64,${base64Data}`;
         console.log(`[🎬] Found Video Overlay: video1.mp4 loaded into memory successfully.`);
     } else {
-        console.log(`[🎬] Video Overlay NOT found (video1.mp4). Skipping video overlay function.`);
+        console.log(`[🎬] Video Overlay NOT found. Skipping video overlay function.`);
     }
 }
 
@@ -7926,82 +7877,59 @@ if (selectedQuality === '360p') { RES_W = 640; RES_H = 360; BITRATE = 800; }
 else if (selectedQuality === '480p') { RES_W = 854; RES_H = 480; BITRATE = 1500; }
 else if (selectedQuality === '720p') { RES_W = 1280; RES_H = 720; BITRATE = 3000; }
 else if (selectedQuality === '1080p') { RES_W = 1920; RES_H = 1080; BITRATE = 4500; }
-else { RES_W = 1920; RES_H = 1080; BITRATE = 6000; }
 
-if (selectedFormat.includes('Shorts')) {
-    let temp = RES_W;
-    RES_W = RES_H;
-    RES_H = temp;
-    console.log(`[📱] SHORTS MODE ENABLED: Resolution swapped to ${RES_W}x${RES_H}`);
-}
-
+if (selectedFormat.includes('Shorts')) { let temp = RES_W; RES_W = RES_H; RES_H = temp; }
 console.log(`[🚀] Smart Engine Locked to: ${RES_W}x${RES_H} @ ${BITRATE}kbps`);
-console.log(`[⏱️] Auto-Refresh Time Set To: ${FORCE_REFRESH_MINUTES} Minutes`);
 
 // =========================================================================================
-// 📅 DYNAMIC PHASE SCHEDULER PARSER
+// 🔄 DYNAMIC URL PARSER & METADATA EXTRACTOR
 // =========================================================================================
 let rawUrls = (process.env.TARGET_URLS || '').trim();
-if (rawUrls === '') {
-    rawUrls = 'https://dadocric.st/player.php?id=starsp3&v=m::None';
+let urlList = [];
+
+if (rawUrls !== '') {
+    urlList = rawUrls.split(',').map(u => {
+        let trimmed = u.trim();
+        let hangThreshold = 8000; 
+        if (trimmed.startsWith('!')) { hangThreshold = 20000; trimmed = trimmed.substring(1); }
+        if (!trimmed.startsWith('http')) trimmed = 'https://' + trimmed;
+        return { url: trimmed, hangTime: hangThreshold };
+    });
+} else {
+    urlList = [{ url: 'https://dadocric.st/player.php?id=starsp3&v=m', hangTime: 8000 }];
 }
 
-let phases = [];
-rawUrls.split('|').forEach(phaseStr => {
-    let parts = phaseStr.split('::');
-    let urlsPart = parts[0].trim();
-    let durationPart = parts.length > 1 ? parts[1].trim() : 'None';
-    
-    let phaseUrls = urlsPart.split(',').map(u => {
-        let val = u.trim();
-        let isStatic = val.startsWith('!');
-        let clean = isStatic ? val.substring(1) : val;
-        clean = clean.startsWith('http') ? clean : 'https://' + clean;
-        return isStatic ? '!' + clean : clean;
-    }).filter(u => u !== '' && u !== '!' && u !== 'https://');
-    
-    if (phaseUrls.length > 0) {
-        phases.push({
-            urls: phaseUrls,
-            durationStr: durationPart,
-            durationMs: parseDurationToMs(durationPart)
-        });
+function getSafeBackupIndex(activeIndex, currentIndex, list) {
+    if (list.length <= 1) return 0; 
+    let next = (currentIndex + 1) % list.length;
+    let attempts = 0;
+    while (next === activeIndex && attempts < list.length) {
+        next = (next + 1) % list.length;
+        attempts++;
     }
-});
-
-if (phases.length === 0) {
-    phases.push({ urls: ['https://dadocric.st/player.php?id=starsp3&v=m'], durationStr: 'None', durationMs: null });
+    return next;
 }
 
-let currentPhaseIndex = 0;
-let urlList = phases[currentPhaseIndex].urls;
 let currentUrlIndex = 0;
-let backupUrlIndex = urlList.length > 1 ? 1 : 0; 
-let phaseEndTime = null; 
+let backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList);
 
-console.log(`\n[📅] TOTAL SCHEDULED MATCHES/PHASES: ${phases.length}`);
-phases.forEach((p, i) => console.log(`  -> Phase ${i + 1}: ${p.urls.length} URLs | Duration: ${p.durationStr}`));
+let browserArgs = []; 
+let activeBrowser = null; let backupBrowser = null;
+let activeBrowserName = "CHROME 1"; let backupBrowserName = "CHROME 2";
+let obsProcess = null; let audioProcess = null;
+let activePage = null; let backupPage = null;
 
-const SERVER_SELECTION = process.env.SERVER_SELECTION || 'None'; 
-const PROXY_ENGINE = process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
-
-const YT_KEY = process.env.YOUTUBE_KEY || '';
-const FB_KEY = process.env.FACEBOOK_KEY || '';
-
-let browser = null;
-let obsProcess = null;
-let audioProcess = null; 
-let activePage = null;
-let backupPage = null;
-
-const FROZEN_THRESHOLD_MS = 8000; 
-
-if (!fs.existsSync('./screenshots')) fs.mkdirSync('./screenshots');
-let pendingScreenshots = [];
-let uploadCycleCount = 0;
+async function createBrowserInstance(args) {
+    return await puppeteer.launch({
+        headless: false, 
+        defaultViewport: { width: RES_W, height: RES_H },
+        ignoreDefaultArgs: ['--enable-automation'], 
+        args: args
+    });
+}
 
 // =========================================================================================
-// ⬛ BLACK SCREEN OVERLAY (DYNAMIC HIDDEN BORDERS)
+// 🛡️ OVERLAYS (Ported to New Architecture)
 // =========================================================================================
 async function injectBlackOverlay(page) {
     if (!page || ENABLE_BLACK_OVERLAY === 'OFF') return;
@@ -8012,40 +7940,17 @@ async function injectBlackOverlay(page) {
                     if (!document.getElementById('sport4u-black-overlay')) {
                         const container = document.createElement('div');
                         container.id = 'sport4u-black-overlay';
-                        
-                        let baseCss = `
-                            position: fixed !important; top: 0 !important; left: 0 !important;
-                            width: 100vw !important; height: 100vh !important;
-                            pointer-events: none !important; z-index: 2147483646 !important;
-                        `;
-
+                        let baseCss = `position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; pointer-events: none !important; z-index: 2147483646 !important;`;
                         if (overlayMode.includes('Borders')) {
                             container.style.cssText = baseCss;
-                            const topBlock = document.createElement('div');
-                            topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 40% !important; background-color: #000000 !important;`;
-                            const bottomBlock = document.createElement('div');
-                            bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 30% !important; background-color: #000000 !important;`;
-                            const leftBlock = document.createElement('div');
-                            leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 20% !important; height: 100% !important; background-color: #000000 !important;`;
-                            const rightBlock = document.createElement('div');
-                            rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 40% !important; height: 100% !important; background-color: #000000 !important;`;
-                            container.appendChild(topBlock);
-                            container.appendChild(bottomBlock);
-                            container.appendChild(leftBlock);
-                            container.appendChild(rightBlock);
-                        } 
-                        else if (overlayMode.includes('Full Black')) {
-                            container.style.cssText = baseCss + `background-color: #000000 !important;`;
-                        } 
-                        else if (overlayMode.includes('Tiny Holes')) {
-                            container.style.cssText = baseCss + `
-                                background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important;
-                                background-size: 6px 6px !important;
-                                background-color: transparent !important;
-                            `;
-                        }
-                        let target = document.body || document.documentElement;
-                        if (target) target.appendChild(container);
+                            const topBlock = document.createElement('div'); topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 40% !important; background-color: #000000 !important;`;
+                            const bottomBlock = document.createElement('div'); bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 30% !important; background-color: #000000 !important;`;
+                            const leftBlock = document.createElement('div'); leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 20% !important; height: 100% !important; background-color: #000000 !important;`;
+                            const rightBlock = document.createElement('div'); rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 40% !important; height: 100% !important; background-color: #000000 !important;`;
+                            container.appendChild(topBlock); container.appendChild(bottomBlock); container.appendChild(leftBlock); container.appendChild(rightBlock);
+                        } else if (overlayMode.includes('Full Black')) { container.style.cssText = baseCss + `background-color: #000000 !important;`; } 
+                        else if (overlayMode.includes('Tiny Holes')) { container.style.cssText = baseCss + `background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important; background-size: 6px 6px !important; background-color: transparent !important;`; }
+                        let target = document.body || document.documentElement; if (target) target.appendChild(container);
                     }
                 } catch(e) {}
             }, 1000); 
@@ -8060,35 +7965,10 @@ async function injectOfficialWatermark(page) {
             setInterval(() => {
                 try {
                     if (!document.getElementById('sport4u-watermark')) {
-                        const overlay = document.createElement('div');
-                        overlay.id = 'sport4u-watermark';
-                      overlay.innerHTML = 'Watch All ⚽ here on Google 👉<span style="color: #ff4d4d; font-size: 5vmin; line-height: 1.2;">sport4u.online</span><span style="font-size: 4vmin; line-height: 1.3; display: block; margin-top: 0.8vh;">Guys, please support me ❤️🙏<br>I work hard to bring you All Football here.<br>Please share your feedback & experience ❤️.<br>Support me Guys Please</span>';
-                      overlay.style.cssText = `
-                            position: fixed !important;
-                            top: 0 !important;
-                            left: 0 !important;
-                            z-index: 2147483647 !important;
-                            background-color: rgba(0, 0, 0, 0.70) !important;
-                            color: #ffffff !important;
-                            padding: 1vh 2vw !important;
-                            font-family: 'Segoe UI', Arial, sans-serif !important;
-                            font-size: 4vmin !important;
-                            font-weight: bold !important;
-                            text-align: center !important;
-                            border-top: 0.3vmin solid #e50914 !important;
-                            border-bottom: 0.3vmin solid #e50914 !important;
-                            width: 100vw !important;
-                            height: auto !important;
-                            max-height: none !important;
-                            overflow: visible !important;
-                            box-sizing: border-box !important;
-                            display: flex !important;
-                            flex-direction: column !important;
-                            justify-content: flex-start !important;
-                            align-items: center !important;
-                        `;
-                        let target = document.body || document.documentElement;
-                        if (target) target.appendChild(overlay);
+                        const overlay = document.createElement('div'); overlay.id = 'sport4u-watermark';
+                        overlay.innerHTML = 'Watch All ⚽ here on Google 👉<span style="color: #ff4d4d; font-size: 5vmin; line-height: 1.2;">sport4u.online</span><span style="font-size: 4vmin; line-height: 1.3; display: block; margin-top: 0.8vh;">Guys, please support me ❤️🙏<br>I work hard to bring you All Football here.<br>Please share your feedback & experience ❤️.<br>Support me Guys Please</span>';
+                        overlay.style.cssText = `position: fixed !important; top: 0 !important; left: 0 !important; z-index: 2147483647 !important; background-color: rgba(0, 0, 0, 0.70) !important; color: #ffffff !important; padding: 1vh 2vw !important; font-family: 'Segoe UI', Arial, sans-serif !important; font-size: 4vmin !important; font-weight: bold !important; text-align: center !important; border-top: 0.3vmin solid #e50914 !important; border-bottom: 0.3vmin solid #e50914 !important; width: 100vw !important; height: auto !important; max-height: none !important; overflow: visible !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: center !important; pointer-events: none !important;`;
+                        let target = document.body || document.documentElement; if (target) target.appendChild(overlay);
                     }
                 } catch(e) {}
             }, 1000); 
@@ -8103,40 +7983,21 @@ async function injectRandomPicOverlay(page) {
             setInterval(() => {
                 try {
                     if (!document.getElementById('sport4u-random-pic')) {
-                        const overlay = document.createElement('img');
-                        overlay.id = 'sport4u-random-pic';
-                        overlay.style.cssText = `
-                            position: fixed !important; top: 0 !important; left: 0 !important;
-                            width: 100vw !important; height: 100vh !important;
-                            object-fit: contain !important;
-                            z-index: 2147483647 !important;
-                            pointer-events: none !important;
-                            display: none !important;
-                            background-color: transparent !important;
-                        `;
-                        let target = document.body || document.documentElement;
-                        if (target) target.appendChild(overlay);
-
+                        const overlay = document.createElement('img'); overlay.id = 'sport4u-random-pic';
+                        overlay.style.cssText = `position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; object-fit: contain !important; z-index: 2147483647 !important; pointer-events: none !important; display: none !important; background-color: transparent !important;`;
+                        let target = document.body || document.documentElement; if (target) target.appendChild(overlay);
                         function triggerRandomShow() {
                             if (!document.getElementById('sport4u-random-pic')) return; 
                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
-                            
                             setTimeout(() => {
                                 const img = document.getElementById('sport4u-random-pic');
                                 if (img) {
                                     img.style.setProperty('display', 'block', 'important');
-                                    let currentSeqIndex = 0;
-                                    img.src = base64Array[currentSeqIndex]; 
-                                    
+                                    let currentSeqIndex = 0; img.src = base64Array[currentSeqIndex]; 
                                     let seqInterval = setInterval(() => {
                                         currentSeqIndex++;
-                                        if(currentSeqIndex >= base64Array.length) {
-                                            clearInterval(seqInterval);
-                                            img.style.setProperty('display', 'none', 'important');
-                                            triggerRandomShow(); 
-                                        } else {
-                                            img.src = base64Array[currentSeqIndex];
-                                        }
+                                        if(currentSeqIndex >= base64Array.length) { clearInterval(seqInterval); img.style.setProperty('display', 'none', 'important'); triggerRandomShow(); } 
+                                        else { img.src = base64Array[currentSeqIndex]; }
                                     }, 2000); 
                                 }
                             }, nextShowDelay);
@@ -8149,94 +8010,94 @@ async function injectRandomPicOverlay(page) {
     } catch (e) {}
 }
 
-// =========================================================================================
-// 🎬 NAYA FEATURE: BULLETPROOF VIDEO OVERLAY FUNCTION
-// =========================================================================================
-// =========================================================================================
-// 🎬 NAYA FEATURE: SMART VIDEO OVERLAY FUNCTION (ALWAYS ON & LOOP MODE)
-// =========================================================================================
 async function injectVideoOverlay(page) {
     if (!page || !videoOverlayBase64 || VIDEO_OVERLAY_MODE === 'OFF') return;
     try {
         await page.evaluate((base64Video, mode) => {
             let videoState = 'waiting'; 
             let secondsCounter = 0;
-
             setInterval(() => {
                 try {
                     let vid = document.getElementById('sport4u-video-overlay');
-                    
                     if (!vid) {
                         vid = document.createElement('video');
-                        vid.id = 'sport4u-video-overlay';
-                        vid.src = base64Video;
-                        vid.muted = true;
-                        vid.playsInline = true;
-                        vid.loop = true; // Video khud ba khud repeat hoti rahegi
-                        vid.style.cssText = `
-                            position: fixed !important; 
-                            left: 50% !important;
-                            transform: translate(-50%, -50%) !important;
-                            width: 30vw !important;
-                            z-index: 2147483648 !important; 
-                            pointer-events: none !important;
-                            background-color: transparent !important;
-                            transition: top 1s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                            border-radius: 12px !important;
-                            box-shadow: 0px 10px 30px rgba(0,0,0,0.8) !important;
-                        `;
-                        
-                        // Agar "Always ON" hai toh start se hi center mein rakho
-                        if (mode.includes('Always ON')) {
-                            vid.style.setProperty('top', '50vh', 'important');
-                        } else {
-                            vid.style.setProperty('top', '-100vh', 'important'); // Loop mode ke liye chhupa do
-                        }
-
-                        let target = document.body || document.documentElement;
-                        if (target) target.appendChild(vid);
-                        
-                        if (mode.includes('Always ON')) {
-                            vid.play().catch(()=>{});
-                        }
-                        
-                        videoState = 'waiting';
-                        secondsCounter = 0;
+                        vid.id = 'sport4u-video-overlay'; vid.src = base64Video; vid.muted = true; vid.playsInline = true; vid.loop = true;
+                        vid.style.cssText = `position: fixed !important; left: 50% !important; transform: translate(-50%, -50%) !important; width: 30vw !important; z-index: 2147483648 !important; pointer-events: none !important; background-color: transparent !important; transition: top 1s cubic-bezier(0.4, 0, 0.2, 1) !important; border-radius: 12px !important; box-shadow: 0px 10px 30px rgba(0,0,0,0.8) !important;`;
+                        if (mode.includes('Always ON')) vid.style.setProperty('top', '50vh', 'important');
+                        else vid.style.setProperty('top', '-100vh', 'important');
+                        let target = document.body || document.documentElement; if (target) target.appendChild(vid);
+                        if (mode.includes('Always ON')) vid.play().catch(()=>{});
+                        videoState = 'waiting'; secondsCounter = 0;
                     }
-
-                    // 1. ALWAYS ON MODE LOGIC
-                    if (mode.includes('Always ON')) {
-                        if (vid.paused) vid.play().catch(()=>{});
-                        return; // Loop logic par nahi jayega
-                    }
-
-                    // 2. LOOP MODE LOGIC (10s Show / 5s Hide)
+                    if (mode.includes('Always ON')) { if (vid.paused) vid.play().catch(()=>{}); return; }
                     if (videoState === 'waiting') {
                         secondsCounter++;
-                        if (secondsCounter >= 5) { // 5 second chupne ke baad
-                            vid.style.setProperty('top', '50vh', 'important');
-                            vid.currentTime = 0;
-                            vid.play().catch(()=>{});
-                            
-                            videoState = 'playing';
-                            secondsCounter = 0;
-                        }
+                        if (secondsCounter >= 5) { vid.style.setProperty('top', '50vh', 'important'); vid.currentTime = 0; vid.play().catch(()=>{}); videoState = 'playing'; secondsCounter = 0; }
                     } else if (videoState === 'playing') {
                         secondsCounter++;
-                        if (secondsCounter >= 10) { // 10 second chalne ke baad
-                            vid.style.setProperty('top', '-100vh', 'important'); // Wapas Oopar
-                            vid.pause();
-                            
-                            videoState = 'waiting';
-                            secondsCounter = 0;
-                        }
+                        if (secondsCounter >= 10) { vid.style.setProperty('top', '-100vh', 'important'); vid.pause(); videoState = 'waiting'; secondsCounter = 0; }
                     }
                 } catch(e) {}
             }, 1000); 
         }, videoOverlayBase64, VIDEO_OVERLAY_MODE);
     } catch (e) {}
 }
+
+async function applyAllOverlays(page) {
+    if(!page) return;
+    await injectBlackOverlay(page);
+    await injectOfficialWatermark(page);
+    await injectRandomPicOverlay(page);
+    await injectVideoOverlay(page);
+}
+
 // =========================================================================================
+// 🛡️ SMART BROWSER RECOVERY & FIREWALL
+// =========================================================================================
+async function preparePage(page) {
+    if (!page) return;
+    await setupNetworkAdBlocker(page);
+    attachAntiAdListeners(page);
+    await applyPreloadFirewall(page);
+}
+
+async function createFreshBackupBrowser() {
+    console.log('\n[🛠️] BACKUP RECOVERY: Creating fresh backup Chrome...');
+    try { if (backupBrowser && backupBrowser.isConnected()) { const pages = await backupBrowser.pages(); for (const p of pages) { try { await p.close(); } catch (e) {} } } } catch (e) {}
+    try { if (backupBrowser && !backupBrowser.isConnected()) backupBrowser = null; } catch (e) { backupBrowser = null; }
+
+    backupBrowser = await createBrowserInstance(browserArgs);
+    const pages = await backupBrowser.pages();
+    backupPage = pages[0];
+    await preparePage(backupPage);
+
+    backupBrowser.on('targetcreated', async (target) => {
+        if (target.type() === 'page') {
+            try { const newPage = await target.page(); setTimeout(async () => { if (newPage && newPage !== backupPage) { try { await newPage.close(); } catch (e) {} } }, 500); } catch (e) {}
+        }
+    });
+    console.log('[✅] BACKUP RECOVERY: Fresh backup Chrome created.');
+    return true;
+}
+
+async function createFreshActiveBrowser() {
+    console.log('\n[🛠️] ACTIVE RECOVERY: Creating fresh active Chrome...');
+    try { if (activeBrowser && activeBrowser.isConnected()) { const pages = await activeBrowser.pages(); for (const p of pages) { try { await p.close(); } catch (e) {} } } } catch (e) {}
+    try { if (activeBrowser && !activeBrowser.isConnected()) activeBrowser = null; } catch (e) { activeBrowser = null; }
+
+    activeBrowser = await createBrowserInstance(browserArgs);
+    const pages = await activeBrowser.pages();
+    activePage = pages[0];
+    await preparePage(activePage);
+
+    activeBrowser.on('targetcreated', async (target) => {
+        if (target.type() === 'page') {
+            try { const newPage = await target.page(); setTimeout(async () => { if (newPage && newPage !== activePage) { try { await newPage.close(); } catch (e) {} } }, 500); } catch (e) {}
+        }
+    });
+    console.log('[✅] ACTIVE RECOVERY: Fresh active Chrome created.');
+    return true;
+}
 
 async function setupNetworkAdBlocker(page) {
     if (!page) return;
@@ -8249,26 +8110,13 @@ async function setupNetworkAdBlocker(page) {
             if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
                 const targetUrl = request.url().toLowerCase();
                 const adKeywords = ['popads', 'exoclick', 'adsterra', 'onclickads', 'jerkmate', 'adrevenue', 'fanduel', 'bet', 'casino'];
-                const isMaliciousAd = adKeywords.some(keyword => targetUrl.includes(keyword));
-
-                if (isMaliciousAd) {
-                    console.log(`[🛡️] NAVIGATION SHIELD: Blocked malicious ad redirection to -> ${targetUrl.substring(0, 70)}...`);
+                if (adKeywords.some(keyword => targetUrl.includes(keyword))) {
                     request.abort().catch(()=>{});
                     return;
                 }
             }
 
-            if (
-                url.includes('popads') || 
-                url.includes('exoclick') || 
-                url.includes('adsterra') || 
-                url.includes('onclickads') || 
-                url.includes('jerkmate') ||
-                url.includes('adrevenue') ||
-                url.includes('fanduel') ||
-                url.includes('doubleclick') ||
-                (type === 'script' && (url.includes('analytics') || url.includes('tracking') || url.includes('ad-delivery') || url.includes('pop') || url.includes('zone')))
-            ) {
+            if (url.includes('popads') || url.includes('exoclick') || url.includes('adsterra') || url.includes('onclickads') || url.includes('jerkmate') || url.includes('adrevenue') || url.includes('fanduel') || url.includes('doubleclick') || (type === 'script' && (url.includes('analytics') || url.includes('tracking') || url.includes('ad-delivery') || url.includes('pop') || url.includes('zone')))) {
                 request.abort().catch(()=>{});
             } else {
                 request.continue().catch(()=>{});
@@ -8281,62 +8129,35 @@ async function applyPreloadFirewall(page) {
     if (!page) return;
     try {
         await page.evaluateOnNewDocument(() => {
-            window.alert = function() {};
-            window.confirm = function() { return true; };
-            window.prompt = function() { return null; };
-            window.open = function() { return null; };
-            
-            Object.defineProperty(window, 'onbeforeunload', {
-                configurable: true,
-                get: function() { return null; },
-                set: function() { return null; }
-            });
-
+            const originalAttachShadow = Element.prototype.attachShadow;
+            Element.prototype.attachShadow = function(init) {
+                if (init && init.mode === 'closed') init.mode = 'open'; 
+                const shadowRoot = originalAttachShadow.call(this, init);
+                const observer = new MutationObserver(() => {
+                    const adElements = shadowRoot.querySelectorAll('in-page-message, [id^="note-"], [id^="missclick-"], [id^="close-"], [src*="adexchangerapid"]');
+                    if (adElements.length > 0) { this.remove(); }
+                });
+                observer.observe(shadowRoot, { childList: true, subtree: true });
+                return shadowRoot;
+            };
+            Element.prototype.attachShadow.toString = function() { return "function attachShadow() { [native code] }"; };
+            window.alert = function() {}; window.confirm = function() { return true; }; window.prompt = function() { return null; }; window.open = function() { return null; };
+            Object.defineProperty(window, 'onbeforeunload', { configurable: true, get: function() { return null; }, set: function() { return null; } });
             document.addEventListener('click', (e) => {
                 const target = e.target;
                 if (target && (target.tagName === 'A' || target.closest('a'))) {
                     const link = target.tagName === 'A' ? target : target.closest('a');
                     if (link.href && !link.href.includes(window.location.hostname) && !link.href.includes('javascript')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return false;
+                        e.preventDefault(); e.stopPropagation(); return false;
                     }
                 }
             }, true);
 
             const style = document.createElement('style');
-            style.textContent = `html, body { background-color: #000000 !important; overflow: hidden !important; }`;
+            style.textContent = `html, body { background-color: #000000 !important; overflow: hidden !important; } in-page-message, [id^="note-"], [id^="missclick-"], [id^="close-"] { display: none !important; opacity: 0 !important; pointer-events: none !important; }`;
             document.documentElement.appendChild(style);
         });
-    } catch (e) { }
-}
-
-async function takeAndBatchScreenshot(page, stepName) {
-    if (!page) return;
-    try {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filePath = `./screenshots/snap_${timestamp}_${stepName}.png`;
-        await page.screenshot({ path: filePath });
-        console.log(`[📸] Screenshot saved: ${filePath}`);
-        pendingScreenshots.push(filePath);
-
-        if (pendingScreenshots.length >= 3) {
-            try {
-                const tag = 'live-stream-logs';
-                try { execSync(`gh release view ${tag} || gh release create ${tag} -t "Live Logs"`, { stdio: 'ignore' }); } catch(e) {}
-                try {
-                    const oldAssets = execSync(`gh release view ${tag} --json assets -q ".assets[].name"`, { encoding: 'utf-8' }).trim().split('\n');
-                    for (const asset of oldAssets) if (asset) execSync(`gh release delete-asset ${tag} "${asset}" -y`, { stdio: 'ignore' });
-                } catch(e) {}
-
-                const fileList = pendingScreenshots.join(' ');
-                exec(`gh release upload ${tag} ${fileList} --clobber`, (err) => {
-                    if (!err) uploadCycleCount++;
-                });
-                pendingScreenshots = []; 
-            } catch (err) { }
-        }
-    } catch (e) { }
+    } catch (e) {}
 }
 
 async function showLoadingUI(page, title, sub) {
@@ -8344,30 +8165,20 @@ async function showLoadingUI(page, title, sub) {
         await page.evaluate((t, s) => {
             if (window.self !== window.top) return; 
             let overlay = document.getElementById('smart-stream-overlay');
-
             if (overlay) {
                 const titleEl = overlay.querySelector('.stream-title');
                 const subEl = overlay.querySelector('.stream-sub');
                 if (titleEl) titleEl.innerHTML = t;
                 if (subEl) subEl.innerHTML = s;
-                
                 overlay.style.setProperty('display', 'flex', 'important');
                 overlay.style.setProperty('opacity', '1', 'important');
                 overlay.style.setProperty('z-index', '2147483647', 'important');
-            } 
-            else {
+            } else {
                 overlay = document.createElement('div');
                 overlay.id = 'smart-stream-overlay';
                 overlay.innerHTML = `
                     <style>
-                        #smart-stream-overlay {
-                            position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-                            width: 100vw !important; height: 100vh !important; background: #000000 !important;
-                            z-index: 2147483647 !important; display: flex !important; flex-direction: column !important;
-                            justify-content: center !important; align-items: center !important; color: #ffffff !important;
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-                            pointer-events: all !important;
-                        }
+                        #smart-stream-overlay { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background: #000000 !important; z-index: 2147483647 !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; color: #ffffff !important; font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; pointer-events: all !important; }
                         .stream-spinner { width: 80px; height: 80px; border: 6px solid rgba(255, 255, 255, 0.1); border-top: 6px solid #e50914; border-radius: 50%; animation: spin-overlay 1s linear infinite; margin-bottom: 25px; box-shadow: 0 0 25px rgba(229, 9, 20, 0.4); }
                         .progress-container { width: 300px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 30px; overflow: hidden; position: relative; }
                         .progress-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e50914, #ff4d4d); position: absolute; left: -100%; animation: shift-progress 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
@@ -8392,14 +8203,45 @@ async function showLoadingUI(page, title, sub) {
 async function hideLoadingUI(page) {
     try {
         await page.evaluate(() => {
-            const overlay = document.getElementById('smart-stream-overlay');
-            if (overlay) {
-                overlay.style.setProperty('display', 'none', 'important');
-                overlay.style.setProperty('opacity', '0', 'important');
-                overlay.style.setProperty('z-index', '-9999', 'important');
-                overlay.remove();
-            }
+            const overlays = document.querySelectorAll('#smart-stream-overlay');
+            overlays.forEach(overlay => overlay.remove());
         });
+    } catch (e) {}
+}
+
+async function showRecoveryUI(page) {
+    try {
+        await page.evaluate(() => {
+            if (window.self !== window.top) return; 
+            let overlay = document.getElementById('stream-recovery-overlay');
+            if (overlay) { overlay.style.setProperty('display', 'flex', 'important'); return; }
+            overlay = document.createElement('div');
+            overlay.id = 'stream-recovery-overlay';
+            overlay.innerHTML = `
+                <style>
+                    #stream-recovery-overlay { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.95) !important; z-index: 2147483647 !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; color: #ffffff !important; font-family: Arial, sans-serif !important; pointer-events: all !important; backdrop-filter: blur(8px); }
+                    .recovery-radar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid transparent; border-top-color: #ff9800; border-bottom-color: #ff9800; animation: radar-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; margin-bottom: 20px; box-shadow: 0 0 30px rgba(255, 152, 0, 0.3); }
+                    .recovery-radar::before { content: ''; position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; border-radius: 50%; border: 3px solid transparent; border-left-color: #f44336; border-right-color: #f44336; animation: radar-spin 2s linear infinite reverse; }
+                    @keyframes radar-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    .warn-title { font-size: 32px !important; font-weight: 800 !important; color: #ff9800 !important; letter-spacing: 2px !important; margin-bottom: 10px !important; text-transform: uppercase !important; }
+                    .warn-sub { font-size: 18px !important; color: #dddddd !important; animation: pulse-text 1.5s infinite; }
+                    @keyframes pulse-text { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+                </style>
+                <div class="recovery-radar"></div>
+                <div class="warn-title">SIGNAL LOST</div>
+                <div class="warn-sub">Attempting Auto-Recovery...</div>
+            `;
+            document.documentElement.appendChild(overlay);
+        });
+    } catch (e) {}
+}
+
+async function hideRecoveryUI(page) {
+    try { 
+        await page.evaluate(() => { 
+            const overlay = document.getElementById('stream-recovery-overlay'); 
+            if (overlay) { overlay.remove(); } 
+        }); 
     } catch (e) {}
 }
 
@@ -8413,87 +8255,147 @@ function setupOBSConfig() {
 
     const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIniContent);
-    
-    const basicIniContent = `[General]
-Name=Untitled
-[Video]
-BaseCX=${RES_W}
-BaseCY=${RES_H}
-OutputCX=${RES_W}
-OutputCY=${RES_H}
-FPSCommon=30
-[Output]
-Mode=Advanced
-[AdvOut]
-TrackIndex=1
-RecType=Standard
-Encoder=obs_x264
-[obs_x264]
-bitrate=${BITRATE}
-keyint_sec=2
-preset=ultrafast
-profile=main
-tune=zerolatency
-`;
-    
+
+    const basicIniContent = `[General]\nName=Untitled\n[Video]\nBaseCX=${RES_W}\nBaseCY=${RES_H}\nOutputCX=${RES_W}\nOutputCY=${RES_H}\nFPSCommon=30\n[Output]\nMode=Simple\n[SimpleOutput]\nVBitrate=${BITRATE}\nStreamEncoder=x264\nx264Preset=ultrafast\nx264Settings=keyint=60 tune=zerolatency profile=main threads=4 rc-lookahead=0\n`;
     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIniContent);
 
-    let rtmpServer = "";
-    let streamKey = "";
-
+    // OUR FB/YT RTMP LOGIC INTEGRATED HERE
+    let rtmpServer = ""; let streamKey = "";
     if (YT_KEY && YT_KEY.trim() !== '') {
-        rtmpServer = "rtmp://a.rtmp.youtube.com/live2/";
-        streamKey = YT_KEY.trim();
+        rtmpServer = "rtmp://a.rtmp.youtube.com/live2/"; streamKey = YT_KEY.trim();
         console.log(`[🚀] TARGET PLATFORM: YOUTUBE`);
     } else if (FB_KEY && FB_KEY.trim() !== '') {
-        rtmpServer = "rtmps://live-api-s.facebook.com:443/rtmp/";
-        streamKey = FB_KEY.trim();
+        rtmpServer = "rtmp://live-api-s.facebook.com:80/rtmp/"; streamKey = FB_KEY.trim(); // Fixed RTMPS issue
         console.log(`[🚀] TARGET PLATFORM: FACEBOOK`);
     } else {
         console.log(`[❌] ERROR: Kam az kam ek Stream Key (YouTube ya Facebook) daalna zaroori hai!`);
         process.exit(1);
     }
 
-    const serviceJson = {
-        "settings": { "server": rtmpServer, "key": streamKey },
-        "type": "rtmp_custom"
-    };
+    const serviceJson = { "settings": { "server": rtmpServer, "key": streamKey }, "type": "rtmp_custom" };
     fs.writeFileSync(path.join(profilesDir, 'service.json'), JSON.stringify(serviceJson, null, 2));
 
     const sceneJson = {
-        "current_scene": "WaitingScene", 
-        "current_program_scene": "WaitingScene", 
-        "name": "Untitled",
+        "current_scene": "WaitingScene", "current_program_scene": "WaitingScene", "name": "Untitled",
         "scene_order": [{"name": "WaitingScene"}, {"name": "MainScene"}],
         "sources": [
             { "id": "xshm_input", "name": "Screen", "settings": { "show_cursor": false } },
             { "id": "pulse_output_capture", "name": "Audio", "settings": {} },
-            {
-                "id": "scene", "name": "MainScene",
-                "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true}, {"name": "Audio", "id": 2, "visible": true} ] }
-            },
-            {
-                "id": "scene", "name": "WaitingScene",
-                "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true} ] } 
-            }
+            { "id": "scene", "name": "MainScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true}, {"name": "Audio", "id": 2, "visible": true} ] } },
+            { "id": "scene", "name": "WaitingScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true} ] } }
         ]
     };
     fs.writeFileSync(path.join(scenesDir, 'Untitled.json'), JSON.stringify(sceneJson, null, 2));
 }
 
 function attachAntiAdListeners(page) {
-    page.on('dialog', async dialog => {
-        try { await dialog.dismiss(); } catch(e){}
-    });
+    page.on('dialog', async dialog => { try { await dialog.dismiss(); } catch(e){} });
 }
 
-async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
+// 🛡️ Force Fullscreen instantly
+async function forcePlayerFullscreen(page) {
+    if (!page) return;
     try {
-        if (urlStr.startsWith('!')) {
-            console.log(`[*] STATIC BROADCAST MODE (!): Skipping video finding, autoplay, and CSS injection.`);
-            return;
-        }
+        await page.evaluate(() => {
+            document.documentElement.style.setProperty('background-color', 'black', 'important');
+            document.body.style.setProperty('background-color', 'black', 'important');
+            document.body.style.setProperty('overflow', 'hidden', 'important');
+            document.documentElement.style.setProperty('overflow', 'hidden', 'important');
 
+            let iframes = Array.from(document.querySelectorAll('iframe'));
+            let mainIframe = null; let maxScore = -1;
+
+            iframes.forEach(ifr => {
+                let w = ifr.clientWidth; let h = ifr.clientHeight;
+                let area = w * h;
+                if (area < 5000) return;
+                let score = area;
+                if (ifr.hasAttribute('allowfullscreen') || ifr.hasAttribute('webkitallowfullscreen')) score += 10000000;
+                if (h > w) score = -1;
+                if (score > maxScore) { maxScore = score; mainIframe = ifr; }
+            });
+
+            if (!mainIframe && iframes.length > 0) {
+                mainIframe = iframes.find(ifr => ifr.getAttribute('allowfullscreen') !== null || (ifr.src && (ifr.src.includes('player') || ifr.src.includes('embed'))));
+            }
+
+            if (mainIframe) {
+                iframes.forEach(ifr => {
+                    if (ifr !== mainIframe) {
+                        ifr.style.setProperty('display', 'none', 'important');
+                        ifr.style.setProperty('opacity', '0', 'important');
+                    }
+                });
+                mainIframe.style.setProperty('position', 'fixed', 'important');
+                mainIframe.style.setProperty('top', '0px', 'important');
+                mainIframe.style.setProperty('left', '0px', 'important');
+                mainIframe.style.setProperty('width', '100vw', 'important');
+                mainIframe.style.setProperty('height', '100vh', 'important');
+                mainIframe.style.setProperty('z-index', '2147483645', 'important'); 
+                mainIframe.style.setProperty('background-color', 'black', 'important');
+                mainIframe.style.setProperty('border', 'none', 'important');
+                mainIframe.style.setProperty('opacity', '1', 'important');
+                mainIframe.style.setProperty('display', 'block', 'important');
+                mainIframe.style.setProperty('visibility', 'visible', 'important');
+            }
+
+            // ADDED OUR OVERLAYS TO EXCLUSION LIST SO THEY DON'T GET DELETED
+            const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay):not(#stream-recovery-overlay):not(#sport4u-watermark):not(#sport4u-black-overlay):not(#sport4u-random-pic):not(#sport4u-video-overlay)';
+            document.querySelectorAll(junkClasses).forEach(el => { try { el.remove(); } catch(e){ el.style.setProperty('display', 'none', 'important'); } });
+        });
+    } catch(e) {}
+}
+
+async function waitForActiveVisualReady(page) {
+    if (!page) return false;
+    let readyCount = 0;
+    for (let i = 0; i < 40; i++) { 
+        try {
+            let isReady = false;
+            for (const frame of page.frames()) {
+                try {
+                    if (frame.isDetached()) continue;
+                    const frameReady = await frame.evaluate(() => {
+                        let v = document.querySelector('video:not(#sport4u-video-overlay)');
+                        return (v && v.clientWidth > 50 && !v.paused && v.currentTime > 0);
+                    });
+                    if (frameReady) { isReady = true; break; }
+                } catch(err) {}
+            }
+            if (isReady) readyCount++; else readyCount = 0;
+            if (readyCount >= 3) return true; 
+        } catch(e) {}
+        await new Promise(r => setTimeout(r, 500));
+    }
+    return false;
+}
+
+async function triggerSmartUnmute(page) {
+    for (const frame of page.frames()) {
+        try {
+            if (frame.isDetached()) continue;
+            await frame.evaluate(() => {
+                const potentialElements = Array.from(document.querySelectorAll('button, div, span, a, i'));
+                potentialElements.forEach(el => {
+                    const text = (el.innerText || el.textContent || '').trim().toUpperCase();
+                    const onClickStr = (el.getAttribute('onclick') || '').toLowerCase();
+                    const matchesText = text.includes('UNMUTE') || text.includes('MUTE ME') || text.includes('STREAM UNMUTE') || text.includes('AUDIO');
+                    const matchesJS = onClickStr.includes('unmute') || onClickStr.includes('volume') || onClickStr.includes('audio');
+                    if (matchesText || matchesJS) {
+                        const rect = el.getBoundingClientRect();
+                        const isVisible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).display !== 'none';
+                        if (isVisible) { try { el.click(); } catch(e) {} try { el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); } catch(e) {} }
+                    }
+                });
+                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(media => { if (media.muted) { media.muted = false; media.volume = 1.0; } });
+            }).catch(() => {});
+        } catch (e) {}
+    }
+}
+
+async function initializeVideo(page, startMuted, isActivePage) {
+    if (!page) return;
+    try {
         if (SERVER_SELECTION !== 'None') {
             console.log(`[*] Clicking specific Server: ${SERVER_SELECTION}`);
             let serverClicked = false; let serverAttempts = 0;
@@ -8506,56 +8408,38 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
                         if (targetBtn) { targetBtn.click(); return true; }
                         return false;
                     }, SERVER_SELECTION);
-
-                    if (clickSuccess) {
-                        serverClicked = true; 
-                        console.log(`[+] Server Button clicked successfully!`);
-                        await takeAndBatchScreenshot(page, `server-clicked`);
-                        await new Promise(r => setTimeout(r, 2000)); 
-                        if (isActivePage) await page.bringToFront(); 
-                    } else await new Promise(r => setTimeout(r, 2000));
+                    if (clickSuccess) { serverClicked = true; await new Promise(r => setTimeout(r, 2000)); if (isActivePage) await page.bringToFront(); } 
+                    else await new Promise(r => setTimeout(r, 2000));
                 } catch (err) { await new Promise(r => setTimeout(r, 2000)); }
             }
         }
 
         console.log('[*] Checking if Video is Autoplaying or Needs a Play Button...');
-        let isVideoPlaying = false; 
-        let attempts = 0;
-        
+        let isVideoPlaying = false; let attempts = 0;
+
         while (!isVideoPlaying && attempts < 15) {
             for (const frame of page.frames()) {
                 try {
-                    const autoPlayed = await frame.evaluate((isMuted) => {
+                    const autoPlayed = await frame.evaluate(() => {
                         let playing = false;
-                        document.querySelectorAll('video').forEach(v => {
-                            if (v.clientWidth > 50 && !v.paused && v.currentTime > 0) {
-                                v.muted = isMuted; 
-                                v.volume = isMuted ? 0.0 : 1.0;
-                                playing = true;
-                            }
-                        });
+                        document.querySelectorAll('video:not(#sport4u-video-overlay)').forEach(v => { if (v.clientWidth > 50 && !v.paused && v.currentTime > 0) { v.muted = false; v.volume = 1.0; playing = true; } });
                         return playing;
-                    }, startMuted);
-
-                    if (autoPlayed) {
-                        isVideoPlaying = true;
-                        break;
-                    }
+                    });
+                    if (autoPlayed) { isVideoPlaying = true; break; }
 
                     const playBtn = await frame.$('.jw-icon-display[aria-label="Play"], button[data-plyr="play"], .vjs-big-play-button, [class*="unmute"], .fp-play');
                     if (playBtn) {
-                        const isVisible = await frame.evaluate(el => {
-                            const style = window.getComputedStyle(el);
-                            return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-                        }, playBtn);
+                        const isVisible = await frame.evaluate(el => { const style = window.getComputedStyle(el); return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0'; }, playBtn);
+                        if (isVisible) { await frame.evaluate(el => el.click(), playBtn); await new Promise(r => setTimeout(r, 3000)); isVideoPlaying = true; break; }
+                    }
 
-                        if (isVisible) {
-                            await frame.evaluate(el => el.click(), playBtn); 
-                            await takeAndBatchScreenshot(page, `play-btn-clicked`);
-                            await new Promise(r => setTimeout(r, 3000)); 
-                            isVideoPlaying = true;
-                            break; 
-                        }
+                    if (!isVideoPlaying && attempts > 5) {
+                        const forced = await frame.evaluate(async () => {
+                            let played = false; let vids = document.querySelectorAll('video:not(#sport4u-video-overlay)');
+                            for(let v of vids) { if (v.clientWidth > 50) { v.muted = false; v.volume = 1.0; try { v.click(); } catch(e){} try { let p = v.play(); if (p !== undefined) p.catch(()=>{}); played = true; } catch(e) {} } }
+                            return played;
+                        });
+                        if (forced) { isVideoPlaying = true; break; }
                     }
                 } catch (err) {}
             }
@@ -8566,157 +8450,55 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
         console.log('[*] Scanning for Exact Real Video Player...');
         let targetFrame = null;
         for (const frame of page.frames()) {
-            try {
-                const isRealLiveStream = await frame.evaluate(() => {
-                    const vid = document.querySelector('video');
-                    return vid && vid.clientWidth > 50 && vid.clientHeight > 50;
-                });
-                if (isRealLiveStream) { 
-                    targetFrame = frame; 
-                    console.log(`[+] Smart Scanner locked onto video frame!`);
-                    break; 
-                }
-            } catch (e) { }
+            try { const isRealLiveStream = await frame.evaluate(() => { const vid = document.querySelector('video:not(#sport4u-video-overlay)'); return vid && vid.clientWidth > 50 && vid.clientHeight > 50; }); if (isRealLiveStream) { targetFrame = frame; break; } } catch (e) { }
         }
 
-        if (!targetFrame) targetFrame = page.mainFrame();
+        await forcePlayerFullscreen(page);
 
         await page.evaluate(() => {
             setInterval(() => {
                 try {
-                    document.documentElement.style.setProperty('background-color', 'black', 'important');
-                    document.body.style.setProperty('background-color', 'black', 'important');
-                    document.body.style.setProperty('overflow', 'hidden', 'important');
-                    document.documentElement.style.setProperty('overflow', 'hidden', 'important');
-
                     let iframes = Array.from(document.querySelectorAll('iframe'));
-                    let mainIframe = null; let maxArea = 0;
-
-                    iframes.forEach(ifr => {
-                        let area = ifr.clientWidth * ifr.clientHeight;
-                        if (area > maxArea && area > 5000) { maxArea = area; mainIframe = ifr; }
-                    });
-
-                    if (!mainIframe && iframes.length > 0) {
-                        mainIframe = iframes.find(ifr => 
-                            ifr.getAttribute('allowfullscreen') !== null || 
-                            (ifr.src && (ifr.src.includes('player') || ifr.src.includes('embed') || ifr.src.includes('stream') || ifr.src.includes('watch')))
-                        );
-                    }
-
+                    let mainIframe = iframes.find(ifr => ifr.style.width === '100vw' && ifr.style.height === '100vh');
                     if (mainIframe) {
-                        iframes.forEach(ifr => {
-                            if (ifr !== mainIframe) {
-                                ifr.style.setProperty('display', 'none', 'important');
-                                ifr.style.setProperty('opacity', '0', 'important');
-                                ifr.style.setProperty('z-index', '-9999', 'important');
-                            }
-                        });
-
-                        mainIframe.style.setProperty('position', 'fixed', 'important');
-                        mainIframe.style.setProperty('top', '0px', 'important');
-                        mainIframe.style.setProperty('left', '0px', 'important');
-                        mainIframe.style.setProperty('width', '100vw', 'important');
-                        mainIframe.style.setProperty('height', '100vh', 'important');
-                        mainIframe.style.setProperty('z-index', '2147483645', 'important'); 
-                        mainIframe.style.setProperty('background-color', 'black', 'important');
-                        mainIframe.style.setProperty('border', 'none', 'important');
-                        mainIframe.style.setProperty('opacity', '1', 'important');
-                        mainIframe.style.setProperty('display', 'block', 'important');
-                        mainIframe.style.setProperty('visibility', 'visible', 'important');
+                        iframes.forEach(ifr => { if (ifr !== mainIframe) { ifr.style.setProperty('display', 'none', 'important'); } });
                     }
-
-                    // ADDED #sport4u-video-overlay to junkClasses exclusion
-                    const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay):not(#sport4u-watermark):not(#sport4u-black-overlay):not(#sport4u-random-pic):not(#sport4u-video-overlay), [id*="pop"], [class*="pop"], a[href*="extension"], [class*="notification"], [id*="notification"]';
-                    document.querySelectorAll(junkClasses).forEach(el => { 
-                        try { el.remove(); } catch(e){ el.style.setProperty('display', 'none', 'important'); } 
-                    });
-
-                    const adKeywords = ['jerk', 'mate', 'free', 'online', 'adult', 'dating', 'close', 'notification', 'justine', 'paying', 'job'];
-                    document.querySelectorAll('div, section, span, a').forEach(el => {
-                        if (el.id === 'smart-stream-overlay' || el.id === 'sport4u-watermark' || el.id === 'sport4u-black-overlay' || el.id === 'sport4u-random-pic' || el.id === 'sport4u-video-overlay') return;
-                        
-                        const style = window.getComputedStyle(el);
-                        const isFloating = style.position === 'fixed' || style.position === 'absolute';
-                        
-                        if (isFloating && el.innerText) {
-                            const textLower = el.innerText.toLowerCase();
-                            const hasBadKeyword = adKeywords.some(keyword => textLower.includes(keyword));
-                            
-                            if (hasBadKeyword || (parseInt(style.zIndex) > 100000 && !el.querySelector('video') && !el.querySelector('iframe'))) {
-                                try { el.remove(); } catch(e) { el.style.setProperty('display', 'none', 'important'); }
-                            }
-                        }
-                    });
-
                 } catch (err) {}
             }, 500); 
         }).catch(() => {});
 
         await targetFrame.evaluate((muteVideo) => {
+            window.isStreamMuted = muteVideo; 
             setInterval(() => {
                 try {
-                    if (!document.getElementById('force-fullscreen-css')) {
-                        const style = document.createElement('style');
-                        style.id = 'force-fullscreen-css';
-                        style.innerHTML = `
-                            html, body { overflow: hidden !important; background-color: #000000 !important; margin: 0 !important; padding: 0 !important; }
-                            video:not(#sport4u-video-overlay) {
-                                position: fixed !important; top: 0 !important; left: 0 !important;
-                                min-width: 100vw !important; min-height: 100vh !important;
-                                width: 100vw !important; height: 100vh !important;
-                                max-width: 100vw !important; max-height: 100vh !important;
-                                z-index: 2147483645 !important;
-                                background-color: #000000 !important;
-                                object-fit: contain !important; transform: none !important; margin: 0 !important; padding: 0 !important;
-                            }
-                            ytd-player, #ytd-player, .html5-video-container, .html5-video-player,
-                            section.video-player, div[class*="videoWrapper"], div[class*="playback-module"] {
-                                position: static !important; width: 100% !important; height: 100% !important;
-                                transform: none !important; clip-path: none !important;
-                            }
-                            .jw-controls, .jw-ui, .plyr__controls, .vjs-control-bar, [data-player] .controls,
-                            .ytp-chrome-bottom, .ytp-chrome-top, ytd-masthead, #masthead-container,
-                            header, .header, [class*="header-module"], [class*="top-panel"] {
-                                display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;
-                            }
-                        `;
-                        document.head.appendChild(style);
-                    }
+                    const style = document.createElement('style');
+                    style.innerHTML = `.jw-controls, .jw-ui, .plyr__controls, .vjs-control-bar, [data-player] .controls { display: none !important; opacity: 0 !important; visibility: hidden !important; }`;
+                    document.head.appendChild(style);
 
                     const mediaElements = document.querySelectorAll('video:not(#sport4u-video-overlay), audio');
                     const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
                     let realVideo = null;
 
-                    mediaElements.forEach(media => { 
-                        media.muted = muteVideo; 
-                        media.volume = muteVideo ? 0.0 : 1.0; 
-                    });
+                    mediaElements.forEach(media => { media.muted = window.isStreamMuted; media.volume = window.isStreamMuted ? 0.0 : 1.0; });
+                    if (!window.isStreamMuted) document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
 
-                    if (!muteVideo) {
-                        document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"], .ytp-unmute').forEach(btn => { try { btn.click(); } catch(e){} });
-                    }
-
-                    for (const v of videos) {
-                        if (v.clientWidth > 100 && v.clientHeight > 100) { realVideo = v; break; }
-                    }
-
-                    if (!realVideo && videos.length > 0) {
-                        realVideo = videos[0];
-                    }
+                    for (const v of videos) { if (v.clientWidth > 100 && v.clientHeight > 100) { realVideo = v; break; } }
+                    if (!realVideo && videos.length > 0) realVideo = videos[0];
 
                     if (realVideo) { 
-                        realVideo.style.setProperty('position', 'fixed', 'important');
-                        realVideo.style.setProperty('top', '0px', 'important');
-                        realVideo.style.setProperty('left', '0px', 'important');
-                        realVideo.style.setProperty('width', '100vw', 'important');
-                        realVideo.style.setProperty('height', '100vh', 'important');
-                        realVideo.style.setProperty('z-index', '2147483645', 'important'); 
-                        realVideo.style.setProperty('background-color', 'black', 'important');
+                        let playerWrap = realVideo.closest('.jwplayer, #player, .plyr, .vjs-player, .shaka-video-container, [data-player]') || realVideo;
+                        playerWrap.style.setProperty('position', 'fixed', 'important');
+                        playerWrap.style.setProperty('top', '0px', 'important');
+                        playerWrap.style.setProperty('left', '0px', 'important');
+                        playerWrap.style.setProperty('width', '100vw', 'important');
+                        playerWrap.style.setProperty('height', '100vh', 'important');
+                        playerWrap.style.setProperty('z-index', '2147483646', 'important'); 
+                        playerWrap.style.setProperty('background-color', 'black', 'important');
+                        playerWrap.style.setProperty('opacity', '1', 'important');
+                        playerWrap.style.setProperty('visibility', 'visible', 'important');
+                        playerWrap.style.setProperty('display', 'block', 'important');
+                        if (playerWrap !== realVideo) { realVideo.style.setProperty('width', '100%', 'important'); realVideo.style.setProperty('height', '100%', 'important'); }
                         realVideo.style.setProperty('object-fit', 'contain', 'important');
-                        realVideo.style.setProperty('opacity', '1', 'important');
-                        realVideo.style.setProperty('visibility', 'visible', 'important');
-                        realVideo.style.setProperty('display', 'block', 'important');
                     }
                 } catch(err) {}
             }, 500); 
@@ -8724,15 +8506,15 @@ async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
 
     } catch (e) { }
 
-    await new Promise(r => setTimeout(r, 1000));
+    if (!startMuted) { await triggerSmartUnmute(page); await new Promise(r => setTimeout(r, 1000)); }
+    
+    // INJECT OVERLAYS
+    await applyAllOverlays(page);
 }
 
-async function checkPageStatus(page, urlStr = '') {
+// 🛡️ Active Tab Health Checker
+async function checkPageStatus(page) {
     if (!page) return { status: 'DEAD' };
-    if (urlStr.startsWith('!')) {
-        return { status: 'HEALTHY', currentTime: Date.now(), decodedFrames: Date.now() }; 
-    }
-
     try {
         for (const frame of page.frames()) {
             try {
@@ -8740,45 +8522,26 @@ async function checkPageStatus(page, urlStr = '') {
                 const result = await Promise.race([
                     frame.evaluate(() => {
                         const bodyText = document.body ? document.body.innerText.toLowerCase() : "";
-                        
-                        if (
-                            bodyText.includes("stream error") || 
-                            bodyText.includes("not found") || 
-                            bodyText.includes("domain is blocked") ||
-                            bodyText.includes("error: forbidden") ||
-                            bodyText.includes("does not have permission") ||
-                            bodyText.includes("access denied") ||
-                            (bodyText.includes("cloudflare") && bodyText.includes("blocked"))
-                        ) {
+                        if (bodyText.includes("stream error") || bodyText.includes("not found") || bodyText.includes("domain is blocked") || bodyText.includes("error: forbidden") || bodyText.includes("does not have permission") || bodyText.includes("access denied") || (bodyText.includes("cloudflare") && bodyText.includes("blocked"))) {
                             return { status: 'CRITICAL_ERROR' };
                         }
-                        
                         const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
                         let targetV = null;
-
                         for (const v of videos) {
                             if (v.clientWidth > 0 && v.clientWidth < 100) continue;
-                            if ((v.src && v.src.startsWith('blob:')) || v.matches('.jw-video, .plyr__video, .vjs-tech')) {
-                                targetV = v; break;
-                            }
+                            if ((v.src && v.src.startsWith('blob:')) || v.matches('.jw-video, .plyr__video, .vjs-tech')) { targetV = v; break; }
                         }
-                        
-                        if (!targetV && videos.length > 0) {
-                            targetV = videos.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0];
-                        }
-                        
-                        if (targetV && !targetV.ended && targetV.currentTime > 0) {
+                        if (!targetV && videos.length > 0) targetV = videos.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0];
+
+                        if (targetV && !targetV.ended) {
                             let frames = 0;
-                            if (targetV.getVideoPlaybackQuality) {
-                                frames = targetV.getVideoPlaybackQuality().totalVideoFrames;
-                            } else if (targetV.webkitDecodedFrameCount !== undefined) {
-                                frames = targetV.webkitDecodedFrameCount;
-                            }
+                            if (targetV.getVideoPlaybackQuality) frames = targetV.getVideoPlaybackQuality().totalVideoFrames;
+                            else if (targetV.webkitDecodedFrameCount !== undefined) frames = targetV.webkitDecodedFrameCount;
                             return { status: 'HEALTHY', currentTime: targetV.currentTime, decodedFrames: frames };
                         }
                         return { status: 'DEAD' };
                     }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 4000))
                 ]);
                 if (result && result.status !== 'DEAD') return result;
             } catch (err) {}
@@ -8787,87 +8550,202 @@ async function checkPageStatus(page, urlStr = '') {
     return { status: 'DEAD' };
 }
 
+// 🛡️ Background Health Checker
+async function checkBackgroundHealth(page) {
+    if (!page) return { status: 'DEAD', currentTime: -1, decodedFrames: -1 };
+    try {
+        for (const frame of page.frames()) {
+            try {
+                if (frame.isDetached()) continue;
+                const result = await Promise.race([
+                    frame.evaluate(() => {
+                        const bodyText = document.body ? document.body.innerText.toLowerCase() : "";
+                        if (bodyText.includes('stream error') || bodyText.includes('not found') || bodyText.includes('domain is blocked') || bodyText.includes('error: forbidden') || bodyText.includes('does not have permission') || bodyText.includes('access denied') || (bodyText.includes('cloudflare') && bodyText.includes('blocked'))) {
+                            return { status: 'CRITICAL_ERROR', currentTime: -1, decodedFrames: -1 };
+                        }
+                        const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
+                        let targetV = null;
+                        for (const v of videos) {
+                            if (v.clientWidth < 50 || v.clientHeight < 50) continue;
+                            if ((v.src && v.src.startsWith('blob:')) || v.matches('.jw-video, .plyr__video, .vjs-tech')) { targetV = v; break; }
+                        }
+                        if (!targetV && videos.length > 0) { targetV = videos.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0]; }
+                        if (!targetV) { return { status: 'DEAD', currentTime: -1, decodedFrames: -1 }; }
+                        let decodedFrames = 0;
+                        if (targetV.getVideoPlaybackQuality) { decodedFrames = targetV.getVideoPlaybackQuality().totalVideoFrames || 0; } 
+                        else if (targetV.webkitDecodedFrameCount !== undefined) { decodedFrames = targetV.webkitDecodedFrameCount || 0; }
+                        return { status: 'VIDEO_FOUND', currentTime: Number(targetV.currentTime || 0), decodedFrames, paused: !!targetV.paused, ended: !!targetV.ended, width: targetV.clientWidth, height: targetV.clientHeight };
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Background health timeout')), 3000))
+                ]);
+                if (result && result.status !== 'DEAD') return result;
+            } catch (err) {}
+        }
+    } catch (e) { return { status: 'DEAD', currentTime: -1, decodedFrames: -1 }; }
+    return { status: 'DEAD', currentTime: -1, decodedFrames: -1 };
+}
+
 async function startWatchdog() {
-    let lastActiveTime = -1;
-    let lastDecodedFrames = -1; 
-    let frozenCheckTimestamp = Date.now();
-    let watchdogTicks = 0;
-    
-    let streamSetupTime = Date.now(); 
-    let isWarmupPhase = true; 
-    const WARMUP_MAX_TIME = 15000; 
-
-    let activeUrlStr = urlList[currentUrlIndex];
-    let backupUrlStr = urlList[backupUrlIndex];
-
-    let currentStreamStartTime = Date.now();
+    let lastActiveTime = -1; let lastDecodedFrames = -1; let frozenCheckTimestamp = Date.now();
+    let lastBackupTime = -1; let lastBackupDecodedFrames = -1; let backupFrozenCheckTimestamp = Date.now();
+    let watchdogTicks = 0; let streamSetupTime = Date.now(); 
+    let isWarmupPhase = true; let backupWarmupTime = Date.now(); const WARMUP_MAX_TIME = 15000; 
+    let isBackupRebuilding = false;
+    let activeUrlStr = urlList[currentUrlIndex].url; let backupUrlStr = urlList[backupUrlIndex].url;
+    let currentStreamStartTime = Date.now(); let isRecoveryUIShown = false;
 
     while (true) {
-        if (!browser || !browser.isConnected()) throw new Error("Browser closed.");
+        const activeBrowserAlive = activeBrowser && activeBrowser.isConnected();
+        const backupBrowserAlive = backupBrowser && backupBrowser.isConnected();
 
-        let activeStatus = await checkPageStatus(activePage, activeUrlStr);
+        if (!activeBrowserAlive && backupBrowserAlive) {
+            console.log('\n==================================================');
+            console.log('[🚨] ACTIVE CHROME DISCONNECTED');
+            console.log('[⚡] PROMOTING BACKUP -> ACTIVE');
+            console.log('==================================================\n');
 
-        // 📅 DYNAMIC SCHEDULER CHECK
-        if (phaseEndTime && Date.now() >= phaseEndTime) {
-            if (currentPhaseIndex + 1 < phases.length) {
-                console.log(`\n[⏰] PHASE TIME UP! Switching to Next Scheduled Match...`);
-                currentPhaseIndex++;
-                urlList = phases[currentPhaseIndex].urls;
-                currentUrlIndex = 0;
-                backupUrlIndex = urlList.length > 1 ? 1 : 0;
-                
-                activeUrlStr = urlList[currentUrlIndex];
-                backupUrlStr = urlList[backupUrlIndex];
-                
-                phaseEndTime = phases[currentPhaseIndex].durationMs ? Date.now() + phases[currentPhaseIndex].durationMs : null;
+            const oldActiveBrowser = activeBrowser; const oldActivePage = activePage;
+            activeBrowser = backupBrowser; activePage = backupPage;
+            backupBrowser = oldActiveBrowser; backupPage = oldActivePage;
+            const oldActiveName = activeBrowserName; activeBrowserName = backupBrowserName; backupBrowserName = oldActiveName;
 
-                activeStatus.status = 'PHASE_CHANGE'; 
-            } else {
-                console.log(`\n[⏰] FINAL PHASE REACHED. Stream will now run indefinitely.`);
-                phaseEndTime = null;
+            const previousActiveIndex = currentUrlIndex; currentUrlIndex = backupUrlIndex; activeUrlStr = urlList[currentUrlIndex].url;
+            backupUrlIndex = getSafeBackupIndex(currentUrlIndex, previousActiveIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+
+            lastActiveTime = -1; lastDecodedFrames = -1; frozenCheckTimestamp = Date.now();
+            streamSetupTime = Date.now(); currentStreamStartTime = Date.now();
+            isWarmupPhase = true; backupWarmupTime = Date.now(); isRecoveryUIShown = false;
+            isBackupRebuilding = false; 
+
+            try { await activePage.bringToFront(); await hideLoadingUI(activePage); } catch (e) {}
+
+            try {
+                await createFreshBackupBrowser();
+                await backupPage.goto(backupUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+                await initializeVideo(backupPage, true, false);
+            } catch (e) {}
+            continue;
+        }
+
+        if (activeBrowserAlive && !backupBrowserAlive) {
+            console.log('\n==================================================');
+            console.log('[⚠️] BACKUP CHROME DISCONNECTED -> REBUILDING');
+            console.log('==================================================\n');
+            try {
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, backupUrlIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+                await createFreshBackupBrowser();
+                await backupPage.goto(backupUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+                await initializeVideo(backupPage, true, false);
+                backupWarmupTime = Date.now();
+                isBackupRebuilding = false;
+            } catch (e) {}
+        }
+
+        if (!activeBrowserAlive && !backupBrowserAlive) {
+            console.log('\n==================================================');
+            console.log('[🚨] BOTH CHROME INSTANCES DISCONNECTED -> RECOVERY');
+            console.log('==================================================\n');
+            try {
+                currentUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); activeUrlStr = urlList[currentUrlIndex].url;
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+
+                await createFreshActiveBrowser();
+                await activePage.goto(activeUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+                await showLoadingUI(activePage, "SEARCHING SERVER", "Finding a stable stream connection...");
+                await initializeVideo(activePage, false, true);
+
+                const visualReady = await waitForActiveVisualReady(activePage); 
+                if (visualReady) await hideLoadingUI(activePage);
+
+                try {
+                    await createFreshBackupBrowser();
+                    await backupPage.goto(backupUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+                    await initializeVideo(backupPage, true, false);
+                } catch (backupError) {}
+
+                try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch (e) {}
+
+                streamSetupTime = Date.now(); currentStreamStartTime = Date.now(); backupWarmupTime = Date.now();
+                frozenCheckTimestamp = Date.now(); lastActiveTime = -1; lastDecodedFrames = -1;
+                isWarmupPhase = true; isRecoveryUIShown = false;
+                isBackupRebuilding = false;
+            } catch (e) { await new Promise(r => setTimeout(r, 3000)); }
+            continue;
+        }
+
+        let activeHangThresholdMs = urlList[currentUrlIndex].hangTime;
+        let activeStatus = await checkPageStatus(activePage);
+
+        // =========================================================================================
+        // 🛡️ INDEPENDENT BACKGROUND SHIELD (Mutex Locked)
+        // =========================================================================================
+        let backgroundReady = false;
+        if (!isBackupRebuilding && (Date.now() - backupWarmupTime > 30000)) { 
+            let verifyStatus = await checkBackgroundHealth(backupPage);
+            if (verifyStatus.status === 'VIDEO_FOUND') {
+                for (let verify = 0; verify < 8; verify++) {
+                    const checkState = await checkBackgroundHealth(backupPage);
+                    if (checkState.status === 'VIDEO_FOUND' && checkState.currentTime > 0 && checkState.decodedFrames > 0) {
+                        if (lastBackupTime !== checkState.currentTime || lastBackupDecodedFrames !== checkState.decodedFrames) {
+                            backgroundReady = true;
+                            lastBackupTime = checkState.currentTime;
+                            lastBackupDecodedFrames = checkState.decodedFrames;
+                            backupFrozenCheckTimestamp = Date.now();
+                            break;
+                        }
+                    }
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+
+            if (!backgroundReady) {
+                console.log(`[🔴] BACKGROUND FAILED/FROZEN : Server [${backupUrlIndex}]`);
+                console.log(`[🔎] BACKGROUND : MOVING TO NEXT SERVER`);
+
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, backupUrlIndex, urlList); 
+                backupUrlStr = urlList[backupUrlIndex].url;
+                isBackupRebuilding = true; 
+
+                (async () => {
+                    try {
+                        console.log(`[⏳] Starting background buffer rebuilding safely with MUTEX lock...`);
+                        lastBackupTime = -1; lastBackupDecodedFrames = -1; backupFrozenCheckTimestamp = Date.now();
+                        await backupPage.goto('about:blank', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(()=>{}); 
+                        await applyPreloadFirewall(backupPage);
+                        await backupPage.goto(backupUrlStr, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+                        await initializeVideo(backupPage, true, false);
+                        console.log(`[🖤] BACKGROUND REBUILD COMPLETE -> Server [${backupUrlIndex}]`);
+                    } catch(e) { console.log(`[🖤] BACKGROUND REBUILD ERROR: ${e.message}`);
+                    } finally { isBackupRebuilding = false; backupWarmupTime = Date.now(); }
+                })();
             }
         }
 
         if (activeStatus.status === 'HEALTHY' && !isWarmupPhase) {
             let elapsedMs = Date.now() - currentStreamStartTime;
             let isExempted = NO_REFRESH_DOMAINS.some(domain => activeUrlStr.includes(domain));
-
-            if (elapsedMs > FORCE_REFRESH_MS) {
-                if (!isExempted) {
-                    console.log(`\n[⏱️ PROACTIVE REFRESH]: Stream ran smoothly for ${FORCE_REFRESH_MINUTES} minutes! Forcing SAME LINK swap to keep connection fresh...`);
-                    activeStatus.status = 'FORCE_REFRESH'; 
-                }
-            }
+            if (elapsedMs > FORCE_REFRESH_MS) { if (!isExempted) { activeStatus.status = 'FORCE_REFRESH'; } }
         }
 
         if (activeStatus.status === 'HEALTHY') {
-            await hideLoadingUI(activePage); 
-            isWarmupPhase = false; 
+            let isTimeStuck = (lastActiveTime !== -1 && activeStatus.currentTime === lastActiveTime);
 
-            let isTimeStuck = (activeStatus.currentTime === lastActiveTime);
-            let isFrameStuck = (activeStatus.decodedFrames === lastDecodedFrames && activeStatus.decodedFrames > 0);
-
-            if (isTimeStuck || isFrameStuck) {
-                if (Date.now() - frozenCheckTimestamp > FROZEN_THRESHOLD_MS) {
-                    activeStatus.status = 'FROZEN';
-                    if (isFrameStuck && !isTimeStuck) {
-                        console.log(`[!] ⚠️ SYSTEM SHIELD: Detected Black Screen (Audio playing, but video frames stuck). Triggering HOT-SWAP.`);
-                    }
-                }
+            if (isTimeStuck) {
+                if (!isRecoveryUIShown) { await showRecoveryUI(activePage); isRecoveryUIShown = true; }
+                if (Date.now() - frozenCheckTimestamp > activeHangThresholdMs) { activeStatus.status = 'FROZEN'; isRecoveryUIShown = false; }
             } else {
-                lastActiveTime = activeStatus.currentTime; 
-                lastDecodedFrames = activeStatus.decodedFrames; 
-                frozenCheckTimestamp = Date.now();
-                
+                lastActiveTime = activeStatus.currentTime; lastDecodedFrames = activeStatus.decodedFrames; frozenCheckTimestamp = Date.now();
+                if (isRecoveryUIShown) { await hideRecoveryUI(activePage); isRecoveryUIShown = false; }
+                await hideLoadingUI(activePage); 
+
                 for (const frame of activePage.frames()) {
                     try {
                         if (!frame.isDetached()) {
-                            frame.evaluate((isAudioEnabled) => { 
-                                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = !isAudioEnabled; m.volume = isAudioEnabled ? 1.0 : 0.0; }); 
-                                if (isAudioEnabled) {
-                                    document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
-                                }
-                            }, ENABLE_STREAM_AUDIO).catch(()=>{});
+                            frame.evaluate(() => { 
+                                window.isStreamMuted = false;
+                                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = false; m.volume = 1.0; }); 
+                                document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
+                            }).catch(()=>{});
                         }
                     } catch(e) {}
                 }
@@ -8876,165 +8754,202 @@ async function startWatchdog() {
 
         if (backupPage) {
             for (const frame of backupPage.frames()) {
-                try {
-                    if (!frame.isDetached()) {
-                        frame.evaluate(() => { document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }).catch(()=>{});
-                    }
-                } catch(e) {}
+                try { if (!frame.isDetached()) frame.evaluate(() => { window.isStreamMuted = true; document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }).catch(()=>{}); } catch(e) {}
             }
         }
 
         watchdogTicks++;
-        
         if (watchdogTicks === 1 || watchdogTicks % 90 === 0) {
-            console.log(`\n[💓] WATCHDOG HEARTBEAT: Status is ${activeStatus.status}`);
+            let logBackupStatus = await checkBackgroundHealth(backupPage);
+            console.log(`\n==================================================`);
+            console.log(`[💓] ACTIVE HEARTBEAT (${activeBrowserName}): Status is ${activeStatus.status} | Video Time: ${activeStatus.currentTime ? activeStatus.currentTime.toFixed(1) + 's' : 'N/A'}`);
+            console.log(`[▶️] CURRENTLY LIVE      : Server [${currentUrlIndex}] -> ${activeUrlStr}`);
+            console.log(`--------------------------------------------------`);
+            console.log(`[🖤] BACKUP HEARTBEAT (${backupBrowserName}): Status=${logBackupStatus.status} | Time=${logBackupStatus.currentTime !== undefined && logBackupStatus.currentTime !== -1 ? logBackupStatus.currentTime.toFixed(1) : 'N/A'} | Frames=${logBackupStatus.decodedFrames !== undefined && logBackupStatus.decodedFrames !== -1 ? logBackupStatus.decodedFrames : 'N/A'}`);
+            if (!backgroundReady && !isBackupRebuilding && watchdogTicks > 1) { console.log(`[🖤] BACKGROUND BACKUP IS NOT HEALTHY (Waiting for repair...)`); }
+            console.log(`[🔄] RUNNING IN BACKGROUND   : Server [${backupUrlIndex}] -> ${backupUrlStr}`);
+            console.log(`==================================================\n`);
         }
 
-        if (watchdogTicks % 120 === 0) {
-            await takeAndBatchScreenshot(activePage, `heartbeat-tick-${watchdogTicks}`);
-        }
+        // =========================================================================================
+        // 🔄 2. ACTIVE TAB HOT-SWAP SHIELD (SCENARIO A, B, C)
+        // =========================================================================================
+        if (activeStatus.status === 'FROZEN' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH') {
 
-        if (activeStatus.status === 'FROZEN' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH' || activeStatus.status === 'PHASE_CHANGE') {
-            
             if (isWarmupPhase && (Date.now() - streamSetupTime < WARMUP_MAX_TIME)) { 
+                console.log(`[⏳] Watchdog detected '${activeStatus.status}', but stream is in WARM-UP phase. Waiting...`);
                 await new Promise(r => setTimeout(r, 2000));
                 continue; 
             }
 
             let isProactiveRefresh = (activeStatus.status === 'FORCE_REFRESH');
-            let isPhaseChange = (activeStatus.status === 'PHASE_CHANGE');
-            
-            let cleanActiveUrl = activeUrlStr.replace(/^!/, '');
+            if (isProactiveRefresh) console.log(`\n[!] 🔄 PROACTIVE REFRESH TRIGGERED`);
+            else console.log(`\n[!] ❌ WATCHDOG DETECTED ISSUE: ${activeStatus.status}`);
 
-            if (isProactiveRefresh || isPhaseChange) {
-                console.log(`\n==================================================`);
-                console.log(`[!] 🔄 ${isPhaseChange ? 'MATCH PHASE CHANGE TRIGGERED' : 'PROACTIVE REFRESH TRIGGERED'}`);
-                console.log(`==================================================`);
-                
-                for (const frame of activePage.frames()) {
-                    try { if (!frame.isDetached()) await frame.evaluate(() => { document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }); } catch(e) {}
-                }
+            console.log(`[*] Checking Backup Tab status before switching...`);
+            let backupStatusTest = await checkBackgroundHealth(backupPage);
+            let isBackupHealthyForSwap = (backupStatusTest.status === 'VIDEO_FOUND' && backupStatusTest.currentTime > 0 && backupStatusTest.decodedFrames > 0);
 
-                if (isPhaseChange) {
-                    await showLoadingUI(activePage, "SWITCHING MATCH", "Connecting to the next scheduled event <span class='stream-blink'>...</span>");
-                }
+            // --------------------------------------------------------------------
+            // ⚡ SCENARIO A: INSTANT SEAMLESS HOT-SWAP
+            // --------------------------------------------------------------------
+            if (isBackupHealthyForSwap && !isProactiveRefresh) {
+                console.log('\n[⚡] BACKUP STREAM ALREADY HEALTHY. PROMOTING INSTANTLY.');
 
-                try {
-                    await backupPage.goto('about:blank').catch(()=>{});
-                    await applyPreloadFirewall(backupPage);
-                    await backupPage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(()=>{});
-                } catch(e) {}
-            } else {
-                console.log(`\n==================================================`);
-                console.log(`[!] ❌ WATCHDOG DETECTED ISSUE: ${activeStatus.status}`);
-                console.log(`==================================================`);
-                await takeAndBatchScreenshot(activePage, `error-${activeStatus.status.toLowerCase()}`);
-            }
-            
-            let checkUrlStr = (isProactiveRefresh || isPhaseChange) ? activeUrlStr : backupUrlStr;
-            let backupStatus = await checkPageStatus(backupPage, checkUrlStr);
-
-            if (backupStatus.status === 'HEALTHY' || backupStatus.status === 'DEAD') { 
-                
-                if (!isProactiveRefresh && !isPhaseChange) {
-                    for (const frame of activePage.frames()) {
-                        try { if (!frame.isDetached()) await frame.evaluate(() => { document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }); } catch(e) {}
-                    }
-                }
-                
-                await showLoadingUI(backupPage, isPhaseChange ? "MATCH CONNECTED" : (isProactiveRefresh ? "REFRESHING CONNECTION" : "RECONNECTING"), "Optimizing stream...");
-                await backupPage.bringToFront();
-                await new Promise(r => setTimeout(r, 1000)); 
-                
-                try { await backupPage.mouse.click(10, 10); } catch(e){} 
-
-                await initializeVideo(backupPage, !ENABLE_STREAM_AUDIO, true, checkUrlStr); 
-                
-                // CALL ALL OVERLAYS DURING SWAP
-                await injectBlackOverlay(backupPage);
-                await injectOfficialWatermark(backupPage);
-                await injectRandomPicOverlay(backupPage);
-                await injectVideoOverlay(backupPage); // <--- VIDEO OVERLAY REFRESHED HERE!
-                await hideLoadingUI(backupPage);
+                await showLoadingUI(backupPage, "RECONNECTING", "Establishing secure connection to backup server...");
+                try { await backupPage.bringToFront(); } catch (e) {}
 
                 let brokenPage = activePage; activePage = backupPage; backupPage = brokenPage;
-                lastActiveTime = -1; frozenCheckTimestamp = Date.now();
+                let brokenBrowser = activeBrowser; activeBrowser = backupBrowser; backupBrowser = brokenBrowser;
+                let brokenName = activeBrowserName; activeBrowserName = backupBrowserName; backupBrowserName = brokenName;
 
-                if (!isProactiveRefresh && !isPhaseChange) {
-                    currentUrlIndex = backupUrlIndex; activeUrlStr = urlList[currentUrlIndex]; 
-                    backupUrlIndex = (backupUrlIndex + 1) % urlList.length; backupUrlStr = urlList[backupUrlIndex]; 
-                } 
+                let previousActiveIndex = currentUrlIndex; currentUrlIndex = backupUrlIndex; activeUrlStr = urlList[currentUrlIndex].url; 
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, previousActiveIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
 
-                console.log(`\n[🔄] SWAP EXECUTED SUCCESSFULLY`);
+                await forcePlayerFullscreen(activePage);
 
-                let cleanBackupUrl = backupUrlStr.replace(/^!/, '');
-                try {
-                    await backupPage.goto('about:blank').catch(()=>{});
-                    await applyPreloadFirewall(backupPage);
-                    backupPage.goto(cleanBackupUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
-                } catch (e) {}
-                
-                streamSetupTime = Date.now(); 
-                isWarmupPhase = true;
-                currentStreamStartTime = Date.now();
+                for (const frame of activePage.frames()) {
+                    try {
+                        if (!frame.isDetached()) {
+                            await frame.evaluate(() => { 
+                                window.isStreamMuted = false;
+                                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = false; m.volume = 1.0; }); 
+                                document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
+                            });
+                        }
+                    } catch(e) {}
+                }
 
-              } else {
-                console.error(`[!] ❌ Backup Tab failed. Hard Restarting System...`);
-                throw new Error("Both Active and Backup tabs failed.");
+                lastActiveTime = -1; lastDecodedFrames = -1; frozenCheckTimestamp = Date.now();
+                isRecoveryUIShown = false; 
+
+                streamSetupTime = Date.now(); currentStreamStartTime = Date.now();
+                isWarmupPhase = true; 
+
+                console.log(`[🛡️] SYSTEM SHIELD: Verifying stream layout before removing overlay...`);
+                const activeVisualReady = await waitForActiveVisualReady(activePage);
+
+                if (activeVisualReady) {
+                    console.log(`[✅] Stream visually verified. Removing RECONNECTING shield.`);
+                    await hideLoadingUI(activePage);
+                } else {
+                    console.log(`[🛡️] STREAM NOT VISUALLY READY. RECONNECTING SHIELD REMAINS ON.`);
+                    await showLoadingUI(activePage, "RECONNECTING", "Waiting for live video signal...");
+                }
+
+                isWarmupPhase = false; 
+                console.log(`[📺] NEW ACTIVE STREAM : Server [${currentUrlIndex}] -> ${activeUrlStr}`);
+
+                isBackupRebuilding = true;
+                (async () => {
+                    try {
+                        console.log(`[⏳] Starting background buffer rebuilding safely...`);
+                        lastBackupTime = -1; lastBackupDecodedFrames = -1; backupFrozenCheckTimestamp = Date.now();
+                        await backupPage.goto('about:blank', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(()=>{}); 
+                        await applyPreloadFirewall(backupPage);
+                        await backupPage.goto(backupUrlStr, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+                        await initializeVideo(backupPage, true, false);
+                        console.log(`[🖤] BACKGROUND REBUILD COMPLETE -> Server [${backupUrlIndex}]`);
+                    } catch (e) { console.log(`[🖤] BACKGROUND REBUILD ERROR: ${e.message}`);
+                    } finally { isBackupRebuilding = false; backupWarmupTime = Date.now(); }
+                })();
             }
-          
-            // } else {
-            //     console.error(`[!] ❌ Backup Tab also failed. Restarting Browser Tabs only (OBS stays LIVE!)...`);
-                
-            //     // 1. OBS ko Waiting Scene par le jao taakey Facebook stream disconnect na ho
-            //     try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){}
 
-            //     try {
-            //         await showLoadingUI(activePage, "CONNECTION ERROR", "Trying to reconnect to the stream...");
-            //         await activePage.bringToFront();
-                    
-            //         // 2. Tabs ko blank kar ke naye siray se reload karo
-            //         await activePage.goto('about:blank').catch(()=>{});
-            //         await backupPage.goto('about:blank').catch(()=>{});
-                    
-            //         let cleanActiveUrl = activeUrlStr.replace(/^!/, '');
-            //         await activePage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(()=>{});
-                    
-            //         await initializeVideo(activePage, !ENABLE_STREAM_AUDIO, true, activeUrlStr); 
-                    
-            //         // 3. Overlays wapas lagao
-            //         await injectBlackOverlay(activePage);
-            //         await injectOfficialWatermark(activePage);
-            //         await injectRandomPicOverlay(activePage);
-            //         await injectVideoOverlay(activePage);
-            //         await hideLoadingUI(activePage);
-                    
-            //         // 4. Sab theek hone ke baad wapas match wali screen (MainScene) par le aao
-            //         try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch(e){}
-            //     } catch(e) {
-            //         console.log(`[!] Tab recovery attempt failed, will retry in next loop.`);
-            //     }
-                
-            //     // 5. Timers ko reset karo taakey loop smoothly chalta rahe
-            //     streamSetupTime = Date.now(); 
-            //     isWarmupPhase = true;
-            //     currentStreamStartTime = Date.now();
-            // }
-        }
+            // --------------------------------------------------------------------
+            // 🔄 SCENARIO B: PROACTIVE REFRESH OR FORCED RECONNECTION
+            // --------------------------------------------------------------------
+            else if (isProactiveRefresh || (isBackupHealthyForSwap && isProactiveRefresh)) {
+                for (const frame of activePage.frames()) { try { if (!frame.isDetached()) await frame.evaluate(() => { window.isStreamMuted = true; document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }); } catch(e) {} }
 
+                await showLoadingUI(backupPage, "REFRESHING CONNECTION", "Optimizing current server stream...");
+                await backupPage.bringToFront();
+                await new Promise(r => setTimeout(r, 1000)); 
+                try { await backupPage.mouse.click(10, 10); } catch(e){} 
+
+                await initializeVideo(backupPage, false, true); 
+
+                let brokenPage = activePage; activePage = backupPage; backupPage = brokenPage;
+                let brokenBrowser = activeBrowser; activeBrowser = backupBrowser; backupBrowser = brokenBrowser;
+                let brokenName = activeBrowserName; activeBrowserName = backupBrowserName; backupBrowserName = brokenName;
+
+                lastActiveTime = -1; frozenCheckTimestamp = Date.now(); isRecoveryUIShown = false; 
+                let previousActiveIndex = currentUrlIndex; currentUrlIndex = backupUrlIndex; activeUrlStr = urlList[currentUrlIndex].url; 
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, previousActiveIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+
+                const activeVisualReady = await waitForActiveVisualReady(activePage);
+                if (activeVisualReady) await hideLoadingUI(activePage);
+                else await showLoadingUI(activePage, "RECONNECTING", "Waiting for live video signal...");
+
+                isBackupRebuilding = true;
+                (async () => {
+                    try {
+                        console.log(`[⏳] Starting background buffer rebuilding safely...`);
+                        lastBackupTime = -1; lastBackupDecodedFrames = -1; backupFrozenCheckTimestamp = Date.now();
+                        await backupPage.goto('about:blank', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(()=>{}); 
+                        await applyPreloadFirewall(backupPage);
+                        await backupPage.goto(backupUrlStr, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+                        await initializeVideo(backupPage, true, false);
+                    } catch (e) {} finally { isBackupRebuilding = false; backupWarmupTime = Date.now(); }
+                })();
+
+                streamSetupTime = Date.now(); isWarmupPhase = true; currentStreamStartTime = Date.now(); 
+            }
+
+            // --------------------------------------------------------------------
+            // ❌ SCENARIO C: BOTH TABS FAILED (Fresh Hunting Mode - FIX: NEVER KILL OBS)
+            // --------------------------------------------------------------------
+            else {
+                console.log(`\n[!] ❌ BOTH TABS FAILED. FRESH HUNTING MODE ACTIVATED.`);
+                try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch (e) {}
+
+                currentUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); activeUrlStr = urlList[currentUrlIndex].url;
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+
+                try { await activePage.close(); } catch(e) {}
+                try { await backupPage.close(); } catch(e) {}
+
+                activePage = await activeBrowser.newPage(); backupPage = await backupBrowser.newPage();
+                await setupNetworkAdBlocker(activePage); await setupNetworkAdBlocker(backupPage);
+                attachAntiAdListeners(activePage); attachAntiAdListeners(backupPage);
+                await applyPreloadFirewall(activePage); await applyPreloadFirewall(backupPage);
+
+                try {
+                    await activePage.goto(activeUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 });
+                    await showLoadingUI(activePage, "SEARCHING SERVER", "Hunting for a stable stream connection...");
+                    await initializeVideo(activePage, false, true); 
+
+                    const activeVisualReady = await waitForActiveVisualReady(activePage);
+                    if (activeVisualReady) await hideLoadingUI(activePage);
+                    else await showLoadingUI(activePage, "SEARCHING SERVER", "Hunting for a stable stream connection...");
+                } catch(e) {}
+
+                isBackupRebuilding = true;
+                (async () => {
+                    try {
+                        await backupPage.goto('about:blank', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(()=>{}); 
+                        await backupPage.goto(backupUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(()=>{});
+                        await initializeVideo(backupPage, true, false); 
+                    } catch(e) {} finally { isBackupRebuilding = false; backupWarmupTime = Date.now(); }
+                })();
+
+                streamSetupTime = Date.now(); isWarmupPhase = true; currentStreamStartTime = Date.now(); 
+                lastActiveTime = -1; frozenCheckTimestamp = Date.now(); isRecoveryUIShown = false;
+
+                try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch (e) {}
+            }
+        } 
         await new Promise(r => setTimeout(r, 2000)); 
     }
 }
 
 async function startDirectStreaming() {
-    console.log(`[*] Starting OBS Studio FIRST...`);
-    setupOBSConfig();
+    activeBrowserName = "CHROME 1"; backupBrowserName = "CHROME 2";
+    console.log(`[*] Starting OBS Studio FIRST...`); setupOBSConfig();
 
     obsProcess = spawn('obs', ['--startstreaming', '--minimize-to-tray']);
     obsProcess.stdout.on('data', (data) => console.log(`[OBS]: ${data.toString().trim()}`));
     obsProcess.stderr.on('data', (data) => {
-        const msg = data.toString().trim();
-        if (msg.includes('error') || msg.includes('fail')) console.log(`[OBS Error]: ${msg}`);
+        const msg = data.toString().trim(); if (msg.includes('error') || msg.includes('fail')) console.log(`[OBS Error]: ${msg}`);
     });
 
     if (ENABLE_BACKGROUND_AUDIO) {
@@ -9042,48 +8957,20 @@ async function startDirectStreaming() {
         let foundAudioPath = null;
         for (let ext of possibleAudioExts) {
             let tempPath = path.join(process.cwd(), `audio804${ext}`);
-            if (fs.existsSync(tempPath)) {
-                foundAudioPath = tempPath;
-                break;
-            }
+            if (fs.existsSync(tempPath)) { foundAudioPath = tempPath; break; }
         }
 
         if (foundAudioPath) {
             const rawVolume = process.env.BACKGROUND_AUDIO_VOLUME || '100';
-            let volNumber = parseInt(rawVolume, 10);
-            if (isNaN(volNumber)) volNumber = 100;
+            let volNumber = parseInt(rawVolume, 10); if (isNaN(volNumber)) volNumber = 100;
             let ffplayVolume = volNumber / 100; 
             
             console.log(`[🎶] Background Audio found: ${foundAudioPath}`);
-            console.log(`[🎶] Starting Audio in INFINITE LOOP at ${volNumber}% volume...`);
-            
             try {
-                audioProcess = spawn('ffplay', [
-                    '-nodisp', 
-                    '-loop', '0', 
-                    '-loglevel', 'warning', 
-                    '-af', `volume=${ffplayVolume}`, 
-                    foundAudioPath
-                ]);
-
-                audioProcess.on('error', (err) => {
-                    console.log(`[!] Audio Process Spawn Error: ${err.message}`);
-                });
-
-                audioProcess.stderr.on('data', (data) => {
-                    const msg = data.toString().trim();
-                    if (msg.toLowerCase().includes('error')) {
-                        console.log(`[!] Audio FFplay Error: ${msg}`);
-                    }
-                });
-            } catch (err) {
-                console.log(`[!] Audio execution failed completely: ${err.message}`);
-            }
-        } else {
-            console.log(`[!] Audio file (audio804) NOT FOUND in main folder. Skipping background audio.`);
+                audioProcess = spawn('ffplay', ['-nodisp', '-loop', '0', '-loglevel', 'warning', '-af', `volume=${ffplayVolume}`, foundAudioPath]);
+                audioProcess.stderr.on('data', (data) => { const msg = data.toString().trim(); if (msg.toLowerCase().includes('error')) console.log(`[!] Audio Error: ${msg}`); });
+            } catch (err) {}
         }
-    } else {
-        console.log(`[🔇] Background Audio is manually turned OFF from GitHub Actions.`);
     }
 
     console.log('[*] Waiting for OBS to initialize before launching browser...');
@@ -9092,111 +8979,53 @@ async function startDirectStreaming() {
     let isObsConnected = false;
     for (let attempt = 1; attempt <= 15; attempt++) {
         try {
-            await Promise.race([
-                obs.connect('ws://127.0.0.1:4455', 'secret'),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
-            ]);
-            isObsConnected = true;
-            console.log('[+] OBS WebSocket Connected Successfully!');
-            break;
-        } catch (e) {
-            await new Promise(r => setTimeout(r, 2000));
-        }
+            await Promise.race([obs.connect('ws://127.0.0.1:4455', 'secret'), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))]);
+            isObsConnected = true; console.log('[+] OBS WebSocket Connected Successfully!'); break;
+        } catch (e) { await new Promise(r => setTimeout(r, 2000)); }
     }
 
-    if (isObsConnected) {
-        try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){}
-    }
+    if (isObsConnected) { try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){} }
 
-    let browserArgs = [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        `--window-size=${RES_W},${RES_H}`, 
-        '--window-position=0,0', 
-        '--kiosk', 
-        '--start-fullscreen',
-        '--autoplay-policy=no-user-gesture-required',
-        '--disable-dev-shm-usage', 
-        '--ignore-certificate-errors',
-        '--disable-web-security',
-        '--ignore-gpu-blocklist', 
-        '--use-gl=egl',
-        '--disable-accelerated-video-decode', 
-        '--disable-accelerated-video-encode',
-        '--disable-smooth-scrolling',
-        '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding'
+    browserArgs = [
+        '--no-sandbox', '--disable-setuid-sandbox', `--window-size=${RES_W},${RES_H}`, '--window-position=0,0', '--kiosk', '--start-fullscreen',
+        '--autoplay-policy=no-user-gesture-required', '--disable-dev-shm-usage', '--ignore-certificate-errors', '--disable-web-security',
+        '--ignore-gpu-blocklist', '--use-gl=egl', '--disable-accelerated-video-decode', '--disable-accelerated-video-encode',
+        '--disable-smooth-scrolling', '--disable-blink-features=AutomationControlled',
+        '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion,NetworkServiceInProcess2',
+        '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding'
     ];
+    // Note: Removed the hardcoded 'ublock-lite' extension path from the new script to avoid crashes if folder is missing.
+    
+    if (PROXY_ENGINE.includes('Cloudflare')) browserArgs.push('--proxy-server=socks5://127.0.0.1:40000');
 
-    if (PROXY_ENGINE.includes('Cloudflare')) {
-        browserArgs.push('--proxy-server=socks5://127.0.0.1:40000');
-    }
+    activeBrowser = await createBrowserInstance(browserArgs); activePage = (await activeBrowser.pages())[0];
+    backupBrowser = await createBrowserInstance(browserArgs); backupPage = (await backupBrowser.pages())[0];
 
-    browser = await puppeteer.launch({
-        headless: false, 
-        defaultViewport: { width: RES_W, height: RES_H },
-        ignoreDefaultArgs: ['--enable-automation'], 
-        args: browserArgs
-    });
+    activeBrowser.on('targetcreated', async (target) => { if (target.type() === 'page') { const newPage = await target.page(); setTimeout(async () => { if (newPage && newPage !== activePage) { try { await newPage.close(); } catch(e) {} } }, 500); } });
+    backupBrowser.on('targetcreated', async (target) => { if (target.type() === 'page') { const newPage = await target.page(); setTimeout(async () => { if (newPage && newPage !== backupPage) { try { await newPage.close(); } catch(e) {} } }, 500); } });
 
-    browser.on('targetcreated', async (target) => {
-        if (target.type() === 'page') {
-            const newPage = await target.page();
-            setTimeout(async () => {
-                if (newPage && newPage !== activePage && newPage !== backupPage) {
-                    try { await newPage.close(); } catch(e) {}
-                }
-            }, 500);
-        }
-    });
-
-    const pages = await browser.pages();
-    activePage = pages[0]; 
-    backupPage = await browser.newPage();
-
-    await setupNetworkAdBlocker(activePage);
-    await setupNetworkAdBlocker(backupPage);
-
-    attachAntiAdListeners(activePage);
-    attachAntiAdListeners(backupPage);
-
-    await applyPreloadFirewall(activePage);
-    await applyPreloadFirewall(backupPage);
+    await setupNetworkAdBlocker(activePage); await setupNetworkAdBlocker(backupPage);
+    attachAntiAdListeners(activePage); attachAntiAdListeners(backupPage);
+    await applyPreloadFirewall(activePage); await applyPreloadFirewall(backupPage);
 
     await activePage.bringToFront(); 
 
-    let cleanActiveUrl = urlList[currentUrlIndex].replace(/^!/, '');
-    console.log(`[*] Loading Active Page...`);
-    await activePage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    
-    await showLoadingUI(activePage, "STREAM LOADING", "Optimizing live video connection <span class='stream-blink'>...</span>");
-    
-    await initializeVideo(activePage, !ENABLE_STREAM_AUDIO, true, urlList[currentUrlIndex]); 
-    
-    // START ALL OVERLAYS FOR THE FIRST TIME
-    await injectBlackOverlay(activePage);
-    await injectOfficialWatermark(activePage);
-    await injectRandomPicOverlay(activePage);
-    await injectVideoOverlay(activePage); // <--- VIDEO OVERLAY STARTED HERE!
-    await hideLoadingUI(activePage); 
+    try { await activePage.goto(urlList[currentUrlIndex].url, { waitUntil: 'domcontentloaded', timeout: 60000 }); } catch (e) {}
+    await showLoadingUI(activePage, "STREAM LOADING", "Optimizing live video connection...");
+    await initializeVideo(activePage, false, true); 
 
-    if (isObsConnected) {
-        try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch (e) {}
-    }
+    const activeVisualReady = await waitForActiveVisualReady(activePage);
+    if (activeVisualReady) await hideLoadingUI(activePage); 
 
-    let cleanBackupUrl = urlList[backupUrlIndex].replace(/^!/, '');
-    backupPage.goto(cleanBackupUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
-    
+    if (isObsConnected) { try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch (e) {} }
+
+    try { await backupPage.goto(urlList[backupUrlIndex].url, { waitUntil: 'domcontentloaded', timeout: 60000 }); } catch (e) {}
+    await initializeVideo(backupPage, true, false);
+
     await activePage.bringToFront();
     try { await activePage.mouse.click(10, 10); } catch(e){} 
-    await hideLoadingUI(activePage);
 
     console.log(`\n[🎥] INITIAL CAPTURE STATUS: Ready to Broadcast`);
-    
-    phaseEndTime = phases[currentPhaseIndex].durationMs ? Date.now() + phases[currentPhaseIndex].durationMs : null;
-
     await startWatchdog();
 }
 
@@ -9204,41 +9033,44 @@ async function mainLoop() {
     while (true) {
         try { await startDirectStreaming(); } 
         catch (error) {
-            console.error(`\n[!] ALERT: ${error.message}`);
-            await cleanup();
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            console.error('\n[🚨] FATAL ENGINE ERROR:', error.message);
+            if (activeBrowser && activeBrowser.isConnected()) { await new Promise(r => setTimeout(r, 3000)); continue; }
+            if (backupBrowser && backupBrowser.isConnected()) { await new Promise(r => setTimeout(r, 3000)); continue; }
+            try { if (activeBrowser) await activeBrowser.close().catch(() => {}); } catch (e) {}
+            try { if (backupBrowser) await backupBrowser.close().catch(() => {}); } catch (e) {}
+            activeBrowser = null; backupBrowser = null; activePage = null; backupPage = null;
+            await new Promise(r => setTimeout(r, 3000)); await cleanup();
         }
     }
 }
 
 async function cleanup() {
     try { await obs.disconnect(); } catch (e) { } 
-    if (browser) { try { await browser.close(); } catch(e) { } browser = null; }
+    if (activeBrowser) { try { await activeBrowser.close(); } catch(e) { } activeBrowser = null; }
+    if (backupBrowser) { try { await backupBrowser.close(); } catch(e) { } backupBrowser = null; }
     if (obsProcess) { try { obsProcess.kill('SIGKILL'); } catch(e) { } obsProcess = null; }
     if (audioProcess) { try { audioProcess.kill('SIGKILL'); } catch(e) { } audioProcess = null; } 
-    try {
-        execSync('pkill -9 obs || true', { stdio: 'ignore' });
-        execSync('pkill -9 chrome || true', { stdio: 'ignore' });
-        execSync('pkill -9 puppeteer || true', { stdio: 'ignore' });
-        execSync('pkill -9 ffplay || true', { stdio: 'ignore' }); 
-    } catch (e) { }
+    try { execSync('pkill -9 obs || true', { stdio: 'ignore' }); execSync('pkill -9 chrome || true', { stdio: 'ignore' }); execSync('pkill -9 puppeteer || true', { stdio: 'ignore' }); execSync('pkill -9 ffplay || true', { stdio: 'ignore' }); } catch (e) { }
 }
 
 process.on('SIGINT', async () => { await cleanup(); process.exit(0); });
 
 const customDurationStr = process.env.CUSTOM_DURATION || 'None';
-const exactDurationMs = parseDurationToMs(customDurationStr);
+function parseDurationToMs(str) {
+    if (!str || str.toLowerCase() === 'none') return null;
+    let ms = 0; const hMatch = str.match(/(\d+)\s*h/i); const mMatch = str.match(/(\d+)\s*m/i);
+    if (hMatch) ms += parseInt(hMatch[1]) * 60 * 60 * 1000;
+    if (mMatch) ms += parseInt(mMatch[1]) * 60 * 1000;
+    return ms > 0 ? ms : null;
+}
 
-if (exactDurationMs) {
-    setTimeout(async () => {
-        await cleanup();
-        process.exit(0);
-    }, exactDurationMs);
-} else {
+const exactDurationMs = parseDurationToMs(customDurationStr);
+if (exactDurationMs) { setTimeout(async () => { await cleanup(); process.exit(0); }, exactDurationMs); } 
+else {
     setTimeout(() => {
         try {
-            const targetUrls = process.env.TARGET_URLS || 'https://dadocric.st/player.php?id=starsp3&v=m';
-            const quality = process.env.STREAM_QUALITY || '110KBps (Balanced 480p)';
+            const targetUrls = process.env.TARGET_URLS || 'https://sport4u.online'; 
+            const quality = process.env.STREAM_QUALITY || '110KBps (Balanced 480p)'; 
             const server = process.env.SERVER_SELECTION || 'None';
             const format = process.env.STREAM_FORMAT || 'Original (16:9 Standard)'; 
             const blackOverlayStatus = process.env.ENABLE_BLACK_OVERLAY || 'OFF'; 
@@ -9247,14 +9079,11 @@ if (exactDurationMs) {
             const bgAudioVolumeStatus = process.env.BACKGROUND_AUDIO_VOLUME || '100'; 
             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
             const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
-            const videoOverlayStatus = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; // NAYA FEATURE
+            const videoOverlayStatus = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; 
             
             const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f enable_text_overlay="${textOverlayStatus}" -f enable_video_overlay="${videoOverlayStatus}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
             execSync(cmd, { stdio: 'inherit' });
-            setTimeout(async () => {
-                await cleanup(); 
-                process.exit(0); 
-            }, 300000); 
+            setTimeout(async () => { await cleanup(); process.exit(0); }, 300000); 
         } catch (err) { }
     }, 21000000);
 }
@@ -9274,6 +9103,1496 @@ mainLoop();
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// yeh done video lekin webisye show hu raha hai 
+
+
+// const puppeteer = require('puppeteer-extra');
+// const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+// puppeteer.use(StealthPlugin());
+
+// const fs = require('fs');
+// const path = require('path');
+// const os = require('os');
+// const { spawn, execSync, exec } = require('child_process');
+// const { OBSWebSocket } = require('obs-websocket-js'); 
+
+// // =========================================================================================
+// // 🛡️ GLOBAL CRASH PREVENTION SHIELD (2026 LATEST FIX)
+// // =========================================================================================
+// process.on('uncaughtException', (err) => {
+//     if (err.message && err.message.includes('Requesting main frame too early')) {
+//         console.log(`[🛡️] SYSTEM SHIELD: Ignored stealth plugin background frame error.`);
+//     } else {
+//         console.log(`[⚠️] IGNORED UNCAUGHT EXCEPTION: ${err.message}`);
+//     }
+// });
+
+// process.on('unhandledRejection', (reason, promise) => {
+//     let msg = reason && reason.message ? reason.message : reason;
+//     if (msg && msg.includes('Protocol error')) {
+//         console.log(`[🛡️] SYSTEM SHIELD: Ignored detached frame protocol error.`);
+//     } else {
+//         console.log(`[⚠️] IGNORED UNHANDLED REJECTION: ${msg}`);
+//     }
+// });
+
+// function parseDurationToMs(str) {
+//     if (!str || str.toLowerCase() === 'none') return null;
+//     let ms = 0;
+//     const hMatch = str.match(/(\d+)\s*h/i);
+//     const mMatch = str.match(/(\d+)\s*m/i);
+//     if (hMatch) ms += parseInt(hMatch[1], 10) * 60 * 60 * 1000;
+//     if (mMatch) ms += parseInt(mMatch[1], 10) * 60 * 1000;
+//     return ms > 0 ? ms : null;
+// }
+
+// const obs = new OBSWebSocket(); 
+// const FORCE_REFRESH_MINUTES = 9; 
+// const FORCE_REFRESH_MS = FORCE_REFRESH_MINUTES * 60 * 1000;
+
+// const NO_REFRESH_DOMAINS = [
+//     'youtube.com',
+//     'facebook.com',
+//     'streamed.pk',
+//     'websitestream.netlify.app/?ch=Channel%20HD%2071'
+// ];
+
+// const selectedQuality = process.env.STREAM_QUALITY || 'Original (1080p Max)';
+// const selectedFormat = process.env.STREAM_FORMAT || 'Original (16:9 Standard)'; 
+// const ENABLE_BLACK_OVERLAY = process.env.ENABLE_BLACK_OVERLAY || 'OFF';
+// const ENABLE_STREAM_AUDIO = process.env.ENABLE_STREAM_AUDIO !== 'OFF'; 
+// const ENABLE_BACKGROUND_AUDIO = process.env.ENABLE_BACKGROUND_AUDIO === 'ON'; 
+// const ENABLE_PIC_OVERLAY = process.env.ENABLE_PIC_OVERLAY === 'ON';
+// const ENABLE_TEXT_OVERLAY = process.env.ENABLE_TEXT_OVERLAY === 'ON';
+// const VIDEO_OVERLAY_MODE = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; // NAYA DROPDOWN FEATURE
+
+// // =========================================================================================
+// // 🖼️ SEQUENTIAL PIC OVERLAY PRELOAD (Base64)
+// // =========================================================================================
+// let picSequenceBase64Array = [];
+// if (ENABLE_PIC_OVERLAY) {
+//     const possiblePicExts = ['.png', '.jpg', '.jpeg', '.webp'];
+//     let seqIndex = 1;
+//     while(true) {
+//         let found = false;
+//         for (let ext of possiblePicExts) {
+//             let tempPath = path.join(process.cwd(), `picSequence${seqIndex}${ext}`);
+//             if (fs.existsSync(tempPath)) {
+//                 let extName = ext.replace('.', '');
+//                 if (extName === 'jpg') extName = 'jpeg';
+//                 const base64Data = fs.readFileSync(tempPath).toString('base64');
+//                 picSequenceBase64Array.push(`data:image/${extName};base64,${base64Data}`);
+//                 console.log(`[🖼️] Found Sequence Pic: picSequence${seqIndex}${ext}`);
+//                 found = true;
+//                 break;
+//             }
+//         }
+//         if (!found) break; 
+//         seqIndex++;
+//     }
+//     if(picSequenceBase64Array.length > 0) {
+//         console.log(`[🖼️] Total Sequence Pics Loaded: ${picSequenceBase64Array.length}`);
+//     } else {
+//         console.log(`[⚠️] Sequence Pics Enabled but NO picSequence images found.`);
+//     }
+// }
+
+// // =========================================================================================
+// // 🎬 VIDEO OVERLAY PRELOAD (Base64) - FOR video1.mp4 (NAYA FEATURE)
+// // =========================================================================================
+// let videoOverlayBase64 = null;
+// if (VIDEO_OVERLAY_MODE !== 'OFF') {
+//     // const videoOverlayPath = path.join(process.cwd(), 'video1.mp4');
+//   const videoOverlayPath = path.join(process.cwd(), 'video', 'video1.mp4');
+//     if (fs.existsSync(videoOverlayPath)) {
+//         const base64Data = fs.readFileSync(videoOverlayPath).toString('base64');
+//         videoOverlayBase64 = `data:video/mp4;base64,${base64Data}`;
+//         console.log(`[🎬] Found Video Overlay: video1.mp4 loaded into memory successfully.`);
+//     } else {
+//         console.log(`[🎬] Video Overlay NOT found (video1.mp4). Skipping video overlay function.`);
+//     }
+// }
+
+// let RES_W = 1920, RES_H = 1080, BITRATE = 5000;
+
+// if (selectedQuality === '360p') { RES_W = 640; RES_H = 360; BITRATE = 800; }
+// else if (selectedQuality === '480p') { RES_W = 854; RES_H = 480; BITRATE = 1500; }
+// else if (selectedQuality === '720p') { RES_W = 1280; RES_H = 720; BITRATE = 3000; }
+// else if (selectedQuality === '1080p') { RES_W = 1920; RES_H = 1080; BITRATE = 4500; }
+// else { RES_W = 1920; RES_H = 1080; BITRATE = 6000; }
+
+// if (selectedFormat.includes('Shorts')) {
+//     let temp = RES_W;
+//     RES_W = RES_H;
+//     RES_H = temp;
+//     console.log(`[📱] SHORTS MODE ENABLED: Resolution swapped to ${RES_W}x${RES_H}`);
+// }
+
+// console.log(`[🚀] Smart Engine Locked to: ${RES_W}x${RES_H} @ ${BITRATE}kbps`);
+// console.log(`[⏱️] Auto-Refresh Time Set To: ${FORCE_REFRESH_MINUTES} Minutes`);
+
+// // =========================================================================================
+// // 📅 DYNAMIC PHASE SCHEDULER PARSER
+// // =========================================================================================
+// let rawUrls = (process.env.TARGET_URLS || '').trim();
+// if (rawUrls === '') {
+//     rawUrls = 'https://dadocric.st/player.php?id=starsp3&v=m::None';
+// }
+
+// let phases = [];
+// rawUrls.split('|').forEach(phaseStr => {
+//     let parts = phaseStr.split('::');
+//     let urlsPart = parts[0].trim();
+//     let durationPart = parts.length > 1 ? parts[1].trim() : 'None';
+    
+//     let phaseUrls = urlsPart.split(',').map(u => {
+//         let val = u.trim();
+//         let isStatic = val.startsWith('!');
+//         let clean = isStatic ? val.substring(1) : val;
+//         clean = clean.startsWith('http') ? clean : 'https://' + clean;
+//         return isStatic ? '!' + clean : clean;
+//     }).filter(u => u !== '' && u !== '!' && u !== 'https://');
+    
+//     if (phaseUrls.length > 0) {
+//         phases.push({
+//             urls: phaseUrls,
+//             durationStr: durationPart,
+//             durationMs: parseDurationToMs(durationPart)
+//         });
+//     }
+// });
+
+// if (phases.length === 0) {
+//     phases.push({ urls: ['https://dadocric.st/player.php?id=starsp3&v=m'], durationStr: 'None', durationMs: null });
+// }
+
+// let currentPhaseIndex = 0;
+// let urlList = phases[currentPhaseIndex].urls;
+// let currentUrlIndex = 0;
+// let backupUrlIndex = urlList.length > 1 ? 1 : 0; 
+// let phaseEndTime = null; 
+
+// console.log(`\n[📅] TOTAL SCHEDULED MATCHES/PHASES: ${phases.length}`);
+// phases.forEach((p, i) => console.log(`  -> Phase ${i + 1}: ${p.urls.length} URLs | Duration: ${p.durationStr}`));
+
+// const SERVER_SELECTION = process.env.SERVER_SELECTION || 'None'; 
+// const PROXY_ENGINE = process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
+
+// const YT_KEY = process.env.YOUTUBE_KEY || '';
+// const FB_KEY = process.env.FACEBOOK_KEY || '';
+
+// let browser = null;
+// let obsProcess = null;
+// let audioProcess = null; 
+// let activePage = null;
+// let backupPage = null;
+
+// const FROZEN_THRESHOLD_MS = 8000; 
+
+// if (!fs.existsSync('./screenshots')) fs.mkdirSync('./screenshots');
+// let pendingScreenshots = [];
+// let uploadCycleCount = 0;
+
+// // =========================================================================================
+// // ⬛ BLACK SCREEN OVERLAY (DYNAMIC HIDDEN BORDERS)
+// // =========================================================================================
+// async function injectBlackOverlay(page) {
+//     if (!page || ENABLE_BLACK_OVERLAY === 'OFF') return;
+//     try {
+//         await page.evaluate((overlayMode) => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('sport4u-black-overlay')) {
+//                         const container = document.createElement('div');
+//                         container.id = 'sport4u-black-overlay';
+                        
+//                         let baseCss = `
+//                             position: fixed !important; top: 0 !important; left: 0 !important;
+//                             width: 100vw !important; height: 100vh !important;
+//                             pointer-events: none !important; z-index: 2147483646 !important;
+//                         `;
+
+//                         if (overlayMode.includes('Borders')) {
+//                             container.style.cssText = baseCss;
+//                             const topBlock = document.createElement('div');
+//                             topBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 40% !important; background-color: #000000 !important;`;
+//                             const bottomBlock = document.createElement('div');
+//                             bottomBlock.style.cssText = `position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 30% !important; background-color: #000000 !important;`;
+//                             const leftBlock = document.createElement('div');
+//                             leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 20% !important; height: 100% !important; background-color: #000000 !important;`;
+//                             const rightBlock = document.createElement('div');
+//                             rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 40% !important; height: 100% !important; background-color: #000000 !important;`;
+//                             container.appendChild(topBlock);
+//                             container.appendChild(bottomBlock);
+//                             container.appendChild(leftBlock);
+//                             container.appendChild(rightBlock);
+//                         } 
+//                         else if (overlayMode.includes('Full Black')) {
+//                             container.style.cssText = baseCss + `background-color: #000000 !important;`;
+//                         } 
+//                         else if (overlayMode.includes('Tiny Holes')) {
+//                             container.style.cssText = baseCss + `
+//                                 background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important;
+//                                 background-size: 6px 6px !important;
+//                                 background-color: transparent !important;
+//                             `;
+//                         }
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(container);
+//                     }
+//                 } catch(e) {}
+//             }, 1000); 
+//         }, ENABLE_BLACK_OVERLAY);
+//     } catch (e) {}
+// }
+
+// async function injectOfficialWatermark(page) {
+//      if (!page || !ENABLE_TEXT_OVERLAY) return;
+//      try {
+//         await page.evaluate(() => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('sport4u-watermark')) {
+//                         const overlay = document.createElement('div');
+//                         overlay.id = 'sport4u-watermark';
+//                       overlay.innerHTML = 'Watch All ⚽ here on Google 👉<span style="color: #ff4d4d; font-size: 5vmin; line-height: 1.2;">sport4u.online</span><span style="font-size: 4vmin; line-height: 1.3; display: block; margin-top: 0.8vh;">Guys, please support me ❤️🙏<br>I work hard to bring you All Football here.<br>Please share your feedback & experience ❤️.<br>Support me Guys Please</span>';
+//                       overlay.style.cssText = `
+//                             position: fixed !important;
+//                             top: 0 !important;
+//                             left: 0 !important;
+//                             z-index: 2147483647 !important;
+//                             background-color: rgba(0, 0, 0, 0.70) !important;
+//                             color: #ffffff !important;
+//                             padding: 1vh 2vw !important;
+//                             font-family: 'Segoe UI', Arial, sans-serif !important;
+//                             font-size: 4vmin !important;
+//                             font-weight: bold !important;
+//                             text-align: center !important;
+//                             border-top: 0.3vmin solid #e50914 !important;
+//                             border-bottom: 0.3vmin solid #e50914 !important;
+//                             width: 100vw !important;
+//                             height: auto !important;
+//                             max-height: none !important;
+//                             overflow: visible !important;
+//                             box-sizing: border-box !important;
+//                             display: flex !important;
+//                             flex-direction: column !important;
+//                             justify-content: flex-start !important;
+//                             align-items: center !important;
+//                         `;
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(overlay);
+//                     }
+//                 } catch(e) {}
+//             }, 1000); 
+//         });
+//     } catch (e) {}
+// }
+
+// async function injectRandomPicOverlay(page) {
+//     if (!page || !ENABLE_PIC_OVERLAY || picSequenceBase64Array.length === 0) return;
+//     try {
+//         await page.evaluate((base64Array) => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('sport4u-random-pic')) {
+//                         const overlay = document.createElement('img');
+//                         overlay.id = 'sport4u-random-pic';
+//                         overlay.style.cssText = `
+//                             position: fixed !important; top: 0 !important; left: 0 !important;
+//                             width: 100vw !important; height: 100vh !important;
+//                             object-fit: contain !important;
+//                             z-index: 2147483647 !important;
+//                             pointer-events: none !important;
+//                             display: none !important;
+//                             background-color: transparent !important;
+//                         `;
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(overlay);
+
+//                         function triggerRandomShow() {
+//                             if (!document.getElementById('sport4u-random-pic')) return; 
+//                             const nextShowDelay = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
+                            
+//                             setTimeout(() => {
+//                                 const img = document.getElementById('sport4u-random-pic');
+//                                 if (img) {
+//                                     img.style.setProperty('display', 'block', 'important');
+//                                     let currentSeqIndex = 0;
+//                                     img.src = base64Array[currentSeqIndex]; 
+                                    
+//                                     let seqInterval = setInterval(() => {
+//                                         currentSeqIndex++;
+//                                         if(currentSeqIndex >= base64Array.length) {
+//                                             clearInterval(seqInterval);
+//                                             img.style.setProperty('display', 'none', 'important');
+//                                             triggerRandomShow(); 
+//                                         } else {
+//                                             img.src = base64Array[currentSeqIndex];
+//                                         }
+//                                     }, 2000); 
+//                                 }
+//                             }, nextShowDelay);
+//                         }
+//                         triggerRandomShow();
+//                     }
+//                 } catch(e) {}
+//             }, 2000); 
+//         }, picSequenceBase64Array);
+//     } catch (e) {}
+// }
+
+// // =========================================================================================
+// // 🎬 NAYA FEATURE: BULLETPROOF VIDEO OVERLAY FUNCTION
+// // =========================================================================================
+// // =========================================================================================
+// // 🎬 NAYA FEATURE: SMART VIDEO OVERLAY FUNCTION (ALWAYS ON & LOOP MODE)
+// // =========================================================================================
+// async function injectVideoOverlay(page) {
+//     if (!page || !videoOverlayBase64 || VIDEO_OVERLAY_MODE === 'OFF') return;
+//     try {
+//         await page.evaluate((base64Video, mode) => {
+//             let videoState = 'waiting'; 
+//             let secondsCounter = 0;
+
+//             setInterval(() => {
+//                 try {
+//                     let vid = document.getElementById('sport4u-video-overlay');
+                    
+//                     if (!vid) {
+//                         vid = document.createElement('video');
+//                         vid.id = 'sport4u-video-overlay';
+//                         vid.src = base64Video;
+//                         vid.muted = true;
+//                         vid.playsInline = true;
+//                         vid.loop = true; // Video khud ba khud repeat hoti rahegi
+//                         vid.style.cssText = `
+//                             position: fixed !important; 
+//                             left: 50% !important;
+//                             transform: translate(-50%, -50%) !important;
+//                             width: 30vw !important;
+//                             z-index: 2147483648 !important; 
+//                             pointer-events: none !important;
+//                             background-color: transparent !important;
+//                             transition: top 1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+//                             border-radius: 12px !important;
+//                             box-shadow: 0px 10px 30px rgba(0,0,0,0.8) !important;
+//                         `;
+                        
+//                         // Agar "Always ON" hai toh start se hi center mein rakho
+//                         if (mode.includes('Always ON')) {
+//                             vid.style.setProperty('top', '50vh', 'important');
+//                         } else {
+//                             vid.style.setProperty('top', '-100vh', 'important'); // Loop mode ke liye chhupa do
+//                         }
+
+//                         let target = document.body || document.documentElement;
+//                         if (target) target.appendChild(vid);
+                        
+//                         if (mode.includes('Always ON')) {
+//                             vid.play().catch(()=>{});
+//                         }
+                        
+//                         videoState = 'waiting';
+//                         secondsCounter = 0;
+//                     }
+
+//                     // 1. ALWAYS ON MODE LOGIC
+//                     if (mode.includes('Always ON')) {
+//                         if (vid.paused) vid.play().catch(()=>{});
+//                         return; // Loop logic par nahi jayega
+//                     }
+
+//                     // 2. LOOP MODE LOGIC (10s Show / 5s Hide)
+//                     if (videoState === 'waiting') {
+//                         secondsCounter++;
+//                         if (secondsCounter >= 5) { // 5 second chupne ke baad
+//                             vid.style.setProperty('top', '50vh', 'important');
+//                             vid.currentTime = 0;
+//                             vid.play().catch(()=>{});
+                            
+//                             videoState = 'playing';
+//                             secondsCounter = 0;
+//                         }
+//                     } else if (videoState === 'playing') {
+//                         secondsCounter++;
+//                         if (secondsCounter >= 10) { // 10 second chalne ke baad
+//                             vid.style.setProperty('top', '-100vh', 'important'); // Wapas Oopar
+//                             vid.pause();
+                            
+//                             videoState = 'waiting';
+//                             secondsCounter = 0;
+//                         }
+//                     }
+//                 } catch(e) {}
+//             }, 1000); 
+//         }, videoOverlayBase64, VIDEO_OVERLAY_MODE);
+//     } catch (e) {}
+// }
+// // =========================================================================================
+
+// async function setupNetworkAdBlocker(page) {
+//     if (!page) return;
+//     try {
+//         await page.setRequestInterception(true);
+//         page.on('request', (request) => {
+//             const url = request.url().toLowerCase();
+//             const type = request.resourceType();
+
+//             if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+//                 const targetUrl = request.url().toLowerCase();
+//                 const adKeywords = ['popads', 'exoclick', 'adsterra', 'onclickads', 'jerkmate', 'adrevenue', 'fanduel', 'bet', 'casino'];
+//                 const isMaliciousAd = adKeywords.some(keyword => targetUrl.includes(keyword));
+
+//                 if (isMaliciousAd) {
+//                     console.log(`[🛡️] NAVIGATION SHIELD: Blocked malicious ad redirection to -> ${targetUrl.substring(0, 70)}...`);
+//                     request.abort().catch(()=>{});
+//                     return;
+//                 }
+//             }
+
+//             if (
+//                 url.includes('popads') || 
+//                 url.includes('exoclick') || 
+//                 url.includes('adsterra') || 
+//                 url.includes('onclickads') || 
+//                 url.includes('jerkmate') ||
+//                 url.includes('adrevenue') ||
+//                 url.includes('fanduel') ||
+//                 url.includes('doubleclick') ||
+//                 (type === 'script' && (url.includes('analytics') || url.includes('tracking') || url.includes('ad-delivery') || url.includes('pop') || url.includes('zone')))
+//             ) {
+//                 request.abort().catch(()=>{});
+//             } else {
+//                 request.continue().catch(()=>{});
+//             }
+//         });
+//     } catch (e) { console.log('[⚠️] Request interception setup failed.'); }
+// }
+
+// async function applyPreloadFirewall(page) {
+//     if (!page) return;
+//     try {
+//         await page.evaluateOnNewDocument(() => {
+//             window.alert = function() {};
+//             window.confirm = function() { return true; };
+//             window.prompt = function() { return null; };
+//             window.open = function() { return null; };
+            
+//             Object.defineProperty(window, 'onbeforeunload', {
+//                 configurable: true,
+//                 get: function() { return null; },
+//                 set: function() { return null; }
+//             });
+
+//             document.addEventListener('click', (e) => {
+//                 const target = e.target;
+//                 if (target && (target.tagName === 'A' || target.closest('a'))) {
+//                     const link = target.tagName === 'A' ? target : target.closest('a');
+//                     if (link.href && !link.href.includes(window.location.hostname) && !link.href.includes('javascript')) {
+//                         e.preventDefault();
+//                         e.stopPropagation();
+//                         return false;
+//                     }
+//                 }
+//             }, true);
+
+//             const style = document.createElement('style');
+//             style.textContent = `html, body { background-color: #000000 !important; overflow: hidden !important; }`;
+//             document.documentElement.appendChild(style);
+//         });
+//     } catch (e) { }
+// }
+
+// async function takeAndBatchScreenshot(page, stepName) {
+//     if (!page) return;
+//     try {
+//         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+//         const filePath = `./screenshots/snap_${timestamp}_${stepName}.png`;
+//         await page.screenshot({ path: filePath });
+//         console.log(`[📸] Screenshot saved: ${filePath}`);
+//         pendingScreenshots.push(filePath);
+
+//         if (pendingScreenshots.length >= 3) {
+//             try {
+//                 const tag = 'live-stream-logs';
+//                 try { execSync(`gh release view ${tag} || gh release create ${tag} -t "Live Logs"`, { stdio: 'ignore' }); } catch(e) {}
+//                 try {
+//                     const oldAssets = execSync(`gh release view ${tag} --json assets -q ".assets[].name"`, { encoding: 'utf-8' }).trim().split('\n');
+//                     for (const asset of oldAssets) if (asset) execSync(`gh release delete-asset ${tag} "${asset}" -y`, { stdio: 'ignore' });
+//                 } catch(e) {}
+
+//                 const fileList = pendingScreenshots.join(' ');
+//                 exec(`gh release upload ${tag} ${fileList} --clobber`, (err) => {
+//                     if (!err) uploadCycleCount++;
+//                 });
+//                 pendingScreenshots = []; 
+//             } catch (err) { }
+//         }
+//     } catch (e) { }
+// }
+
+// async function showLoadingUI(page, title, sub) {
+//     try {
+//         await page.evaluate((t, s) => {
+//             if (window.self !== window.top) return; 
+//             let overlay = document.getElementById('smart-stream-overlay');
+
+//             if (overlay) {
+//                 const titleEl = overlay.querySelector('.stream-title');
+//                 const subEl = overlay.querySelector('.stream-sub');
+//                 if (titleEl) titleEl.innerHTML = t;
+//                 if (subEl) subEl.innerHTML = s;
+                
+//                 overlay.style.setProperty('display', 'flex', 'important');
+//                 overlay.style.setProperty('opacity', '1', 'important');
+//                 overlay.style.setProperty('z-index', '2147483647', 'important');
+//             } 
+//             else {
+//                 overlay = document.createElement('div');
+//                 overlay.id = 'smart-stream-overlay';
+//                 overlay.innerHTML = `
+//                     <style>
+//                         #smart-stream-overlay {
+//                             position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+//                             width: 100vw !important; height: 100vh !important; background: #000000 !important;
+//                             z-index: 2147483647 !important; display: flex !important; flex-direction: column !important;
+//                             justify-content: center !important; align-items: center !important; color: #ffffff !important;
+//                             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+//                             pointer-events: all !important;
+//                         }
+//                         .stream-spinner { width: 80px; height: 80px; border: 6px solid rgba(255, 255, 255, 0.1); border-top: 6px solid #e50914; border-radius: 50%; animation: spin-overlay 1s linear infinite; margin-bottom: 25px; box-shadow: 0 0 25px rgba(229, 9, 20, 0.4); }
+//                         .progress-container { width: 300px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 30px; overflow: hidden; position: relative; }
+//                         .progress-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e50914, #ff4d4d); position: absolute; left: -100%; animation: shift-progress 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+//                         @keyframes spin-overlay { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+//                         @keyframes shift-progress { 0% { left: -100%; } 50% { left: 0; } 100% { left: 100%; } }
+//                         .stream-title { font-size: 36px !important; font-weight: 800 !important; letter-spacing: 3px !important; margin-bottom: 15px !important; text-transform: uppercase !important; text-shadow: 0px 4px 10px rgba(0,0,0,0.8) !important; }
+//                         .stream-sub { font-size: 20px !important; color: #cccccc !important; text-align: center !important; line-height: 1.6 !important; }
+//                         .stream-blink { animation: blinker 1.5s linear infinite; color: #e50914; font-weight: bold; }
+//                         @keyframes blinker { 50% { opacity: 0.3; } }
+//                     </style>
+//                     <div class="stream-spinner"></div>
+//                     <div class="progress-container"><div class="progress-bar-fill"></div></div>
+//                     <div class="stream-title">${t}</div>
+//                     <div class="stream-sub">${s}</div>
+//                 `;
+//                 document.documentElement.appendChild(overlay);
+//             }
+//         }, title, sub);
+//     } catch (e) {}
+// }
+
+// async function hideLoadingUI(page) {
+//     try {
+//         await page.evaluate(() => {
+//             const overlay = document.getElementById('smart-stream-overlay');
+//             if (overlay) {
+//                 overlay.style.setProperty('display', 'none', 'important');
+//                 overlay.style.setProperty('opacity', '0', 'important');
+//                 overlay.style.setProperty('z-index', '-9999', 'important');
+//                 overlay.remove();
+//             }
+//         });
+//     } catch (e) {}
+// }
+
+// function setupOBSConfig() {
+//     const obsDir = path.join(os.homedir(), '.config', 'obs-studio');
+//     const profilesDir = path.join(obsDir, 'basic', 'profiles', 'Untitled');
+//     const scenesDir = path.join(obsDir, 'basic', 'scenes');
+
+//     fs.mkdirSync(profilesDir, { recursive: true });
+//     fs.mkdirSync(scenesDir, { recursive: true });
+
+//     const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
+//     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIniContent);
+    
+//     const basicIniContent = `[General]
+// Name=Untitled
+// [Video]
+// BaseCX=${RES_W}
+// BaseCY=${RES_H}
+// OutputCX=${RES_W}
+// OutputCY=${RES_H}
+// FPSCommon=30
+// [Output]
+// Mode=Advanced
+// [AdvOut]
+// TrackIndex=1
+// RecType=Standard
+// Encoder=obs_x264
+// [obs_x264]
+// bitrate=${BITRATE}
+// keyint_sec=2
+// preset=ultrafast
+// profile=main
+// tune=zerolatency
+// `;
+    
+//     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIniContent);
+
+//     let rtmpServer = "";
+//     let streamKey = "";
+
+//     if (YT_KEY && YT_KEY.trim() !== '') {
+//         rtmpServer = "rtmp://a.rtmp.youtube.com/live2/";
+//         streamKey = YT_KEY.trim();
+//         console.log(`[🚀] TARGET PLATFORM: YOUTUBE`);
+//     } else if (FB_KEY && FB_KEY.trim() !== '') {
+//         rtmpServer = "rtmps://live-api-s.facebook.com:443/rtmp/";
+//         streamKey = FB_KEY.trim();
+//         console.log(`[🚀] TARGET PLATFORM: FACEBOOK`);
+//     } else {
+//         console.log(`[❌] ERROR: Kam az kam ek Stream Key (YouTube ya Facebook) daalna zaroori hai!`);
+//         process.exit(1);
+//     }
+
+//     const serviceJson = {
+//         "settings": { "server": rtmpServer, "key": streamKey },
+//         "type": "rtmp_custom"
+//     };
+//     fs.writeFileSync(path.join(profilesDir, 'service.json'), JSON.stringify(serviceJson, null, 2));
+
+//     const sceneJson = {
+//         "current_scene": "WaitingScene", 
+//         "current_program_scene": "WaitingScene", 
+//         "name": "Untitled",
+//         "scene_order": [{"name": "WaitingScene"}, {"name": "MainScene"}],
+//         "sources": [
+//             { "id": "xshm_input", "name": "Screen", "settings": { "show_cursor": false } },
+//             { "id": "pulse_output_capture", "name": "Audio", "settings": {} },
+//             {
+//                 "id": "scene", "name": "MainScene",
+//                 "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true}, {"name": "Audio", "id": 2, "visible": true} ] }
+//             },
+//             {
+//                 "id": "scene", "name": "WaitingScene",
+//                 "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true} ] } 
+//             }
+//         ]
+//     };
+//     fs.writeFileSync(path.join(scenesDir, 'Untitled.json'), JSON.stringify(sceneJson, null, 2));
+// }
+
+// function attachAntiAdListeners(page) {
+//     page.on('dialog', async dialog => {
+//         try { await dialog.dismiss(); } catch(e){}
+//     });
+// }
+
+// async function initializeVideo(page, startMuted, isActivePage, urlStr = '') {
+//     try {
+//         if (urlStr.startsWith('!')) {
+//             console.log(`[*] STATIC BROADCAST MODE (!): Skipping video finding, autoplay, and CSS injection.`);
+//             return;
+//         }
+
+//         if (SERVER_SELECTION !== 'None') {
+//             console.log(`[*] Clicking specific Server: ${SERVER_SELECTION}`);
+//             let serverClicked = false; let serverAttempts = 0;
+//             while (!serverClicked && serverAttempts < 10) { 
+//                 serverAttempts++;
+//                 try {
+//                     const clickSuccess = await page.evaluate((serverName) => {
+//                         const buttons = Array.from(document.querySelectorAll('button'));
+//                         const targetBtn = buttons.find(b => b.innerText && b.innerText.trim().includes(serverName));
+//                         if (targetBtn) { targetBtn.click(); return true; }
+//                         return false;
+//                     }, SERVER_SELECTION);
+
+//                     if (clickSuccess) {
+//                         serverClicked = true; 
+//                         console.log(`[+] Server Button clicked successfully!`);
+//                         await takeAndBatchScreenshot(page, `server-clicked`);
+//                         await new Promise(r => setTimeout(r, 2000)); 
+//                         if (isActivePage) await page.bringToFront(); 
+//                     } else await new Promise(r => setTimeout(r, 2000));
+//                 } catch (err) { await new Promise(r => setTimeout(r, 2000)); }
+//             }
+//         }
+
+//         console.log('[*] Checking if Video is Autoplaying or Needs a Play Button...');
+//         let isVideoPlaying = false; 
+//         let attempts = 0;
+        
+//         while (!isVideoPlaying && attempts < 15) {
+//             for (const frame of page.frames()) {
+//                 try {
+//                     const autoPlayed = await frame.evaluate((isMuted) => {
+//                         let playing = false;
+//                         document.querySelectorAll('video').forEach(v => {
+//                             if (v.clientWidth > 50 && !v.paused && v.currentTime > 0) {
+//                                 v.muted = isMuted; 
+//                                 v.volume = isMuted ? 0.0 : 1.0;
+//                                 playing = true;
+//                             }
+//                         });
+//                         return playing;
+//                     }, startMuted);
+
+//                     if (autoPlayed) {
+//                         isVideoPlaying = true;
+//                         break;
+//                     }
+
+//                     const playBtn = await frame.$('.jw-icon-display[aria-label="Play"], button[data-plyr="play"], .vjs-big-play-button, [class*="unmute"], .fp-play');
+//                     if (playBtn) {
+//                         const isVisible = await frame.evaluate(el => {
+//                             const style = window.getComputedStyle(el);
+//                             return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+//                         }, playBtn);
+
+//                         if (isVisible) {
+//                             await frame.evaluate(el => el.click(), playBtn); 
+//                             await takeAndBatchScreenshot(page, `play-btn-clicked`);
+//                             await new Promise(r => setTimeout(r, 3000)); 
+//                             isVideoPlaying = true;
+//                             break; 
+//                         }
+//                     }
+//                 } catch (err) {}
+//             }
+//             if (!isVideoPlaying) await new Promise(r => setTimeout(r, 2000));
+//             attempts++;
+//         }
+
+//         console.log('[*] Scanning for Exact Real Video Player...');
+//         let targetFrame = null;
+//         for (const frame of page.frames()) {
+//             try {
+//                 const isRealLiveStream = await frame.evaluate(() => {
+//                     const vid = document.querySelector('video');
+//                     return vid && vid.clientWidth > 50 && vid.clientHeight > 50;
+//                 });
+//                 if (isRealLiveStream) { 
+//                     targetFrame = frame; 
+//                     console.log(`[+] Smart Scanner locked onto video frame!`);
+//                     break; 
+//                 }
+//             } catch (e) { }
+//         }
+
+//         if (!targetFrame) targetFrame = page.mainFrame();
+
+//         await page.evaluate(() => {
+//             setInterval(() => {
+//                 try {
+//                     document.documentElement.style.setProperty('background-color', 'black', 'important');
+//                     document.body.style.setProperty('background-color', 'black', 'important');
+//                     document.body.style.setProperty('overflow', 'hidden', 'important');
+//                     document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+
+//                     let iframes = Array.from(document.querySelectorAll('iframe'));
+//                     let mainIframe = null; let maxArea = 0;
+
+//                     iframes.forEach(ifr => {
+//                         let area = ifr.clientWidth * ifr.clientHeight;
+//                         if (area > maxArea && area > 5000) { maxArea = area; mainIframe = ifr; }
+//                     });
+
+//                     if (!mainIframe && iframes.length > 0) {
+//                         mainIframe = iframes.find(ifr => 
+//                             ifr.getAttribute('allowfullscreen') !== null || 
+//                             (ifr.src && (ifr.src.includes('player') || ifr.src.includes('embed') || ifr.src.includes('stream') || ifr.src.includes('watch')))
+//                         );
+//                     }
+
+//                     if (mainIframe) {
+//                         iframes.forEach(ifr => {
+//                             if (ifr !== mainIframe) {
+//                                 ifr.style.setProperty('display', 'none', 'important');
+//                                 ifr.style.setProperty('opacity', '0', 'important');
+//                                 ifr.style.setProperty('z-index', '-9999', 'important');
+//                             }
+//                         });
+
+//                         mainIframe.style.setProperty('position', 'fixed', 'important');
+//                         mainIframe.style.setProperty('top', '0px', 'important');
+//                         mainIframe.style.setProperty('left', '0px', 'important');
+//                         mainIframe.style.setProperty('width', '100vw', 'important');
+//                         mainIframe.style.setProperty('height', '100vh', 'important');
+//                         mainIframe.style.setProperty('z-index', '2147483645', 'important'); 
+//                         mainIframe.style.setProperty('background-color', 'black', 'important');
+//                         mainIframe.style.setProperty('border', 'none', 'important');
+//                         mainIframe.style.setProperty('opacity', '1', 'important');
+//                         mainIframe.style.setProperty('display', 'block', 'important');
+//                         mainIframe.style.setProperty('visibility', 'visible', 'important');
+//                     }
+
+//                     // ADDED #sport4u-video-overlay to junkClasses exclusion
+//                     const junkClasses = '.chat, #chat, header, footer, .sidebar, .banner, .ads, [class*="overlay"]:not(#smart-stream-overlay):not(#sport4u-watermark):not(#sport4u-black-overlay):not(#sport4u-random-pic):not(#sport4u-video-overlay), [id*="pop"], [class*="pop"], a[href*="extension"], [class*="notification"], [id*="notification"]';
+//                     document.querySelectorAll(junkClasses).forEach(el => { 
+//                         try { el.remove(); } catch(e){ el.style.setProperty('display', 'none', 'important'); } 
+//                     });
+
+//                     const adKeywords = ['jerk', 'mate', 'free', 'online', 'adult', 'dating', 'close', 'notification', 'justine', 'paying', 'job'];
+//                     document.querySelectorAll('div, section, span, a').forEach(el => {
+//                         if (el.id === 'smart-stream-overlay' || el.id === 'sport4u-watermark' || el.id === 'sport4u-black-overlay' || el.id === 'sport4u-random-pic' || el.id === 'sport4u-video-overlay') return;
+                        
+//                         const style = window.getComputedStyle(el);
+//                         const isFloating = style.position === 'fixed' || style.position === 'absolute';
+                        
+//                         if (isFloating && el.innerText) {
+//                             const textLower = el.innerText.toLowerCase();
+//                             const hasBadKeyword = adKeywords.some(keyword => textLower.includes(keyword));
+                            
+//                             if (hasBadKeyword || (parseInt(style.zIndex) > 100000 && !el.querySelector('video') && !el.querySelector('iframe'))) {
+//                                 try { el.remove(); } catch(e) { el.style.setProperty('display', 'none', 'important'); }
+//                             }
+//                         }
+//                     });
+
+//                 } catch (err) {}
+//             }, 500); 
+//         }).catch(() => {});
+
+//         await targetFrame.evaluate((muteVideo) => {
+//             setInterval(() => {
+//                 try {
+//                     if (!document.getElementById('force-fullscreen-css')) {
+//                         const style = document.createElement('style');
+//                         style.id = 'force-fullscreen-css';
+//                         style.innerHTML = `
+//                             html, body { overflow: hidden !important; background-color: #000000 !important; margin: 0 !important; padding: 0 !important; }
+//                             video:not(#sport4u-video-overlay) {
+//                                 position: fixed !important; top: 0 !important; left: 0 !important;
+//                                 min-width: 100vw !important; min-height: 100vh !important;
+//                                 width: 100vw !important; height: 100vh !important;
+//                                 max-width: 100vw !important; max-height: 100vh !important;
+//                                 z-index: 2147483645 !important;
+//                                 background-color: #000000 !important;
+//                                 object-fit: contain !important; transform: none !important; margin: 0 !important; padding: 0 !important;
+//                             }
+//                             ytd-player, #ytd-player, .html5-video-container, .html5-video-player,
+//                             section.video-player, div[class*="videoWrapper"], div[class*="playback-module"] {
+//                                 position: static !important; width: 100% !important; height: 100% !important;
+//                                 transform: none !important; clip-path: none !important;
+//                             }
+//                             .jw-controls, .jw-ui, .plyr__controls, .vjs-control-bar, [data-player] .controls,
+//                             .ytp-chrome-bottom, .ytp-chrome-top, ytd-masthead, #masthead-container,
+//                             header, .header, [class*="header-module"], [class*="top-panel"] {
+//                                 display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;
+//                             }
+//                         `;
+//                         document.head.appendChild(style);
+//                     }
+
+//                     const mediaElements = document.querySelectorAll('video:not(#sport4u-video-overlay), audio');
+//                     const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
+//                     let realVideo = null;
+
+//                     mediaElements.forEach(media => { 
+//                         media.muted = muteVideo; 
+//                         media.volume = muteVideo ? 0.0 : 1.0; 
+//                     });
+
+//                     if (!muteVideo) {
+//                         document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"], .ytp-unmute').forEach(btn => { try { btn.click(); } catch(e){} });
+//                     }
+
+//                     for (const v of videos) {
+//                         if (v.clientWidth > 100 && v.clientHeight > 100) { realVideo = v; break; }
+//                     }
+
+//                     if (!realVideo && videos.length > 0) {
+//                         realVideo = videos[0];
+//                     }
+
+//                     if (realVideo) { 
+//                         realVideo.style.setProperty('position', 'fixed', 'important');
+//                         realVideo.style.setProperty('top', '0px', 'important');
+//                         realVideo.style.setProperty('left', '0px', 'important');
+//                         realVideo.style.setProperty('width', '100vw', 'important');
+//                         realVideo.style.setProperty('height', '100vh', 'important');
+//                         realVideo.style.setProperty('z-index', '2147483645', 'important'); 
+//                         realVideo.style.setProperty('background-color', 'black', 'important');
+//                         realVideo.style.setProperty('object-fit', 'contain', 'important');
+//                         realVideo.style.setProperty('opacity', '1', 'important');
+//                         realVideo.style.setProperty('visibility', 'visible', 'important');
+//                         realVideo.style.setProperty('display', 'block', 'important');
+//                     }
+//                 } catch(err) {}
+//             }, 500); 
+//         }, startMuted).catch(() => {});
+
+//     } catch (e) { }
+
+//     await new Promise(r => setTimeout(r, 1000));
+// }
+
+// async function checkPageStatus(page, urlStr = '') {
+//     if (!page) return { status: 'DEAD' };
+//     if (urlStr.startsWith('!')) {
+//         return { status: 'HEALTHY', currentTime: Date.now(), decodedFrames: Date.now() }; 
+//     }
+
+//     try {
+//         for (const frame of page.frames()) {
+//             try {
+//                 if (frame.isDetached()) continue;
+//                 const result = await Promise.race([
+//                     frame.evaluate(() => {
+//                         const bodyText = document.body ? document.body.innerText.toLowerCase() : "";
+                        
+//                         if (
+//                             bodyText.includes("stream error") || 
+//                             bodyText.includes("not found") || 
+//                             bodyText.includes("domain is blocked") ||
+//                             bodyText.includes("error: forbidden") ||
+//                             bodyText.includes("does not have permission") ||
+//                             bodyText.includes("access denied") ||
+//                             (bodyText.includes("cloudflare") && bodyText.includes("blocked"))
+//                         ) {
+//                             return { status: 'CRITICAL_ERROR' };
+//                         }
+                        
+//                         const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
+//                         let targetV = null;
+
+//                         for (const v of videos) {
+//                             if (v.clientWidth > 0 && v.clientWidth < 100) continue;
+//                             if ((v.src && v.src.startsWith('blob:')) || v.matches('.jw-video, .plyr__video, .vjs-tech')) {
+//                                 targetV = v; break;
+//                             }
+//                         }
+                        
+//                         if (!targetV && videos.length > 0) {
+//                             targetV = videos.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0];
+//                         }
+                        
+//                         if (targetV && !targetV.ended && targetV.currentTime > 0) {
+//                             let frames = 0;
+//                             if (targetV.getVideoPlaybackQuality) {
+//                                 frames = targetV.getVideoPlaybackQuality().totalVideoFrames;
+//                             } else if (targetV.webkitDecodedFrameCount !== undefined) {
+//                                 frames = targetV.webkitDecodedFrameCount;
+//                             }
+//                             return { status: 'HEALTHY', currentTime: targetV.currentTime, decodedFrames: frames };
+//                         }
+//                         return { status: 'DEAD' };
+//                     }),
+//                     new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500))
+//                 ]);
+//                 if (result && result.status !== 'DEAD') return result;
+//             } catch (err) {}
+//         }
+//     } catch (e) { return { status: 'DEAD' }; }
+//     return { status: 'DEAD' };
+// }
+
+// async function startWatchdog() {
+//     let lastActiveTime = -1;
+//     let lastDecodedFrames = -1; 
+//     let frozenCheckTimestamp = Date.now();
+//     let watchdogTicks = 0;
+    
+//     let streamSetupTime = Date.now(); 
+//     let isWarmupPhase = true; 
+//     const WARMUP_MAX_TIME = 15000; 
+
+//     let activeUrlStr = urlList[currentUrlIndex];
+//     let backupUrlStr = urlList[backupUrlIndex];
+
+//     let currentStreamStartTime = Date.now();
+
+//     while (true) {
+//         if (!browser || !browser.isConnected()) throw new Error("Browser closed.");
+
+//         let activeStatus = await checkPageStatus(activePage, activeUrlStr);
+
+//         // 📅 DYNAMIC SCHEDULER CHECK
+//         if (phaseEndTime && Date.now() >= phaseEndTime) {
+//             if (currentPhaseIndex + 1 < phases.length) {
+//                 console.log(`\n[⏰] PHASE TIME UP! Switching to Next Scheduled Match...`);
+//                 currentPhaseIndex++;
+//                 urlList = phases[currentPhaseIndex].urls;
+//                 currentUrlIndex = 0;
+//                 backupUrlIndex = urlList.length > 1 ? 1 : 0;
+                
+//                 activeUrlStr = urlList[currentUrlIndex];
+//                 backupUrlStr = urlList[backupUrlIndex];
+                
+//                 phaseEndTime = phases[currentPhaseIndex].durationMs ? Date.now() + phases[currentPhaseIndex].durationMs : null;
+
+//                 activeStatus.status = 'PHASE_CHANGE'; 
+//             } else {
+//                 console.log(`\n[⏰] FINAL PHASE REACHED. Stream will now run indefinitely.`);
+//                 phaseEndTime = null;
+//             }
+//         }
+
+//         if (activeStatus.status === 'HEALTHY' && !isWarmupPhase) {
+//             let elapsedMs = Date.now() - currentStreamStartTime;
+//             let isExempted = NO_REFRESH_DOMAINS.some(domain => activeUrlStr.includes(domain));
+
+//             if (elapsedMs > FORCE_REFRESH_MS) {
+//                 if (!isExempted) {
+//                     console.log(`\n[⏱️ PROACTIVE REFRESH]: Stream ran smoothly for ${FORCE_REFRESH_MINUTES} minutes! Forcing SAME LINK swap to keep connection fresh...`);
+//                     activeStatus.status = 'FORCE_REFRESH'; 
+//                 }
+//             }
+//         }
+
+//         if (activeStatus.status === 'HEALTHY') {
+//             await hideLoadingUI(activePage); 
+//             isWarmupPhase = false; 
+
+//             let isTimeStuck = (activeStatus.currentTime === lastActiveTime);
+//             let isFrameStuck = (activeStatus.decodedFrames === lastDecodedFrames && activeStatus.decodedFrames > 0);
+
+//             if (isTimeStuck || isFrameStuck) {
+//                 if (Date.now() - frozenCheckTimestamp > FROZEN_THRESHOLD_MS) {
+//                     activeStatus.status = 'FROZEN';
+//                     if (isFrameStuck && !isTimeStuck) {
+//                         console.log(`[!] ⚠️ SYSTEM SHIELD: Detected Black Screen (Audio playing, but video frames stuck). Triggering HOT-SWAP.`);
+//                     }
+//                 }
+//             } else {
+//                 lastActiveTime = activeStatus.currentTime; 
+//                 lastDecodedFrames = activeStatus.decodedFrames; 
+//                 frozenCheckTimestamp = Date.now();
+                
+//                 for (const frame of activePage.frames()) {
+//                     try {
+//                         if (!frame.isDetached()) {
+//                             frame.evaluate((isAudioEnabled) => { 
+//                                 document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = !isAudioEnabled; m.volume = isAudioEnabled ? 1.0 : 0.0; }); 
+//                                 if (isAudioEnabled) {
+//                                     document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
+//                                 }
+//                             }, ENABLE_STREAM_AUDIO).catch(()=>{});
+//                         }
+//                     } catch(e) {}
+//                 }
+//             }
+//         }
+
+//         if (backupPage) {
+//             for (const frame of backupPage.frames()) {
+//                 try {
+//                     if (!frame.isDetached()) {
+//                         frame.evaluate(() => { document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }).catch(()=>{});
+//                     }
+//                 } catch(e) {}
+//             }
+//         }
+
+//         watchdogTicks++;
+        
+//         if (watchdogTicks === 1 || watchdogTicks % 90 === 0) {
+//             console.log(`\n[💓] WATCHDOG HEARTBEAT: Status is ${activeStatus.status}`);
+//         }
+
+//         if (watchdogTicks % 120 === 0) {
+//             await takeAndBatchScreenshot(activePage, `heartbeat-tick-${watchdogTicks}`);
+//         }
+
+//         if (activeStatus.status === 'FROZEN' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH' || activeStatus.status === 'PHASE_CHANGE') {
+            
+//             if (isWarmupPhase && (Date.now() - streamSetupTime < WARMUP_MAX_TIME)) { 
+//                 await new Promise(r => setTimeout(r, 2000));
+//                 continue; 
+//             }
+
+//             let isProactiveRefresh = (activeStatus.status === 'FORCE_REFRESH');
+//             let isPhaseChange = (activeStatus.status === 'PHASE_CHANGE');
+            
+//             let cleanActiveUrl = activeUrlStr.replace(/^!/, '');
+
+//             if (isProactiveRefresh || isPhaseChange) {
+//                 console.log(`\n==================================================`);
+//                 console.log(`[!] 🔄 ${isPhaseChange ? 'MATCH PHASE CHANGE TRIGGERED' : 'PROACTIVE REFRESH TRIGGERED'}`);
+//                 console.log(`==================================================`);
+                
+//                 for (const frame of activePage.frames()) {
+//                     try { if (!frame.isDetached()) await frame.evaluate(() => { document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }); } catch(e) {}
+//                 }
+
+//                 if (isPhaseChange) {
+//                     await showLoadingUI(activePage, "SWITCHING MATCH", "Connecting to the next scheduled event <span class='stream-blink'>...</span>");
+//                 }
+
+//                 try {
+//                     await backupPage.goto('about:blank').catch(()=>{});
+//                     await applyPreloadFirewall(backupPage);
+//                     await backupPage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(()=>{});
+//                 } catch(e) {}
+//             } else {
+//                 console.log(`\n==================================================`);
+//                 console.log(`[!] ❌ WATCHDOG DETECTED ISSUE: ${activeStatus.status}`);
+//                 console.log(`==================================================`);
+//                 await takeAndBatchScreenshot(activePage, `error-${activeStatus.status.toLowerCase()}`);
+//             }
+            
+//             let checkUrlStr = (isProactiveRefresh || isPhaseChange) ? activeUrlStr : backupUrlStr;
+//             let backupStatus = await checkPageStatus(backupPage, checkUrlStr);
+
+//             if (backupStatus.status === 'HEALTHY' || backupStatus.status === 'DEAD') { 
+                
+//                 if (!isProactiveRefresh && !isPhaseChange) {
+//                     for (const frame of activePage.frames()) {
+//                         try { if (!frame.isDetached()) await frame.evaluate(() => { document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = true; m.volume = 0.0; }); }); } catch(e) {}
+//                     }
+//                 }
+                
+//                 await showLoadingUI(backupPage, isPhaseChange ? "MATCH CONNECTED" : (isProactiveRefresh ? "REFRESHING CONNECTION" : "RECONNECTING"), "Optimizing stream...");
+//                 await backupPage.bringToFront();
+//                 await new Promise(r => setTimeout(r, 1000)); 
+                
+//                 try { await backupPage.mouse.click(10, 10); } catch(e){} 
+
+//                 await initializeVideo(backupPage, !ENABLE_STREAM_AUDIO, true, checkUrlStr); 
+                
+//                 // CALL ALL OVERLAYS DURING SWAP
+//                 await injectBlackOverlay(backupPage);
+//                 await injectOfficialWatermark(backupPage);
+//                 await injectRandomPicOverlay(backupPage);
+//                 await injectVideoOverlay(backupPage); // <--- VIDEO OVERLAY REFRESHED HERE!
+//                 await hideLoadingUI(backupPage);
+
+//                 let brokenPage = activePage; activePage = backupPage; backupPage = brokenPage;
+//                 lastActiveTime = -1; frozenCheckTimestamp = Date.now();
+
+//                 if (!isProactiveRefresh && !isPhaseChange) {
+//                     currentUrlIndex = backupUrlIndex; activeUrlStr = urlList[currentUrlIndex]; 
+//                     backupUrlIndex = (backupUrlIndex + 1) % urlList.length; backupUrlStr = urlList[backupUrlIndex]; 
+//                 } 
+
+//                 console.log(`\n[🔄] SWAP EXECUTED SUCCESSFULLY`);
+
+//                 let cleanBackupUrl = backupUrlStr.replace(/^!/, '');
+//                 try {
+//                     await backupPage.goto('about:blank').catch(()=>{});
+//                     await applyPreloadFirewall(backupPage);
+//                     backupPage.goto(cleanBackupUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+//                 } catch (e) {}
+                
+//                 streamSetupTime = Date.now(); 
+//                 isWarmupPhase = true;
+//                 currentStreamStartTime = Date.now();
+
+//             //   } else {
+//             //     console.error(`[!] ❌ Backup Tab failed. Hard Restarting System...`);
+//             //     throw new Error("Both Active and Backup tabs failed.");
+//             // }
+          
+//             } else {
+//                 console.error(`[!] ❌ Backup Tab also failed. Restarting Browser Tabs only (OBS stays LIVE!)...`);
+                
+//                 // 1. OBS ko Waiting Scene par le jao taakey Facebook stream disconnect na ho
+//                 try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){}
+
+//                 try {
+//                     await showLoadingUI(activePage, "CONNECTION ERROR", "Trying to reconnect to the stream...");
+//                     await activePage.bringToFront();
+                    
+//                     // 2. Tabs ko blank kar ke naye siray se reload karo
+//                     await activePage.goto('about:blank').catch(()=>{});
+//                     await backupPage.goto('about:blank').catch(()=>{});
+                    
+//                     let cleanActiveUrl = activeUrlStr.replace(/^!/, '');
+//                     await activePage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(()=>{});
+                    
+//                     await initializeVideo(activePage, !ENABLE_STREAM_AUDIO, true, activeUrlStr); 
+                    
+//                     // 3. Overlays wapas lagao
+//                     await injectBlackOverlay(activePage);
+//                     await injectOfficialWatermark(activePage);
+//                     await injectRandomPicOverlay(activePage);
+//                     await injectVideoOverlay(activePage);
+//                     await hideLoadingUI(activePage);
+                    
+//                     // 4. Sab theek hone ke baad wapas match wali screen (MainScene) par le aao
+//                     try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch(e){}
+//                 } catch(e) {
+//                     console.log(`[!] Tab recovery attempt failed, will retry in next loop.`);
+//                 }
+                
+//                 // 5. Timers ko reset karo taakey loop smoothly chalta rahe
+//                 streamSetupTime = Date.now(); 
+//                 isWarmupPhase = true;
+//                 currentStreamStartTime = Date.now();
+//             }
+//         }
+
+//         await new Promise(r => setTimeout(r, 2000)); 
+//     }
+// }
+
+// async function startDirectStreaming() {
+//     console.log(`[*] Starting OBS Studio FIRST...`);
+//     setupOBSConfig();
+
+//     obsProcess = spawn('obs', ['--startstreaming', '--minimize-to-tray']);
+//     obsProcess.stdout.on('data', (data) => console.log(`[OBS]: ${data.toString().trim()}`));
+//     obsProcess.stderr.on('data', (data) => {
+//         const msg = data.toString().trim();
+//         if (msg.includes('error') || msg.includes('fail')) console.log(`[OBS Error]: ${msg}`);
+//     });
+
+//     if (ENABLE_BACKGROUND_AUDIO) {
+//         const possibleAudioExts = ['.mp3', '.wav', '.m4a', '.aac', '.mp4'];
+//         let foundAudioPath = null;
+//         for (let ext of possibleAudioExts) {
+//             let tempPath = path.join(process.cwd(), `audio804${ext}`);
+//             if (fs.existsSync(tempPath)) {
+//                 foundAudioPath = tempPath;
+//                 break;
+//             }
+//         }
+
+//         if (foundAudioPath) {
+//             const rawVolume = process.env.BACKGROUND_AUDIO_VOLUME || '100';
+//             let volNumber = parseInt(rawVolume, 10);
+//             if (isNaN(volNumber)) volNumber = 100;
+//             let ffplayVolume = volNumber / 100; 
+            
+//             console.log(`[🎶] Background Audio found: ${foundAudioPath}`);
+//             console.log(`[🎶] Starting Audio in INFINITE LOOP at ${volNumber}% volume...`);
+            
+//             try {
+//                 audioProcess = spawn('ffplay', [
+//                     '-nodisp', 
+//                     '-loop', '0', 
+//                     '-loglevel', 'warning', 
+//                     '-af', `volume=${ffplayVolume}`, 
+//                     foundAudioPath
+//                 ]);
+
+//                 audioProcess.on('error', (err) => {
+//                     console.log(`[!] Audio Process Spawn Error: ${err.message}`);
+//                 });
+
+//                 audioProcess.stderr.on('data', (data) => {
+//                     const msg = data.toString().trim();
+//                     if (msg.toLowerCase().includes('error')) {
+//                         console.log(`[!] Audio FFplay Error: ${msg}`);
+//                     }
+//                 });
+//             } catch (err) {
+//                 console.log(`[!] Audio execution failed completely: ${err.message}`);
+//             }
+//         } else {
+//             console.log(`[!] Audio file (audio804) NOT FOUND in main folder. Skipping background audio.`);
+//         }
+//     } else {
+//         console.log(`[🔇] Background Audio is manually turned OFF from GitHub Actions.`);
+//     }
+
+//     console.log('[*] Waiting for OBS to initialize before launching browser...');
+//     await new Promise(r => setTimeout(r, 6000));
+
+//     let isObsConnected = false;
+//     for (let attempt = 1; attempt <= 15; attempt++) {
+//         try {
+//             await Promise.race([
+//                 obs.connect('ws://127.0.0.1:4455', 'secret'),
+//                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+//             ]);
+//             isObsConnected = true;
+//             console.log('[+] OBS WebSocket Connected Successfully!');
+//             break;
+//         } catch (e) {
+//             await new Promise(r => setTimeout(r, 2000));
+//         }
+//     }
+
+//     if (isObsConnected) {
+//         try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){}
+//     }
+
+//     let browserArgs = [
+//         '--no-sandbox', 
+//         '--disable-setuid-sandbox',
+//         `--window-size=${RES_W},${RES_H}`, 
+//         '--window-position=0,0', 
+//         '--kiosk', 
+//         '--start-fullscreen',
+//         '--autoplay-policy=no-user-gesture-required',
+//         '--disable-dev-shm-usage', 
+//         '--ignore-certificate-errors',
+//         '--disable-web-security',
+//         '--ignore-gpu-blocklist', 
+//         '--use-gl=egl',
+//         '--disable-accelerated-video-decode', 
+//         '--disable-accelerated-video-encode',
+//         '--disable-smooth-scrolling',
+//         '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion',
+//         '--disable-background-timer-throttling',
+//         '--disable-backgrounding-occluded-windows',
+//         '--disable-renderer-backgrounding'
+//     ];
+
+//     if (PROXY_ENGINE.includes('Cloudflare')) {
+//         browserArgs.push('--proxy-server=socks5://127.0.0.1:40000');
+//     }
+
+//     browser = await puppeteer.launch({
+//         headless: false, 
+//         defaultViewport: { width: RES_W, height: RES_H },
+//         ignoreDefaultArgs: ['--enable-automation'], 
+//         args: browserArgs
+//     });
+
+//     browser.on('targetcreated', async (target) => {
+//         if (target.type() === 'page') {
+//             const newPage = await target.page();
+//             setTimeout(async () => {
+//                 if (newPage && newPage !== activePage && newPage !== backupPage) {
+//                     try { await newPage.close(); } catch(e) {}
+//                 }
+//             }, 500);
+//         }
+//     });
+
+//     const pages = await browser.pages();
+//     activePage = pages[0]; 
+//     backupPage = await browser.newPage();
+
+//     await setupNetworkAdBlocker(activePage);
+//     await setupNetworkAdBlocker(backupPage);
+
+//     attachAntiAdListeners(activePage);
+//     attachAntiAdListeners(backupPage);
+
+//     await applyPreloadFirewall(activePage);
+//     await applyPreloadFirewall(backupPage);
+
+//     await activePage.bringToFront(); 
+
+//     let cleanActiveUrl = urlList[currentUrlIndex].replace(/^!/, '');
+//     console.log(`[*] Loading Active Page...`);
+//     await activePage.goto(cleanActiveUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    
+//     await showLoadingUI(activePage, "STREAM LOADING", "Optimizing live video connection <span class='stream-blink'>...</span>");
+    
+//     await initializeVideo(activePage, !ENABLE_STREAM_AUDIO, true, urlList[currentUrlIndex]); 
+    
+//     // START ALL OVERLAYS FOR THE FIRST TIME
+//     await injectBlackOverlay(activePage);
+//     await injectOfficialWatermark(activePage);
+//     await injectRandomPicOverlay(activePage);
+//     await injectVideoOverlay(activePage); // <--- VIDEO OVERLAY STARTED HERE!
+//     await hideLoadingUI(activePage); 
+
+//     if (isObsConnected) {
+//         try { await obs.call('SetCurrentProgramScene', { sceneName: 'MainScene' }); } catch (e) {}
+//     }
+
+//     let cleanBackupUrl = urlList[backupUrlIndex].replace(/^!/, '');
+//     backupPage.goto(cleanBackupUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+    
+//     await activePage.bringToFront();
+//     try { await activePage.mouse.click(10, 10); } catch(e){} 
+//     await hideLoadingUI(activePage);
+
+//     console.log(`\n[🎥] INITIAL CAPTURE STATUS: Ready to Broadcast`);
+    
+//     phaseEndTime = phases[currentPhaseIndex].durationMs ? Date.now() + phases[currentPhaseIndex].durationMs : null;
+
+//     await startWatchdog();
+// }
+
+// async function mainLoop() {
+//     while (true) {
+//         try { await startDirectStreaming(); } 
+//         catch (error) {
+//             console.error(`\n[!] ALERT: ${error.message}`);
+//             await cleanup();
+//             await new Promise(resolve => setTimeout(resolve, 3000));
+//         }
+//     }
+// }
+
+// async function cleanup() {
+//     try { await obs.disconnect(); } catch (e) { } 
+//     if (browser) { try { await browser.close(); } catch(e) { } browser = null; }
+//     if (obsProcess) { try { obsProcess.kill('SIGKILL'); } catch(e) { } obsProcess = null; }
+//     if (audioProcess) { try { audioProcess.kill('SIGKILL'); } catch(e) { } audioProcess = null; } 
+//     try {
+//         execSync('pkill -9 obs || true', { stdio: 'ignore' });
+//         execSync('pkill -9 chrome || true', { stdio: 'ignore' });
+//         execSync('pkill -9 puppeteer || true', { stdio: 'ignore' });
+//         execSync('pkill -9 ffplay || true', { stdio: 'ignore' }); 
+//     } catch (e) { }
+// }
+
+// process.on('SIGINT', async () => { await cleanup(); process.exit(0); });
+
+// const customDurationStr = process.env.CUSTOM_DURATION || 'None';
+// const exactDurationMs = parseDurationToMs(customDurationStr);
+
+// if (exactDurationMs) {
+//     setTimeout(async () => {
+//         await cleanup();
+//         process.exit(0);
+//     }, exactDurationMs);
+// } else {
+//     setTimeout(() => {
+//         try {
+//             const targetUrls = process.env.TARGET_URLS || 'https://dadocric.st/player.php?id=starsp3&v=m';
+//             const quality = process.env.STREAM_QUALITY || '110KBps (Balanced 480p)';
+//             const server = process.env.SERVER_SELECTION || 'None';
+//             const format = process.env.STREAM_FORMAT || 'Original (16:9 Standard)'; 
+//             const blackOverlayStatus = process.env.ENABLE_BLACK_OVERLAY || 'OFF'; 
+//             const streamAudioStatus = process.env.ENABLE_STREAM_AUDIO || 'ON'; 
+//             const bgAudioStatus = process.env.ENABLE_BACKGROUND_AUDIO || 'ON'; 
+//             const bgAudioVolumeStatus = process.env.BACKGROUND_AUDIO_VOLUME || '100'; 
+//             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
+//             const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
+//             const videoOverlayStatus = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; // NAYA FEATURE
+            
+//             const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f enable_text_overlay="${textOverlayStatus}" -f enable_video_overlay="${videoOverlayStatus}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
+//             execSync(cmd, { stdio: 'inherit' });
+//             setTimeout(async () => {
+//                 await cleanup(); 
+//                 process.exit(0); 
+//             }, 300000); 
+//         } catch (err) { }
+//     }, 21000000);
+// }
+
+// mainLoop();
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////// pehely yeh thaaa hahaha Alhamdullah
 
 
 
