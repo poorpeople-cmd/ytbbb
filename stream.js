@@ -7899,22 +7899,58 @@ console.log(`[🚀] Smart Engine Locked to: ${RES_W}x${RES_H} @ ${BITRATE}kbps`)
 // =========================================================================================
 // 🔄 DYNAMIC URL PARSER & METADATA EXTRACTOR
 // =========================================================================================
-let rawUrls = (process.env.TARGET_URLS || '').trim();
-let urlList = [];
+//     urlList = [{ url: 'https://dadocric.st/player.php?id=starsp3&v=m', hangTime: 8000 }];
+// }
 
-if (rawUrls !== '') {
-    // FIX: URL ke end se '::None' ya '::2h' wale hissay ko hatao
-    let cleanUrlsPart = rawUrls.split('::')[0]; 
+// function getSafeBackupIndex(activeIndex, currentIndex, list) {
+//     if (list.length <= 1) return 0; 
+//     let next = (currentIndex + 1) % list.length;
+//     let attempts = 0;
+//     while (next === activeIndex && attempts < list.length) {
+//         next = (next + 1) % list.length;
+//         attempts++;
+//     }
+//     return next;
+// }
+
+// let currentUrlIndex = 0;
+// let backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList);
+
+// =========================================================================================
+// 🔄 DYNAMIC URL PARSER & PHASE SCHEDULER
+// =========================================================================================
+function parseDurationToMs(str) {
+    if (!str || str.toLowerCase() === 'none') return null;
+    let ms = 0; const hMatch = str.match(/(\d+)\s*h/i); const mMatch = str.match(/(\d+)\s*m/i);
+    if (hMatch) ms += parseInt(hMatch[1]) * 60 * 60 * 1000;
+    if (mMatch) ms += parseInt(mMatch[1]) * 60 * 1000;
+    return ms > 0 ? ms : null;
+}
+
+let rawUrls = (process.env.TARGET_URLS || '').trim();
+if (rawUrls === '') rawUrls = 'https://dadocric.st/player.php?id=starsp3&v=m::None';
+
+let phases = [];
+rawUrls.split('|').forEach(phaseStr => {
+    let parts = phaseStr.split('::');
+    let urlsPart = parts[0].trim();
+    let durationPart = parts.length > 1 ? parts[1].trim() : 'None';
     
-    urlList = cleanUrlsPart.split(',').map(u => {
+    let phaseUrls = urlsPart.split(',').map(u => {
         let trimmed = u.trim();
         let hangThreshold = 8000; 
         if (trimmed.startsWith('!')) { hangThreshold = 20000; trimmed = trimmed.substring(1); }
         if (!trimmed.startsWith('http')) trimmed = 'https://' + trimmed;
         return { url: trimmed, hangTime: hangThreshold };
     }).filter(u => u.url !== 'https://');
-} else {
-    urlList = [{ url: 'https://dadocric.st/player.php?id=starsp3&v=m', hangTime: 8000 }];
+    
+    if (phaseUrls.length > 0) {
+        phases.push({ urls: phaseUrls, durationStr: durationPart, durationMs: parseDurationToMs(durationPart) });
+    }
+});
+
+if (phases.length === 0) {
+    phases.push({ urls: [{ url: 'https://dadocric.st/player.php?id=starsp3&v=m', hangTime: 8000 }], durationStr: 'None', durationMs: null });
 }
 
 function getSafeBackupIndex(activeIndex, currentIndex, list) {
@@ -7928,8 +7964,14 @@ function getSafeBackupIndex(activeIndex, currentIndex, list) {
     return next;
 }
 
+let currentPhaseIndex = 0;
+let urlList = phases[currentPhaseIndex].urls;
 let currentUrlIndex = 0;
 let backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList);
+let phaseEndTime = null;
+
+console.log(`\n[📅] TOTAL SCHEDULED MATCHES/PHASES: ${phases.length}`);
+phases.forEach((p, i) => console.log(`  -> Phase ${i + 1}: ${p.urls.length} URLs | Duration: ${p.durationStr}`));
 
 let browserArgs = []; 
 let activeBrowser = null; let backupBrowser = null;
@@ -8754,9 +8796,34 @@ async function startWatchdog() {
             continue;
         }
 
-        let activeHangThresholdMs = urlList[currentUrlIndex].hangTime;
+        // let activeHangThresholdMs = urlList[currentUrlIndex].hangTime;
+        // let activeStatus = await checkPageStatus(activePage);
+
+      let activeHangThresholdMs = urlList[currentUrlIndex].hangTime;
         let activeStatus = await checkPageStatus(activePage);
 
+        // 📅 DYNAMIC SCHEDULER CHECK (TIME OVER HONE PAR PHASE CHANGE KAREGA)
+        if (phaseEndTime && Date.now() >= phaseEndTime) {
+            if (currentPhaseIndex + 1 < phases.length) {
+                console.log(`\n[⏰] PHASE TIME UP! Switching to Next Scheduled Match...`);
+                currentPhaseIndex++;
+                urlList = phases[currentPhaseIndex].urls;
+                currentUrlIndex = 0;
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList);
+                
+                activeUrlStr = urlList[currentUrlIndex].url;
+                backupUrlStr = urlList[backupUrlIndex].url;
+                
+                phaseEndTime = phases[currentPhaseIndex].durationMs ? Date.now() + phases[currentPhaseIndex].durationMs : null;
+                activeStatus.status = 'PHASE_CHANGE'; 
+            } else {
+                console.log(`\n[⏰] FINAL PHASE REACHED. Stream will now run indefinitely.`);
+                phaseEndTime = null;
+            }
+        }
+
+        // =========================================================================================
+        // 🛡️ INDEPENDENT BACKGROUND SHIELD (Mutex Locked)
         // =========================================================================================
         // 🛡️ INDEPENDENT BACKGROUND SHIELD (Mutex Locked)
         // =========================================================================================
@@ -8855,7 +8922,23 @@ async function startWatchdog() {
         // =========================================================================================
         // 🔄 2. ACTIVE TAB HOT-SWAP SHIELD (SCENARIO A, B, C)
         // =========================================================================================
-        if (activeStatus.status === 'FROZEN' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH') {
+        // if (activeStatus.status === 'FROZEN' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH') {
+
+        //     if (isWarmupPhase && (Date.now() - streamSetupTime < WARMUP_MAX_TIME)) { 
+        //         console.log(`[⏳] Watchdog detected '${activeStatus.status}', but stream is in WARM-UP phase. Waiting...`);
+        //         await new Promise(r => setTimeout(r, 2000));
+        //         continue; 
+        //     }
+
+        //     let isProactiveRefresh = (activeStatus.status === 'FORCE_REFRESH');
+        //     if (isProactiveRefresh) console.log(`\n[!] 🔄 PROACTIVE REFRESH TRIGGERED`);
+        //     else console.log(`\n[!] ❌ WATCHDOG DETECTED ISSUE: ${activeStatus.status}`);
+
+        //     console.log(`[*] Checking Backup Tab status before switching...`);
+        //     let backupStatusTest = await checkBackgroundHealth(backupPage);
+        //     let isBackupHealthyForSwap = (backupStatusTest.status === 'VIDEO_FOUND' && backupStatusTest.currentTime > 0 && backupStatusTest.decodedFrames > 0);
+
+      if (activeStatus.status === 'FROZEN' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH' || activeStatus.status === 'PHASE_CHANGE') {
 
             if (isWarmupPhase && (Date.now() - streamSetupTime < WARMUP_MAX_TIME)) { 
                 console.log(`[⏳] Watchdog detected '${activeStatus.status}', but stream is in WARM-UP phase. Waiting...`);
@@ -8864,12 +8947,16 @@ async function startWatchdog() {
             }
 
             let isProactiveRefresh = (activeStatus.status === 'FORCE_REFRESH');
-            if (isProactiveRefresh) console.log(`\n[!] 🔄 PROACTIVE REFRESH TRIGGERED`);
+            let isPhaseChange = (activeStatus.status === 'PHASE_CHANGE');
+            
+            if (isPhaseChange) console.log(`\n[!] 🔄 MATCH PHASE CHANGE TRIGGERED`);
+            else if (isProactiveRefresh) console.log(`\n[!] 🔄 PROACTIVE REFRESH TRIGGERED`);
             else console.log(`\n[!] ❌ WATCHDOG DETECTED ISSUE: ${activeStatus.status}`);
 
             console.log(`[*] Checking Backup Tab status before switching...`);
             let backupStatusTest = await checkBackgroundHealth(backupPage);
-            let isBackupHealthyForSwap = (backupStatusTest.status === 'VIDEO_FOUND' && backupStatusTest.currentTime > 0 && backupStatusTest.decodedFrames > 0);
+            let isBackupHealthyForSwap = (!isPhaseChange && backupStatusTest.status === 'VIDEO_FOUND' && backupStatusTest.currentTime > 0 && backupStatusTest.decodedFrames > 0);
+
 
             // --------------------------------------------------------------------
             // ⚡ SCENARIO A: INSTANT SEAMLESS HOT-SWAP
@@ -8998,12 +9085,27 @@ async function startWatchdog() {
           // --------------------------------------------------------------------
             // ❌ SCENARIO C: BOTH TABS FAILED (Fresh Hunting Mode - FIX: NEVER KILL OBS)
             // --------------------------------------------------------------------
+            // else {
+            //     console.log(`\n[!] ❌ BOTH TABS FAILED. FRESH HUNTING MODE ACTIVATED.`);
+            //     try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch (e) {}
+
+            //     currentUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); activeUrlStr = urlList[currentUrlIndex].url;
+            //     backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+
+// --------------------------------------------------------------------
+            // ❌ SCENARIO C: FRESH HUNTING MODE OR PHASE CHANGE (NEVER KILL OBS)
+            // --------------------------------------------------------------------
             else {
-                console.log(`\n[!] ❌ BOTH TABS FAILED. FRESH HUNTING MODE ACTIVATED.`);
+                if (isPhaseChange) console.log(`\n[!] 🔄 LOADING NEW PHASE URLs...`);
+                else console.log(`\n[!] ❌ BOTH TABS FAILED. FRESH HUNTING MODE ACTIVATED.`);
                 try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch (e) {}
 
-                currentUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); activeUrlStr = urlList[currentUrlIndex].url;
-                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+                if (!isPhaseChange) {
+                    currentUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); 
+                }
+                activeUrlStr = urlList[currentUrlIndex].url;
+                backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); 
+                backupUrlStr = urlList[backupUrlIndex].url;
 
                 // FIX: TABS KO CLOSE NAHI KARNA WARNA CHROME CRASH (PROTOCOL ERROR) DE GA!
                 // Bas unko about:blank par bhej kar clear kar dein. Pehle wali AdBlock settings lagi rahengi.
@@ -9122,9 +9224,15 @@ async function startDirectStreaming() {
     await activePage.bringToFront();
     try { await activePage.mouse.click(10, 10); } catch(e){} 
 
-    console.log(`\n[🎥] INITIAL CAPTURE STATUS: Ready to Broadcast`);
+//     console.log(`\n[🎥] INITIAL CAPTURE STATUS: Ready to Broadcast`);
+//     await startWatchdog();
+// }
+
+  console.log(`\n[🎥] INITIAL CAPTURE STATUS: Ready to Broadcast`);
+    phaseEndTime = phases[currentPhaseIndex].durationMs ? Date.now() + phases[currentPhaseIndex].durationMs : null;
     await startWatchdog();
 }
+
 
 async function mainLoop() {
     while (true) {
