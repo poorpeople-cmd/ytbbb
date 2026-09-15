@@ -7908,7 +7908,7 @@ if (ENABLE_PIC_OVERLAY) {
 // 🎬 VIDEO OVERLAY PRELOAD (Base64) - FOR video1.mp4 (NAYA FEATURE)
 // =========================================================================================
 let videoOverlayBase64 = null;
-if (ENABLE_VIDEO_OVERLAY) {
+if (VIDEO_OVERLAY_MODE !== 'OFF') {
     // const videoOverlayPath = path.join(process.cwd(), 'video1.mp4');
   const videoOverlayPath = path.join(process.cwd(), 'video', 'video1.mp4');
     if (fs.existsSync(videoOverlayPath)) {
