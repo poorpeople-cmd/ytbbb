@@ -8245,6 +8245,49 @@ async function hideRecoveryUI(page) {
     } catch (e) {}
 }
 
+// function setupOBSConfig() {
+//     const obsDir = path.join(os.homedir(), '.config', 'obs-studio');
+//     const profilesDir = path.join(obsDir, 'basic', 'profiles', 'Untitled');
+//     const scenesDir = path.join(obsDir, 'basic', 'scenes');
+
+//     fs.mkdirSync(profilesDir, { recursive: true });
+//     fs.mkdirSync(scenesDir, { recursive: true });
+
+//     const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
+//     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIniContent);
+
+//     const basicIniContent = `[General]\nName=Untitled\n[Video]\nBaseCX=${RES_W}\nBaseCY=${RES_H}\nOutputCX=${RES_W}\nOutputCY=${RES_H}\nFPSCommon=30\n[Output]\nMode=Simple\n[SimpleOutput]\nVBitrate=${BITRATE}\nStreamEncoder=x264\nx264Preset=ultrafast\nx264Settings=keyint=60 tune=zerolatency profile=main threads=4 rc-lookahead=0\n`;
+//     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIniContent);
+
+//     // OUR FB/YT RTMP LOGIC INTEGRATED HERE
+//     let rtmpServer = ""; let streamKey = "";
+//     if (YT_KEY && YT_KEY.trim() !== '') {
+//         rtmpServer = "rtmp://a.rtmp.youtube.com/live2/"; streamKey = YT_KEY.trim();
+//         console.log(`[🚀] TARGET PLATFORM: YOUTUBE`);
+//     } else if (FB_KEY && FB_KEY.trim() !== '') {
+//         rtmpServer = "rtmp://live-api-s.facebook.com:80/rtmp/"; streamKey = FB_KEY.trim(); // Fixed RTMPS issue
+//         console.log(`[🚀] TARGET PLATFORM: FACEBOOK`);
+//     } else {
+//         console.log(`[❌] ERROR: Kam az kam ek Stream Key (YouTube ya Facebook) daalna zaroori hai!`);
+//         process.exit(1);
+//     }
+
+//     const serviceJson = { "settings": { "server": rtmpServer, "key": streamKey }, "type": "rtmp_custom" };
+//     fs.writeFileSync(path.join(profilesDir, 'service.json'), JSON.stringify(serviceJson, null, 2));
+
+//     const sceneJson = {
+//         "current_scene": "WaitingScene", "current_program_scene": "WaitingScene", "name": "Untitled",
+//         "scene_order": [{"name": "WaitingScene"}, {"name": "MainScene"}],
+//         "sources": [
+//             { "id": "xshm_input", "name": "Screen", "settings": { "show_cursor": false } },
+//             { "id": "pulse_output_capture", "name": "Audio", "settings": {} },
+//             { "id": "scene", "name": "MainScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true}, {"name": "Audio", "id": 2, "visible": true} ] } },
+//             { "id": "scene", "name": "WaitingScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true} ] } }
+//         ]
+//     };
+//     fs.writeFileSync(path.join(scenesDir, 'Untitled.json'), JSON.stringify(sceneJson, null, 2));
+// }
+
 function setupOBSConfig() {
     const obsDir = path.join(os.homedir(), '.config', 'obs-studio');
     const profilesDir = path.join(obsDir, 'basic', 'profiles', 'Untitled');
@@ -8256,16 +8299,36 @@ function setupOBSConfig() {
     const globalIniContent = `[General]\nLicenseAccepted=true\n[BasicWindow]\nShowAutoConfig=false\nWarned=true\n[OBSWebSocket]\nServerEnabled=true\nServerPort=4455\nServerPassword=secret\n`;
     fs.writeFileSync(path.join(obsDir, 'global.ini'), globalIniContent);
 
-    const basicIniContent = `[General]\nName=Untitled\n[Video]\nBaseCX=${RES_W}\nBaseCY=${RES_H}\nOutputCX=${RES_W}\nOutputCY=${RES_H}\nFPSCommon=30\n[Output]\nMode=Simple\n[SimpleOutput]\nVBitrate=${BITRATE}\nStreamEncoder=x264\nx264Preset=ultrafast\nx264Settings=keyint=60 tune=zerolatency profile=main threads=4 rc-lookahead=0\n`;
+    // RESTORING ADVANCED MODE FROM YOUR OLD SCRIPT (FACEBOOK LOVES THIS)
+    const basicIniContent = `[General]
+Name=Untitled
+[Video]
+BaseCX=${RES_W}
+BaseCY=${RES_H}
+OutputCX=${RES_W}
+OutputCY=${RES_H}
+FPSCommon=30
+[Output]
+Mode=Advanced
+[AdvOut]
+TrackIndex=1
+RecType=Standard
+Encoder=obs_x264
+[obs_x264]
+bitrate=${BITRATE}
+keyint_sec=2
+preset=ultrafast
+profile=main
+tune=zerolatency
+`;
     fs.writeFileSync(path.join(profilesDir, 'basic.ini'), basicIniContent);
 
-    // OUR FB/YT RTMP LOGIC INTEGRATED HERE
     let rtmpServer = ""; let streamKey = "";
     if (YT_KEY && YT_KEY.trim() !== '') {
         rtmpServer = "rtmp://a.rtmp.youtube.com/live2/"; streamKey = YT_KEY.trim();
         console.log(`[🚀] TARGET PLATFORM: YOUTUBE`);
     } else if (FB_KEY && FB_KEY.trim() !== '') {
-        rtmpServer = "rtmp://live-api-s.facebook.com:80/rtmp/"; streamKey = FB_KEY.trim(); // Fixed RTMPS issue
+        rtmpServer = "rtmps://live-api-s.facebook.com:443/rtmp/"; streamKey = FB_KEY.trim(); // Facebook requires Secure RTMPS
         console.log(`[🚀] TARGET PLATFORM: FACEBOOK`);
     } else {
         console.log(`[❌] ERROR: Kam az kam ek Stream Key (YouTube ya Facebook) daalna zaroori hai!`);
