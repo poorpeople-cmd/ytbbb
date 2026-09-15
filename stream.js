@@ -7884,17 +7884,35 @@ console.log(`[🚀] Smart Engine Locked to: ${RES_W}x${RES_H} @ ${BITRATE}kbps`)
 // =========================================================================================
 // 🔄 DYNAMIC URL PARSER & METADATA EXTRACTOR
 // =========================================================================================
+// let rawUrls = (process.env.TARGET_URLS || '').trim();
+// let urlList = [];
+
+// if (rawUrls !== '') {
+//     urlList = rawUrls.split(',').map(u => {
+//         let trimmed = u.trim();
+//         let hangThreshold = 8000; 
+//         if (trimmed.startsWith('!')) { hangThreshold = 20000; trimmed = trimmed.substring(1); }
+//         if (!trimmed.startsWith('http')) trimmed = 'https://' + trimmed;
+//         return { url: trimmed, hangTime: hangThreshold };
+//     });
+// } else {
+// =========================================================================================
+// 🔄 DYNAMIC URL PARSER & METADATA EXTRACTOR
+// =========================================================================================
 let rawUrls = (process.env.TARGET_URLS || '').trim();
 let urlList = [];
 
 if (rawUrls !== '') {
-    urlList = rawUrls.split(',').map(u => {
+    // FIX: URL ke end se '::None' ya '::2h' wale hissay ko hatao
+    let cleanUrlsPart = rawUrls.split('::')[0]; 
+    
+    urlList = cleanUrlsPart.split(',').map(u => {
         let trimmed = u.trim();
         let hangThreshold = 8000; 
         if (trimmed.startsWith('!')) { hangThreshold = 20000; trimmed = trimmed.substring(1); }
         if (!trimmed.startsWith('http')) trimmed = 'https://' + trimmed;
         return { url: trimmed, hangTime: hangThreshold };
-    });
+    }).filter(u => u.url !== 'https://');
 } else {
     urlList = [{ url: 'https://dadocric.st/player.php?id=starsp3&v=m', hangTime: 8000 }];
 }
@@ -8961,6 +8979,25 @@ async function startWatchdog() {
             // --------------------------------------------------------------------
             // ❌ SCENARIO C: BOTH TABS FAILED (Fresh Hunting Mode - FIX: NEVER KILL OBS)
             // --------------------------------------------------------------------
+            // else {
+            //     console.log(`\n[!] ❌ BOTH TABS FAILED. FRESH HUNTING MODE ACTIVATED.`);
+            //     try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch (e) {}
+
+            //     currentUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); activeUrlStr = urlList[currentUrlIndex].url;
+            //     backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
+
+            //     try { await activePage.close(); } catch(e) {}
+            //     try { await backupPage.close(); } catch(e) {}
+
+            //     activePage = await activeBrowser.newPage(); backupPage = await backupBrowser.newPage();
+            //     await setupNetworkAdBlocker(activePage); await setupNetworkAdBlocker(backupPage);
+            //     attachAntiAdListeners(activePage); attachAntiAdListeners(backupPage);
+            //     await applyPreloadFirewall(activePage); await applyPreloadFirewall(backupPage);
+
+            //     try {
+          // --------------------------------------------------------------------
+            // ❌ SCENARIO C: BOTH TABS FAILED (Fresh Hunting Mode - FIX: NEVER KILL OBS)
+            // --------------------------------------------------------------------
             else {
                 console.log(`\n[!] ❌ BOTH TABS FAILED. FRESH HUNTING MODE ACTIVATED.`);
                 try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch (e) {}
@@ -8968,13 +9005,10 @@ async function startWatchdog() {
                 currentUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); activeUrlStr = urlList[currentUrlIndex].url;
                 backupUrlIndex = getSafeBackupIndex(currentUrlIndex, currentUrlIndex, urlList); backupUrlStr = urlList[backupUrlIndex].url;
 
-                try { await activePage.close(); } catch(e) {}
-                try { await backupPage.close(); } catch(e) {}
-
-                activePage = await activeBrowser.newPage(); backupPage = await backupBrowser.newPage();
-                await setupNetworkAdBlocker(activePage); await setupNetworkAdBlocker(backupPage);
-                attachAntiAdListeners(activePage); attachAntiAdListeners(backupPage);
-                await applyPreloadFirewall(activePage); await applyPreloadFirewall(backupPage);
+                // FIX: TABS KO CLOSE NAHI KARNA WARNA CHROME CRASH (PROTOCOL ERROR) DE GA!
+                // Bas unko about:blank par bhej kar clear kar dein. Pehle wali AdBlock settings lagi rahengi.
+                try { await activePage.goto('about:blank'); } catch(e) {}
+                try { await backupPage.goto('about:blank'); } catch(e) {}
 
                 try {
                     await activePage.goto(activeUrlStr, { waitUntil: 'domcontentloaded', timeout: 60000 });
