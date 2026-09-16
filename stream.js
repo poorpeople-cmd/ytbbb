@@ -201,7 +201,33 @@ async function injectOfficialWatermark(page) {
                 try {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div'); overlay.id = 'sport4u-watermark';
-                        overlay.innerHTML = 'Watch All ⚽ here on Google 👉<span style="color: #ff4d4d; font-size: 5vmin; line-height: 1.2;">sport4u.online</span><span style="font-size: 4vmin; line-height: 1.3; display: block; margin-top: 0.8vh;">Guys, please support me ❤️🙏<br>I work hard to bring you All Football here.<br>Please share your feedback & experience ❤️.<br>Support me Guys Please</span>';
+                        // overlay.innerHTML = 'Watch All ⚽ here on Google 👉<span style="color: #ff4d4d; font-size: 5vmin; line-height: 1.2;">sport4u.online</span><span style="font-size: 4vmin; line-height: 1.3; display: block; margin-top: 0.8vh;">Guys, please support me ❤️🙏<br>I work hard to bring you All Football here.<br>Please share your feedback & experience ❤️.<br>Support me Guys Please</span>';
+
+
+                        overlay.innerHTML = `
+                            <div style="font-size: 5vmin; font-weight: bold; color: #ffcc00; margin-bottom: 1vh; text-shadow: 2px 2px 4px #000;">
+                                ⚽ MATCH IS LIVE! ⚽
+                            </div>
+                            <div style="font-size: 3.5vmin; color: #ffffff; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 8px; margin-bottom: 1.5vh; display: inline-block;">
+                                (Display is limited here due to platform policies)
+                            </div>
+                            <div style="font-size: 4.5vmin; line-height: 1.3;">
+                                Watch FULL HD & Clear Screen Here:
+                            </div>
+                            <div style="font-size: 4vmin; margin-top: 1vh;">
+                                🔍 Search on Google 👉 
+                                <span style="color: #ff4d4d; font-size: 5.5vmin; font-weight: bold; background: #ffffff; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 0.5vh;">
+                                    sport4u.online
+                                </span>
+                            </div>
+                            <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000;">
+                                Guys, please support me ❤️🙏
+                            </div>
+                        `;
+                        
+                        
+
+                        
                         overlay.style.cssText = `position: fixed !important; top: 0 !important; left: 0 !important; z-index: 2147483647 !important; background-color: rgba(0, 0, 0, 0.70) !important; color: #ffffff !important; padding: 1vh 2vw !important; font-family: 'Segoe UI', Arial, sans-serif !important; font-size: 4vmin !important; font-weight: bold !important; text-align: center !important; border-top: 0.3vmin solid #e50914 !important; border-bottom: 0.3vmin solid #e50914 !important; width: 100vw !important; height: auto !important; max-height: none !important; overflow: visible !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: center !important; pointer-events: none !important;`;
                         let target = document.body || document.documentElement; if (target) target.appendChild(overlay);
                     }
