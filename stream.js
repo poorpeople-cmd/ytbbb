@@ -185,7 +185,12 @@ async function injectBlackOverlay(page) {
                             const leftBlock = document.createElement('div'); leftBlock.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 20% !important; height: 100% !important; background-color: #000000 !important;`;
                             const rightBlock = document.createElement('div'); rightBlock.style.cssText = `position: absolute !important; top: 0 !important; right: 0 !important; width: 40% !important; height: 100% !important; background-color: #000000 !important;`;
                             container.appendChild(topBlock); container.appendChild(bottomBlock); container.appendChild(leftBlock); container.appendChild(rightBlock);
-                        } else if (overlayMode.includes('Full Black')) { container.style.cssText = baseCss + `background-color: #000000 !important;`; } 
+
+
+                            
+                            // 2 second show and 1second hide 
+                            
+                            } else if (overlayMode.includes('Full Black')) { container.style.cssText = baseCss + `background-color: #000000 !important;`; } 
                         else if (overlayMode.includes('Tiny Holes')) { 
                             container.style.cssText = baseCss + `background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important; background-size: 6px 6px !important; background-color: transparent !important;`; 
                             let isVisible = true;
@@ -198,6 +203,28 @@ async function injectBlackOverlay(page) {
                             }, 1000);
                         }
                         let target = document.body || document.documentElement; if (target) target.appendChild(container);
+
+
+
+
+
+
+                            
+                            //// 1 seconds hide and 1 second show
+                            
+                        // } else if (overlayMode.includes('Full Black')) { container.style.cssText = baseCss + `background-color: #000000 !important;`; } 
+                        // else if (overlayMode.includes('Tiny Holes')) { 
+                        //     container.style.cssText = baseCss + `background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important; background-size: 6px 6px !important; background-color: transparent !important;`; 
+                        //     let isVisible = true;
+                        //     setInterval(() => {
+                        //         const el = document.getElementById('sport4u-black-overlay');
+                        //         if (el) {
+                        //             isVisible = !isVisible;
+                        //             el.style.setProperty('opacity', isVisible ? '1' : '0', 'important');
+                        //         }
+                        //     }, 1000);
+                        // }
+                        // let target = document.body || document.documentElement; if (target) target.appendChild(container);
                     }
                 } catch(e) {}
             }, 1000); 
