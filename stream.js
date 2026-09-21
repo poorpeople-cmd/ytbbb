@@ -4,7 +4,7 @@ puppeteer.use(StealthPlugin());
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');S
+const os = require('os');
 const { spawn, execSync } = require('child_process');
 const { OBSWebSocket } = require('obs-websocket-js'); 
 
