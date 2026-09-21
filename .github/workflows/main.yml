@@ -105,16 +105,16 @@ on:
           - 'Loop (10s Show / 5s Hide)'
           - 'OFF'
         default: 'OFF'
-      # pic_urls:
-      #   description: 'Optional: Comma-separated Image URLs to download & append in Pic Sequence'
-      #   required: false
-      #   type: string
-      #   default: ''
       pic_urls:
-        description: 'Optional: Image URLs separated by double colon (::) e.g. url1::url2'
+        description: 'Optional: Comma-separated Image URLs to download & append in Pic Sequence'
         required: false
         type: string
         default: ''
+      # pic_urls:
+      #   description: 'Optional: Image URLs separated by double colon (::) e.g. url1::url2'
+      #   required: false
+      #   type: string
+      #   default: ''
       enable_text_overlay:
         description: 'Enable Text Watermark Overlay'
         required: true
