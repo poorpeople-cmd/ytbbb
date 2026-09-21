@@ -58,49 +58,6 @@ const PIC_URLS_INPUT = process.env.PIC_URLS || '';
 // =========================================================================================
 let picSequenceData = []; // Ab sirf string nahi, objects save honge { src, duration }
 
-// async function loadAllPictures() {
-//     if (!ENABLE_PIC_OVERLAY) return;
-//     picSequenceData = [];
-    
-//     // 1. Local Images (2 Seconds = 2000ms)
-//     const possiblePicExts = ['.png', '.jpg', '.jpeg', '.webp'];
-//     let seqIndex = 1;
-//     while(true) {
-//         let found = false;
-//         for (let ext of possiblePicExts) {
-//             let tempPath = path.join(process.cwd(), `picSequence${seqIndex}${ext}`);
-//             if (fs.existsSync(tempPath)) {
-//                 let extName = ext.replace('.', '');
-//                 if (extName === 'jpg') extName = 'jpeg';
-//                 const base64Data = fs.readFileSync(tempPath).toString('base64');
-//                 picSequenceData.push({ src: `data:image/${extName};base64,${base64Data}`, duration: 2000 });
-//                 console.log(`[🖼️] Found Local Sequence Pic: picSequence${seqIndex}${ext} (2s)`);
-//                 found = true;
-//                 break;
-//             }
-//         }
-//         if (!found) break; 
-//         seqIndex++;
-//     }
-
-//     // 2. URL Images Download (1 Second = 1000ms)
-//     const urls = PIC_URLS_INPUT.split(',').map(u => u.trim()).filter(u => u.startsWith('http'));
-//     for (let i = 0; i < urls.length; i++) {
-//         try {
-//             console.log(`[🖼️] Downloading URL Pic ${i+1}...`);
-//             const resp = await fetch(urls[i]);
-//             const arrayBuffer = await resp.arrayBuffer();
-//             const base64Data = Buffer.from(arrayBuffer).toString('base64');
-//             const contentType = resp.headers.get('content-type') || 'image/jpeg';
-//             picSequenceData.push({ src: `data:${contentType};base64,${base64Data}`, duration: 1000 });
-//             console.log(`[🖼️] Successfully loaded URL Pic ${i+1} (1s)`);
-//         } catch(e) {
-//             console.log(`[❌] Failed to download URL Pic ${i+1}: ${urls[i]}`);
-//         }
-//     }
-// }
-
-
 async function loadAllPictures() {
     if (!ENABLE_PIC_OVERLAY) return;
     picSequenceData = [];
@@ -126,37 +83,80 @@ async function loadAllPictures() {
         seqIndex++;
     }
 
-    // 2. Dynamic Input Images (URL ya Base64) (1 Second = 1000ms)
-    // Filter updated to allow both 'http' and 'data:image'
-    // const urls = PIC_URLS_INPUT.split(',').map(u => u.trim()).filter(u => u.length > 0);
-
-    // 2. Dynamic Input Images (URL ya Base64) (1 Second = 1000ms)
-    // Filter updated to allow both 'http' and 'data:image'
-    const urls = PIC_URLS_INPUT.split('::').map(u => u.trim()).filter(u => u.length > 0);
-    
+    // 2. URL Images Download (1 Second = 1000ms)
+    const urls = PIC_URLS_INPUT.split(',').map(u => u.trim()).filter(u => u.startsWith('http'));
     for (let i = 0; i < urls.length; i++) {
         try {
-            if (urls[i].startsWith('data:image')) {
-                // Agar input pehle se Base64 hai, toh seedha add kar do (Download ki zaroorat nahi)
-                picSequenceData.push({ src: urls[i], duration: 1000 });
-                console.log(`[🖼️] Successfully loaded Base64 Pic ${i+1} (1s)`);
-                
-            } else if (urls[i].startsWith('http')) {
-                // Agar normal URL hai, toh fetch karke Base64 banalo
-                console.log(`[🖼️] Downloading URL Pic ${i+1}...`);
-                const resp = await fetch(urls[i]);
-                const arrayBuffer = await resp.arrayBuffer();
-                const base64Data = Buffer.from(arrayBuffer).toString('base64');
-                const contentType = resp.headers.get('content-type') || 'image/jpeg';
-                
-                picSequenceData.push({ src: `data:${contentType};base64,${base64Data}`, duration: 1000 });
-                console.log(`[🖼️] Successfully loaded URL Pic ${i+1} (1s)`);
-            }
+            console.log(`[🖼️] Downloading URL Pic ${i+1}...`);
+            const resp = await fetch(urls[i]);
+            const arrayBuffer = await resp.arrayBuffer();
+            const base64Data = Buffer.from(arrayBuffer).toString('base64');
+            const contentType = resp.headers.get('content-type') || 'image/jpeg';
+            picSequenceData.push({ src: `data:${contentType};base64,${base64Data}`, duration: 1000 });
+            console.log(`[🖼️] Successfully loaded URL Pic ${i+1} (1s)`);
         } catch(e) {
-            console.log(`[❌] Failed to process Pic ${i+1}`);
+            console.log(`[❌] Failed to download URL Pic ${i+1}: ${urls[i]}`);
         }
     }
 }
+
+
+// async function loadAllPictures() {
+//     if (!ENABLE_PIC_OVERLAY) return;
+//     picSequenceData = [];
+    
+//     // 1. Local Images (2 Seconds = 2000ms)
+//     const possiblePicExts = ['.png', '.jpg', '.jpeg', '.webp'];
+//     let seqIndex = 1;
+//     while(true) {
+//         let found = false;
+//         for (let ext of possiblePicExts) {
+//             let tempPath = path.join(process.cwd(), `picSequence${seqIndex}${ext}`);
+//             if (fs.existsSync(tempPath)) {
+//                 let extName = ext.replace('.', '');
+//                 if (extName === 'jpg') extName = 'jpeg';
+//                 const base64Data = fs.readFileSync(tempPath).toString('base64');
+//                 picSequenceData.push({ src: `data:image/${extName};base64,${base64Data}`, duration: 2000 });
+//                 console.log(`[🖼️] Found Local Sequence Pic: picSequence${seqIndex}${ext} (2s)`);
+//                 found = true;
+//                 break;
+//             }
+//         }
+//         if (!found) break; 
+//         seqIndex++;
+//     }
+
+//     // 2. Dynamic Input Images (URL ya Base64) (1 Second = 1000ms)
+//     // Filter updated to allow both 'http' and 'data:image'
+//     // const urls = PIC_URLS_INPUT.split(',').map(u => u.trim()).filter(u => u.length > 0);
+
+//     // 2. Dynamic Input Images (URL ya Base64) (1 Second = 1000ms)
+//     // Filter updated to allow both 'http' and 'data:image'
+//     const urls = PIC_URLS_INPUT.split('::').map(u => u.trim()).filter(u => u.length > 0);
+    
+//     for (let i = 0; i < urls.length; i++) {
+//         try {
+//             if (urls[i].startsWith('data:image')) {
+//                 // Agar input pehle se Base64 hai, toh seedha add kar do (Download ki zaroorat nahi)
+//                 picSequenceData.push({ src: urls[i], duration: 1000 });
+//                 console.log(`[🖼️] Successfully loaded Base64 Pic ${i+1} (1s)`);
+                
+//             } else if (urls[i].startsWith('http')) {
+//                 // Agar normal URL hai, toh fetch karke Base64 banalo
+//                 console.log(`[🖼️] Downloading URL Pic ${i+1}...`);
+//                 const resp = await fetch(urls[i]);
+//                 const arrayBuffer = await resp.arrayBuffer();
+//                 const base64Data = Buffer.from(arrayBuffer).toString('base64');
+//                 const contentType = resp.headers.get('content-type') || 'image/jpeg';
+                
+//                 picSequenceData.push({ src: `data:${contentType};base64,${base64Data}`, duration: 1000 });
+//                 console.log(`[🖼️] Successfully loaded URL Pic ${i+1} (1s)`);
+//             }
+//         } catch(e) {
+//             console.log(`[❌] Failed to process Pic ${i+1}`);
+//         }
+//     }
+// }
 
 
 // =========================================================================================
