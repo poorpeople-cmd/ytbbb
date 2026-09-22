@@ -46,7 +46,12 @@ const ENABLE_PIC_OVERLAY = process.env.ENABLE_PIC_OVERLAY === 'ON';
 const ENABLE_TEXT_OVERLAY = process.env.ENABLE_TEXT_OVERLAY === 'ON';
 const VIDEO_OVERLAY_MODE = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; 
 
-const SERVER_SELECTION = process.env.SERVER_SELECTION || 'None'; 
+const WATERMARK_ICON_INPUT = process.env.WATERMARK_ICON || 'Football ⚽';
+let MATCH_ICON = '⚽';
+if (WATERMARK_ICON_INPUT.includes('Cricket')) MATCH_ICON = '🏏';
+else if (WATERMARK_ICON_INPUT.includes('Both')) MATCH_ICON = '⚽ 🏏';
+
+const SERVER_SELECTION = process.env.SERVER_SELECTION || 'None';
 const PROXY_ENGINE = process.env.PROXY_ENGINE || 'Cloudflare WARP (Recommended)';
 
 const YT_KEY = process.env.YOUTUBE_KEY || '';
@@ -276,17 +281,15 @@ async function injectBlackOverlay(page) {
 async function injectOfficialWatermark(page) {
      if (!page || !ENABLE_TEXT_OVERLAY) return;
      try {
-        await page.evaluate(() => {
+        await page.evaluate((icon) => {
             setInterval(() => {
                 try {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div'); overlay.id = 'sport4u-watermark';
-                        // overlay.innerHTML = 'Watch All ⚽ here on Google 👉<span style="color: #ff4d4d; font-size: 5vmin; line-height: 1.2;">sport4u.online</span><span style="font-size: 4vmin; line-height: 1.3; display: block; margin-top: 0.8vh;">Guys, please support me ❤️🙏<br>I work hard to bring you All Football here.<br>Please share your feedback & experience ❤️.<br>Support me Guys Please</span>';
-
-
+                        
                         overlay.innerHTML = `
                             <div style="font-size: 5vmin; font-weight: bold; color: #ffcc00; margin-bottom: 1vh; text-shadow: 2px 2px 4px #000;">
-                                ⚽ MATCH IS LIVE! ⚽
+                                ${icon} MATCH IS LIVE! ${icon}
                             </div>
                             <div style="font-size: 3.5vmin; color: #ffffff; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 8px; margin-bottom: 1.5vh; display: inline-block;">
                                 (Display is limited here due to platform policies)
@@ -305,15 +308,12 @@ async function injectOfficialWatermark(page) {
                             </div>
                         `;
                         
-                        
-
-                        
                         overlay.style.cssText = `position: fixed !important; top: 0 !important; left: 0 !important; z-index: 2147483647 !important; background-color: rgba(0, 0, 0, 0.70) !important; color: #ffffff !important; padding: 1vh 2vw !important; font-family: 'Segoe UI', Arial, sans-serif !important; font-size: 4vmin !important; font-weight: bold !important; text-align: center !important; border-top: 0.3vmin solid #e50914 !important; border-bottom: 0.3vmin solid #e50914 !important; width: 100vw !important; height: auto !important; max-height: none !important; overflow: visible !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: center !important; pointer-events: none !important;`;
                         let target = document.body || document.documentElement; if (target) target.appendChild(overlay);
                     }
                 } catch(e) {}
             }, 1000); 
-        });
+        }, MATCH_ICON); 
     } catch (e) {}
 }
 
@@ -1066,9 +1066,10 @@ else {
             const bgAudioVolumeStatus = process.env.BACKGROUND_AUDIO_VOLUME || '100'; 
             const picOverlayStatus = process.env.ENABLE_PIC_OVERLAY || 'OFF'; 
             const textOverlayStatus = process.env.ENABLE_TEXT_OVERLAY || 'ON';
-           const videoOverlayStatus = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; 
+            const videoOverlayStatus = process.env.ENABLE_VIDEO_OVERLAY || 'OFF'; 
+            const watermarkIconStatus = process.env.WATERMARK_ICON || 'Football ⚽';
             
-            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f pic_urls="${PIC_URLS_INPUT}" -f enable_text_overlay="${textOverlayStatus}" -f enable_video_overlay="${videoOverlayStatus}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
+            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f pic_urls="${PIC_URLS_INPUT}" -f enable_text_overlay="${textOverlayStatus}" -f watermark_icon="${watermarkIconStatus}" -f enable_video_overlay="${videoOverlayStatus}" -f background_audio_volume="${bgAudioVolumeStatus}" -f custom_duration="None"`;
             execSync(cmd, { stdio: 'inherit' });
             setTimeout(async () => { await cleanup(); process.exit(0); }, 300000); 
         } catch (err) { }
