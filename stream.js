@@ -459,36 +459,23 @@ async function applyPreloadFirewall(p) {
             }, true);
 
             const style = document.createElement('style');
-            // FIX: html ko black aur body ko totally invisible (opacity: 0) kar diya
-            style.textContent = `html { background-color: #000000 !important; overflow: hidden !important; } body { opacity: 0 !important; pointer-events: none !important; background-color: #000000 !important; } in-page-message, [id^="note-"], [id^="missclick-"], [id^="close-"] { display: none !important; opacity: 0 !important; pointer-events: none !important; }`;
+            // FIX 1: Pichli baar wali opacity: 0 hata di taake video fullscreen ho sake
+            style.textContent = `html, body { background-color: #000000 !important; overflow: hidden !important; } in-page-message, [id^="note-"], [id^="missclick-"], [id^="close-"] { display: none !important; opacity: 0 !important; pointer-events: none !important; }`;
             document.documentElement.appendChild(style);
 
-            // FIX: Jese hi page banne lage, instant Loading Screen daal do website dikhne se pehle
-            const observer = new MutationObserver(() => {
-                if (document.body && !document.getElementById('smart-stream-overlay')) {
-                    const overlay = document.createElement('div');
-                    overlay.id = 'smart-stream-overlay';
-                    overlay.innerHTML = `
-                        <style>
-                            #smart-stream-overlay { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background: #000000 !important; z-index: 2147483647 !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; color: #ffffff !important; font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; pointer-events: all !important; }
-                            .stream-spinner { width: 80px; height: 80px; border: 6px solid rgba(255, 255, 255, 0.1); border-top: 6px solid #e50914; border-radius: 50%; animation: spin-overlay 1s linear infinite; margin-bottom: 25px; box-shadow: 0 0 25px rgba(229, 9, 20, 0.4); }
-                            .progress-container { width: 300px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 30px; overflow: hidden; position: relative; }
-                            .progress-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e50914, #ff4d4d); position: absolute; left: -100%; animation: shift-progress 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-                            @keyframes spin-overlay { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                            @keyframes shift-progress { 0% { left: -100%; } 50% { left: 0; } 100% { left: 100%; } }
-                            .stream-title { font-size: 36px !important; font-weight: 800 !important; letter-spacing: 3px !important; margin-bottom: 15px !important; text-transform: uppercase !important; text-shadow: 0px 4px 10px rgba(0,0,0,0.8) !important; }
-                            .stream-sub { font-size: 20px !important; color: #cccccc !important; text-align: center !important; line-height: 1.6 !important; }
-                        </style>
-                        <div class="stream-spinner"></div>
-                        <div class="progress-container"><div class="progress-bar-fill"></div></div>
-                        <div class="stream-title">STREAM LOADING</div>
-                        <div class="stream-sub">Optimizing live video connection...</div>
-                    `;
-                    document.documentElement.appendChild(overlay);
-                    observer.disconnect();
-                }
-            });
-            observer.observe(document.documentElement, { childList: true, subtree: true });
+            // FIX 2: Naya URL khulte hi puri website ke upar Instant Black Shield laga di
+            if (window.self === window.top) {
+                const observer = new MutationObserver(() => {
+                    if (document.body && !document.getElementById('instant-black-shield')) {
+                        const shield = document.createElement('div');
+                        shield.id = 'instant-black-shield';
+                        shield.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background-color: #000000 !important; z-index: 2147483646 !important;';
+                        document.documentElement.appendChild(shield);
+                        observer.disconnect();
+                    }
+                });
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+            }
         });
     } catch (e) {}
 }
@@ -537,15 +524,9 @@ async function showLoadingUI(page, title, sub) {
 async function hideLoadingUI(page) {
     try {
         await page.evaluate(() => {
-            const overlays = document.querySelectorAll('#smart-stream-overlay');
+            // FIX 3: Jab video ready ho jaye, toh Spinner aur Black Shield dono ko aik sath hata do
+            const overlays = document.querySelectorAll('#smart-stream-overlay, #instant-black-shield');
             overlays.forEach(overlay => overlay.remove());
-            
-            // FIX: Jab video play ho jaye, tab body (website) ko show karo taake stream dikhe
-            if (document.body) {
-                document.body.style.setProperty('transition', 'opacity 0.5s ease-in', 'important');
-                document.body.style.setProperty('opacity', '1', 'important');
-                document.body.style.setProperty('pointer-events', 'auto', 'important');
-            }
         });
     } catch (e) {}
 }
