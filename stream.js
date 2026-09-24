@@ -836,32 +836,37 @@ async function checkPageStatus(p) {
                 const result = await Promise.race([
                     frame.evaluate(() => {
                         const bodyText = document.body ? document.body.innerText.toLowerCase() : "";
-                        if (bodyText.includes("stream error") || bodyText.includes("not found") || bodyText.includes("domain is blocked") || bodyText.includes("error: forbidden") || bodyText.includes("access denied") || (bodyText.includes("cloudflare") && bodyText.includes("blocked"))) {
+                        if (bodyText.includes("stream error") || bodyText.includes("not found") || bodyText.includes("domain is blocked") || bodyText.includes("error: forbidden") || bodyText.includes("access denied")) {
                             return { status: 'CRITICAL_ERROR' };
                         }
+                        
                         const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
                         let targetV = null;
                         for (const v of videos) {
-                            if (v.clientWidth > 0 && v.clientWidth < 100) continue;
+                            if (v.clientWidth < 50 || v.clientHeight < 50) continue;
                             if ((v.src && v.src.startsWith('blob:')) || v.matches('.jw-video, .plyr__video, .vjs-tech')) { targetV = v; break; }
                         }
-                        if (!targetV && videos.length > 0) targetV = videos.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0];
+                        if (!targetV && videos.length > 0) {
+                            targetV = videos.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0];
+                        }
                         
-                        if (targetV && !targetV.ended) {
+                        if (targetV) {
                             let frames = 0;
                             if (targetV.getVideoPlaybackQuality) frames = targetV.getVideoPlaybackQuality().totalVideoFrames;
                             else if (targetV.webkitDecodedFrameCount !== undefined) frames = targetV.webkitDecodedFrameCount;
                             return { status: 'HEALTHY', currentTime: targetV.currentTime, decodedFrames: frames };
                         }
-                        return { status: 'DEAD' };
+                        return null; // Null return karega taake 8 sec timeout tak try karta rahe, fauran DEAD na bole
                     }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 4000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000)) // 👈 Wapas 8 seconds Timeout set kar diya
                 ]);
-                if (result && result.status !== 'DEAD') return result;
+                
+                if (result && result.status === 'CRITICAL_ERROR') return result;
+                if (result && result.status === 'HEALTHY') return result;
             } catch (err) {}
         }
+        return { status: 'LOADING_OR_DEAD' }; 
     } catch (e) { return { status: 'DEAD' }; }
-    return { status: 'DEAD' };
 }
 
 // =========================================================================================
@@ -885,7 +890,6 @@ async function startWatchdog() {
         let currentUrlStr = urlList[currentUrlIndex].url;
         let activeStatus = await checkPageStatus(page);
 
-        // 📅 DYNAMIC SCHEDULER CHECK
         if (phaseEndTime && Date.now() >= phaseEndTime) {
             if (currentPhaseIndex + 1 < phases.length) {
                 console.log(`\n[⏰] PHASE TIME UP! Switching to Next Phase...`);
@@ -896,11 +900,11 @@ async function startWatchdog() {
             } else { phaseEndTime = null; }
         }
 
-        // 🛡️ STRIKE LOGIC: Patience badha di hai, 4 strikes par action lega taake buffering survive ho
-        if (activeStatus.status === 'DEAD' || activeStatus.status === 'CRITICAL_ERROR') {
+        // 🛡️ STRIKE LOGIC: Patience level badha diya hai (5 Strikes = 10s grace period)
+        if (activeStatus.status === 'DEAD' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'LOADING_OR_DEAD') {
             strikes++;
-            if (strikes < 4) {
-                console.log(`[⚠️] WARNING: Stream reported ${activeStatus.status} (Strike ${strikes}/4). Verifying...`);
+            if (strikes < 5) {
+                console.log(`[⚠️] WARNING: Stream reported ${activeStatus.status} (Strike ${strikes}/5). Verifying...`);
                 await new Promise(r => setTimeout(r, 2000));
                 continue; 
             } else {
@@ -917,7 +921,6 @@ async function startWatchdog() {
         }
 
         if (activeStatus.status === 'HEALTHY') {
-            // 🧠 SUPER SMART HANG DETECTION: Check both Time AND Frames
             let isTimeStuck = (lastTime !== -1 && activeStatus.currentTime === lastTime && lastDecodedFrames === activeStatus.decodedFrames);
             
             if (isTimeStuck) {
@@ -949,7 +952,6 @@ async function startWatchdog() {
             console.log(`==================================================\n`);
         }
 
-        // RELOAD/RECOVERY LOGIC
         if (activeStatus.status === 'FROZEN' || activeStatus.status === 'DEAD' || activeStatus.status === 'FORCE_REFRESH' || activeStatus.status === 'PHASE_CHANGE') {
             
             strikes = 0; 
