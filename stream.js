@@ -665,22 +665,23 @@ async function forcePlayerFullscreen(p) {
 async function waitForActiveVisualReady(p) {
     if (!p) return false;
     let readyCount = 0;
-    for (let i = 0; i < 40; i++) { // Max 20 seconds wait (500ms intervals)
+    for (let i = 0; i < 40; i++) { // Max 20 seconds
         try {
-            let isReady = false;
-            for (const frame of p.frames()) {
+            const framePromises = p.frames().map(async (frame) => {
+                if (frame.isDetached()) return false;
                 try {
-                    if (frame.isDetached()) continue;
-                    const frameReady = await frame.evaluate(() => {
-                        let v = document.querySelector('video:not(#sport4u-video-overlay)');
-                        // Video element exists, has size, and is actively playing
-                        return (v && v.clientWidth > 50 && !v.paused && v.currentTime > 0);
+                    return await frame.evaluate(() => {
+                        const v = document.querySelector('video:not(#sport4u-video-overlay)');
+                        return (v && !v.paused && v.currentTime > 0);
                     });
-                    if (frameReady) { isReady = true; break; }
-                } catch(err) {}
-            }
+                } catch(err) { return false; }
+            });
+            
+            const results = await Promise.all(framePromises);
+            const isReady = results.some(r => r === true);
+            
             if (isReady) readyCount++; else readyCount = 0;
-            if (readyCount >= 3) return true; // 3 consecutive passes required for confirmation!
+            if (readyCount >= 3) return true; // 3 baar tasalli karega
         } catch(e) {}
         await new Promise(r => setTimeout(r, 500));
     }
@@ -830,45 +831,43 @@ async function initializeVideo(p, startMuted) {
 async function checkPageStatus(p) {
     if (!p) return { status: 'DEAD' };
     try {
-        for (const frame of p.frames()) {
+        // Saare iframes ko ek sath check karne ki logic (Parallel Promises)
+        const framePromises = p.frames().map(async (frame) => {
+            if (frame.isDetached()) return null;
             try {
-                if (frame.isDetached()) continue;
-                const result = await Promise.race([
+                return await Promise.race([
                     frame.evaluate(() => {
                         const bodyText = document.body ? document.body.innerText.toLowerCase() : "";
-                        if (bodyText.includes("stream error") || bodyText.includes("not found") || bodyText.includes("domain is blocked") || bodyText.includes("error: forbidden") || bodyText.includes("access denied")) {
+                        if (bodyText.includes("stream error") || bodyText.includes("domain is blocked") || bodyText.includes("error: forbidden")) {
                             return { status: 'CRITICAL_ERROR' };
                         }
                         
+                        // Video dhundne ki ninja technique
                         const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
-                        let targetV = null;
-                        for (const v of videos) {
-                            if (v.clientWidth < 50 || v.clientHeight < 50) continue;
-                            if ((v.src && v.src.startsWith('blob:')) || v.matches('.jw-video, .plyr__video, .vjs-tech')) { targetV = v; break; }
+                        for (let v of videos) {
+                            if (v.clientWidth > 10 || !v.paused) {
+                                let frames = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality().totalVideoFrames : (v.webkitDecodedFrameCount || 0);
+                                return { status: 'HEALTHY', currentTime: v.currentTime, decodedFrames: frames };
+                            }
                         }
-                        if (!targetV && videos.length > 0) {
-                            targetV = videos.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0];
-                        }
-                        
-                        if (targetV) {
-                            let frames = 0;
-                            if (targetV.getVideoPlaybackQuality) frames = targetV.getVideoPlaybackQuality().totalVideoFrames;
-                            else if (targetV.webkitDecodedFrameCount !== undefined) frames = targetV.webkitDecodedFrameCount;
-                            return { status: 'HEALTHY', currentTime: targetV.currentTime, decodedFrames: frames };
-                        }
-                        return null; // Null return karega taake 8 sec timeout tak try karta rahe, fauran DEAD na bole
+                        return null;
                     }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000)) // 👈 Wapas 8 seconds Timeout set kar diya
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
                 ]);
-                
-                if (result && result.status === 'CRITICAL_ERROR') return result;
-                if (result && result.status === 'HEALTHY') return result;
-            } catch (err) {}
+            } catch (err) { return null; }
+        });
+
+        const results = await Promise.all(framePromises);
+        
+        // Agar kisi ek iframe mein bhi video mil gayi toh HEALTHY return kar do
+        for (let res of results) {
+            if (res && res.status === 'CRITICAL_ERROR') return res;
+            if (res && res.status === 'HEALTHY') return res;
         }
+        
         return { status: 'LOADING_OR_DEAD' }; 
     } catch (e) { return { status: 'DEAD' }; }
 }
-
 // =========================================================================================
 // 🔄 SINGLE-SYSTEM WATCHDOG
 // =========================================================================================
@@ -900,7 +899,6 @@ async function startWatchdog() {
             } else { phaseEndTime = null; }
         }
 
-        // 🛡️ STRIKE LOGIC: Patience level badha diya hai (5 Strikes = 10s grace period)
         if (activeStatus.status === 'DEAD' || activeStatus.status === 'CRITICAL_ERROR' || activeStatus.status === 'LOADING_OR_DEAD') {
             strikes++;
             if (strikes < 5) {
@@ -924,7 +922,8 @@ async function startWatchdog() {
             let isTimeStuck = (lastTime !== -1 && activeStatus.currentTime === lastTime && lastDecodedFrames === activeStatus.decodedFrames);
             
             if (isTimeStuck) {
-                if (Date.now() - frozenTimestamp > urlList[currentUrlIndex].hangTime) { activeStatus.status = 'FROZEN'; }
+                // 🛡️ PATIENCE BOOST: 20 seconds tak buffer/freeze bardasht karega!
+                if (Date.now() - frozenTimestamp > 20000) { activeStatus.status = 'FROZEN'; }
             } else {
                 lastTime = activeStatus.currentTime; 
                 lastDecodedFrames = activeStatus.decodedFrames; 
