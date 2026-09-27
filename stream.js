@@ -299,15 +299,15 @@ async function injectOfficialWatermark(page) {
                         const overlay = document.createElement('div'); overlay.id = 'sport4u-watermark';
                         
                         overlay.innerHTML = `
-                            <div style="font-size: 5vmin; font-weight: bold; color: #ffcc00; margin-bottom: 1vh; text-shadow: 2px 2px 4px #000;">
-                                ${icon} MATCH IS LIVE! ${icon}
-                            </div>
-                            <div style="font-size: 3.5vmin; color: #ffffff; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 8px; margin-bottom: 1.5vh; display: inline-block;">
-                                (Display is limited here due to platform policies)
-                            </div>
-                            <div style="font-size: 4.5vmin; line-height: 1.3;">
-                                Watch FULL HD & Clear Screen Here:
-                            </div>
+                            // <div style="font-size: 5vmin; font-weight: bold; color: #ffcc00; margin-bottom: 1vh; text-shadow: 2px 2px 4px #000;">
+                            //     ${icon} MATCH IS LIVE! ${icon}
+                            // </div>
+                            // <div style="font-size: 3.5vmin; color: #ffffff; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 8px; margin-bottom: 1.5vh; display: inline-block;">
+                            //     (Display is limited here due to platform policies)
+                            // </div>
+                            // <div style="font-size: 4.5vmin; line-height: 1.3;">
+                            //     Watch FULL HD & Clear Screen Here:
+                            // </div>
                             <div style="font-size: 4vmin; margin-top: 1vh;">
                                 🔍 Search on Google 👉 
                                 <span style="color: #ff4d4d; font-size: 5.5vmin; font-weight: bold; background: #ffffff; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 0.5vh;">
