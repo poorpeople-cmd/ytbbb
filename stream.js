@@ -1127,14 +1127,14 @@ else {
     //     } catch (err) { }
     // }, 20400000); // 5 hours 40 minutes par naya workflow start hoga
 // }
-            // [TESTING] 5 Minutes (300000ms) ka overlap time new runner k boot aur OBS setup k liye
+            // 8 Minutes (480000ms) ka overlap time naye runner ke setup aur OBS takeover ke liye
             setTimeout(async () => { 
-                console.log("[🔄] TEST MODE: Handoff Time! Stopping old stream...");
+                console.log("[🔄] Handoff Time! Stopping old stream to let the new runner take over instantly.");
                 await cleanup(); 
                 process.exit(0); 
-            }, 300000); 
+            }, 480000); 
         } catch (err) { }
-    }, 300000); // [TESTING] 5 minutes k baad naya workflow start ho jayega
+    }, 21000000); // 5 hours 50 minutes (21000000ms) par naya workflow start hoga
 }
 
 mainLoop();
