@@ -175,7 +175,11 @@ on:
           - 'Both ⚽🏏'
         default: 'Football ⚽'
       scoreboard_matches:
-        description: 'Matches List by ID (e.g. 1,2 | 3,4). Type OFF to disable.'
+        description: |
+          Matches (e.g. 1,2 | 9,11) OFF to disable.
+          🔹 UEFA: 1:FRA, 2:ITA, 3:BEL, 4:TUR, 5:GER, 6:NED, 7:SRB, 8:GRE, 9:ESP, 10:CRO, 11:ENG, 12:CZE, 13:POR, 14:DEN, 15:NOR, 16:WAL
+          🔹 WORLD: 21:ARG, 22:BRA, 23:URU, 24:COL, 25:USA, 26:MEX, 27:MAR, 28:ALG, 29:NGA, 30:SEN
+          🔹 CLUBS: 51:RMA, 52:BARCA, 53:CITY, 54:ARS, 55:LIV, 56:MUN, 57:CHE, 58:BAY, 59:PSG, 60:JUV, 61:ALN
         required: true
         type: string
         default: 'OFF'
