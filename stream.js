@@ -69,39 +69,104 @@ const PIC_URLS_INPUT = process.env.PIC_URLS || '';
 // =========================================================================================
 // ⚽ SCOREBOARD TEAM DATABASE (WITH UEFA NATIONS LEAGUE)
 // =========================================================================================
+// const SCOREBOARD_MATCHES = process.env.SCOREBOARD_MATCHES || 'OFF';
+
+// const TEAM_DB = {
+//     // --- UEFA NATIONS LEAGUE A GROUPS ---
+//     1: { name: 'France', flag: 'https://flagcdn.com/w40/fr.png' }, 2: { name: 'Italy', flag: 'https://flagcdn.com/w40/it.png' },
+//     3: { name: 'Belgium', flag: 'https://flagcdn.com/w40/be.png' }, 4: { name: 'Türkiye', flag: 'https://flagcdn.com/w40/tr.png' },
+//     5: { name: 'Germany', flag: 'https://flagcdn.com/w40/de.png' }, 6: { name: 'Netherlands', flag: 'https://flagcdn.com/w40/nl.png' },
+//     7: { name: 'Serbia', flag: 'https://flagcdn.com/w40/rs.png' }, 8: { name: 'Greece', flag: 'https://flagcdn.com/w40/gr.png' },
+//     9: { name: 'Spain', flag: 'https://flagcdn.com/w40/es.png' }, 10: { name: 'Croatia', flag: 'https://flagcdn.com/w40/hr.png' },
+//     11: { name: 'England', flag: 'https://flagcdn.com/w40/gb-eng.png' }, 12: { name: 'Czechia', flag: 'https://flagcdn.com/w40/cz.png' },
+//     13: { name: 'Portugal', flag: 'https://flagcdn.com/w40/pt.png' }, 14: { name: 'Denmark', flag: 'https://flagcdn.com/w40/dk.png' },
+//     15: { name: 'Norway', flag: 'https://flagcdn.com/w40/no.png' }, 16: { name: 'Wales', flag: 'https://flagcdn.com/w40/gb-wls.png' },
+
+//     // --- OTHER TOP COUNTRIES ---
+//     21: { name: 'Argentina', flag: 'https://flagcdn.com/w40/ar.png' }, 22: { name: 'Brazil', flag: 'https://flagcdn.com/w40/br.png' },
+//     23: { name: 'Uruguay', flag: 'https://flagcdn.com/w40/uy.png' }, 24: { name: 'Colombia', flag: 'https://flagcdn.com/w40/co.png' },
+//     25: { name: 'USA', flag: 'https://flagcdn.com/w40/us.png' }, 26: { name: 'Mexico', flag: 'https://flagcdn.com/w40/mx.png' },
+//     27: { name: 'Morocco', flag: 'https://flagcdn.com/w40/ma.png' }, 28: { name: 'Algeria', flag: 'https://flagcdn.com/w40/dz.png' },
+//     29: { name: 'Nigeria', flag: 'https://flagcdn.com/w40/ng.png' }, 30: { name: 'Senegal', flag: 'https://flagcdn.com/w40/sn.png' },
+
+//     // --- CLUBS (Original Wikimedia SVGs - No Size Errors) ---
+//     51: { name: 'Real Madrid', flag: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' }, 
+//     52: { name: 'Barcelona', flag: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' }, 
+//     53: { name: 'Man City', flag: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg' }, 
+//     54: { name: 'Arsenal', flag: 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg' }, 
+//     55: { name: 'Liverpool', flag: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg' },
+//     56: { name: 'Man United', flag: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg' }, 
+//     57: { name: 'Chelsea', flag: 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg' },
+//     58: { name: 'Bayern Munich', flag: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg' }, 
+//     59: { name: 'PSG', flag: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg' },
+//     60: { name: 'Juventus', flag: 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_2017_icon_%28black%29.svg' },
+//     61: { name: 'Al Nassr', flag: 'https://upload.wikimedia.org/wikipedia/en/b/b3/Al-Nassr.svg' }
+// };
+
+
+// =========================================================================================
+// ⚽ SCOREBOARD TEAM DATABASE (WITH ALL UEFA LEAGUES A, B, C, D)
+// =========================================================================================
 const SCOREBOARD_MATCHES = process.env.SCOREBOARD_MATCHES || 'OFF';
 
 const TEAM_DB = {
-    // --- UEFA NATIONS LEAGUE A GROUPS ---
-    1: { name: 'France', flag: 'https://flagcdn.com/w40/fr.png' }, 2: { name: 'Italy', flag: 'https://flagcdn.com/w40/it.png' },
-    3: { name: 'Belgium', flag: 'https://flagcdn.com/w40/be.png' }, 4: { name: 'Türkiye', flag: 'https://flagcdn.com/w40/tr.png' },
-    5: { name: 'Germany', flag: 'https://flagcdn.com/w40/de.png' }, 6: { name: 'Netherlands', flag: 'https://flagcdn.com/w40/nl.png' },
-    7: { name: 'Serbia', flag: 'https://flagcdn.com/w40/rs.png' }, 8: { name: 'Greece', flag: 'https://flagcdn.com/w40/gr.png' },
-    9: { name: 'Spain', flag: 'https://flagcdn.com/w40/es.png' }, 10: { name: 'Croatia', flag: 'https://flagcdn.com/w40/hr.png' },
-    11: { name: 'England', flag: 'https://flagcdn.com/w40/gb-eng.png' }, 12: { name: 'Czechia', flag: 'https://flagcdn.com/w40/cz.png' },
-    13: { name: 'Portugal', flag: 'https://flagcdn.com/w40/pt.png' }, 14: { name: 'Denmark', flag: 'https://flagcdn.com/w40/dk.png' },
-    15: { name: 'Norway', flag: 'https://flagcdn.com/w40/no.png' }, 16: { name: 'Wales', flag: 'https://flagcdn.com/w40/gb-wls.png' },
+    // --- UEFA LEAGUE A ---
+    // Group A1
+    1: { name: 'France', flag: 'https://flagcdn.com/w40/fr.png' }, 2: { name: 'Italy', flag: 'https://flagcdn.com/w40/it.png' }, 3: { name: 'Belgium', flag: 'https://flagcdn.com/w40/be.png' }, 4: { name: 'Türkiye', flag: 'https://flagcdn.com/w40/tr.png' },
+    // Group A2
+    5: { name: 'Germany', flag: 'https://flagcdn.com/w40/de.png' }, 6: { name: 'Netherlands', flag: 'https://flagcdn.com/w40/nl.png' }, 7: { name: 'Serbia', flag: 'https://flagcdn.com/w40/rs.png' }, 8: { name: 'Greece', flag: 'https://flagcdn.com/w40/gr.png' },
+    // Group A3
+    9: { name: 'Spain', flag: 'https://flagcdn.com/w40/es.png' }, 10: { name: 'Croatia', flag: 'https://flagcdn.com/w40/hr.png' }, 11: { name: 'England', flag: 'https://flagcdn.com/w40/gb-eng.png' }, 12: { name: 'Czechia', flag: 'https://flagcdn.com/w40/cz.png' },
+    // Group A4
+    13: { name: 'Portugal', flag: 'https://flagcdn.com/w40/pt.png' }, 14: { name: 'Denmark', flag: 'https://flagcdn.com/w40/dk.png' }, 15: { name: 'Norway', flag: 'https://flagcdn.com/w40/no.png' }, 16: { name: 'Wales', flag: 'https://flagcdn.com/w40/gb-wls.png' },
+
+    // --- UEFA LEAGUE B ---
+    // Group B1
+    17: { name: 'Scotland', flag: 'https://flagcdn.com/w40/gb-sct.png' }, 18: { name: 'Switzerland', flag: 'https://flagcdn.com/w40/ch.png' }, 19: { name: 'Slovenia', flag: 'https://flagcdn.com/w40/si.png' }, 20: { name: 'North Macedonia', flag: 'https://flagcdn.com/w40/mk.png' },
+    // Group B2
+    21: { name: 'Hungary', flag: 'https://flagcdn.com/w40/hu.png' }, 22: { name: 'Ukraine', flag: 'https://flagcdn.com/w40/ua.png' }, 23: { name: 'Georgia', flag: 'https://flagcdn.com/w40/ge.png' }, 24: { name: 'Northern Ireland', flag: 'https://flagcdn.com/w40/gb-nir.png' },
+    // Group B3
+    25: { name: 'Israel', flag: 'https://flagcdn.com/w40/il.png' }, 26: { name: 'Austria', flag: 'https://flagcdn.com/w40/at.png' }, 27: { name: 'Republic of Ireland', flag: 'https://flagcdn.com/w40/ie.png' }, 28: { name: 'Kosovo', flag: 'https://flagcdn.com/w40/xk.png' },
+    // Group B4
+    29: { name: 'Poland', flag: 'https://flagcdn.com/w40/pl.png' }, 30: { name: 'Bosnia and Herzegovina', flag: 'https://flagcdn.com/w40/ba.png' }, 31: { name: 'Romania', flag: 'https://flagcdn.com/w40/ro.png' }, 32: { name: 'Sweden', flag: 'https://flagcdn.com/w40/se.png' },
+
+    // --- UEFA LEAGUE C ---
+    // Group C1
+    33: { name: 'Albania', flag: 'https://flagcdn.com/w40/al.png' }, 34: { name: 'Finland', flag: 'https://flagcdn.com/w40/fi.png' }, 35: { name: 'Belarus', flag: 'https://flagcdn.com/w40/by.png' }, 36: { name: 'San Marino', flag: 'https://flagcdn.com/w40/sm.png' },
+    // Group C2
+    37: { name: 'Montenegro', flag: 'https://flagcdn.com/w40/me.png' }, 38: { name: 'Armenia', flag: 'https://flagcdn.com/w40/am.png' }, 39: { name: 'Cyprus', flag: 'https://flagcdn.com/w40/cy.png' }, 40: { name: 'Latvia', flag: 'https://flagcdn.com/w40/lv.png' },
+    // Group C3
+    41: { name: 'Kazakhstan', flag: 'https://flagcdn.com/w40/kz.png' }, 42: { name: 'Slovakia', flag: 'https://flagcdn.com/w40/sk.png' }, 43: { name: 'Faroe Islands', flag: 'https://flagcdn.com/w40/fo.png' }, 44: { name: 'Moldova', flag: 'https://flagcdn.com/w40/md.png' },
+    // Group C4
+    45: { name: 'Iceland', flag: 'https://flagcdn.com/w40/is.png' }, 46: { name: 'Bulgaria', flag: 'https://flagcdn.com/w40/bg.png' }, 47: { name: 'Estonia', flag: 'https://flagcdn.com/w40/ee.png' }, 48: { name: 'Luxembourg', flag: 'https://flagcdn.com/w40/lu.png' },
+
+    // --- UEFA LEAGUE D ---
+    // Group D1
+    49: { name: 'Malta', flag: 'https://flagcdn.com/w40/mt.png' }, 50: { name: 'Gibraltar', flag: 'https://flagcdn.com/w40/gi.png' }, 51: { name: 'Andorra', flag: 'https://flagcdn.com/w40/ad.png' },
+    // Group D2
+    52: { name: 'Lithuania', flag: 'https://flagcdn.com/w40/lt.png' }, 53: { name: 'Azerbaijan', flag: 'https://flagcdn.com/w40/az.png' }, 54: { name: 'Liechtenstein', flag: 'https://flagcdn.com/w40/li.png' },
 
     // --- OTHER TOP COUNTRIES ---
-    21: { name: 'Argentina', flag: 'https://flagcdn.com/w40/ar.png' }, 22: { name: 'Brazil', flag: 'https://flagcdn.com/w40/br.png' },
-    23: { name: 'Uruguay', flag: 'https://flagcdn.com/w40/uy.png' }, 24: { name: 'Colombia', flag: 'https://flagcdn.com/w40/co.png' },
-    25: { name: 'USA', flag: 'https://flagcdn.com/w40/us.png' }, 26: { name: 'Mexico', flag: 'https://flagcdn.com/w40/mx.png' },
-    27: { name: 'Morocco', flag: 'https://flagcdn.com/w40/ma.png' }, 28: { name: 'Algeria', flag: 'https://flagcdn.com/w40/dz.png' },
-    29: { name: 'Nigeria', flag: 'https://flagcdn.com/w40/ng.png' }, 30: { name: 'Senegal', flag: 'https://flagcdn.com/w40/sn.png' },
+    61: { name: 'Argentina', flag: 'https://flagcdn.com/w40/ar.png' }, 62: { name: 'Brazil', flag: 'https://flagcdn.com/w40/br.png' },
+    63: { name: 'Uruguay', flag: 'https://flagcdn.com/w40/uy.png' }, 64: { name: 'Colombia', flag: 'https://flagcdn.com/w40/co.png' },
+    65: { name: 'USA', flag: 'https://flagcdn.com/w40/us.png' }, 66: { name: 'Mexico', flag: 'https://flagcdn.com/w40/mx.png' },
+    67: { name: 'Morocco', flag: 'https://flagcdn.com/w40/ma.png' }, 68: { name: 'Algeria', flag: 'https://flagcdn.com/w40/dz.png' },
+    69: { name: 'Nigeria', flag: 'https://flagcdn.com/w40/ng.png' }, 70: { name: 'Senegal', flag: 'https://flagcdn.com/w40/sn.png' },
 
-    // --- CLUBS (Original Wikimedia SVGs - No Size Errors) ---
-    51: { name: 'Real Madrid', flag: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' }, 
-    52: { name: 'Barcelona', flag: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' }, 
-    53: { name: 'Man City', flag: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg' }, 
-    54: { name: 'Arsenal', flag: 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg' }, 
-    55: { name: 'Liverpool', flag: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg' },
-    56: { name: 'Man United', flag: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg' }, 
-    57: { name: 'Chelsea', flag: 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg' },
-    58: { name: 'Bayern Munich', flag: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg' }, 
-    59: { name: 'PSG', flag: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg' },
-    60: { name: 'Juventus', flag: 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_2017_icon_%28black%29.svg' },
-    61: { name: 'Al Nassr', flag: 'https://upload.wikimedia.org/wikipedia/en/b/b3/Al-Nassr.svg' }
+    // --- CLUBS ---
+    81: { name: 'Real Madrid', flag: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' }, 
+    82: { name: 'Barcelona', flag: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' }, 
+    83: { name: 'Man City', flag: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg' }, 
+    84: { name: 'Arsenal', flag: 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg' }, 
+    85: { name: 'Liverpool', flag: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg' },
+    86: { name: 'Man United', flag: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg' }, 
+    87: { name: 'Chelsea', flag: 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg' },
+    88: { name: 'Bayern Munich', flag: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg' }, 
+    89: { name: 'PSG', flag: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg' },
+    90: { name: 'Juventus', flag: 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_2017_icon_%28black%29.svg' },
+    91: { name: 'Al Nassr', flag: 'https://upload.wikimedia.org/wikipedia/en/b/b3/Al-Nassr.svg' }
 };
+
 
 // =========================================================================================
 // 🖼️ PIC OVERLAY PRELOAD (Base64 & Downloader)
