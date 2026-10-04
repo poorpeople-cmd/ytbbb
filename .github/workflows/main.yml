@@ -176,10 +176,13 @@ on:
         default: 'Football ⚽'
       scoreboard_matches:
         description: |
-          Matches (e.g. 1,2 | 9,11) OFF to disable.
-          🔹 UEFA: 1:FRA, 2:ITA, 3:BEL, 4:TUR, 5:GER, 6:NED, 7:SRB, 8:GRE, 9:ESP, 10:CRO, 11:ENG, 12:CZE, 13:POR, 14:DEN, 15:NOR, 16:WAL
-          🔹 WORLD: 21:ARG, 22:BRA, 23:URU, 24:COL, 25:USA, 26:MEX, 27:MAR, 28:ALG, 29:NGA, 30:SEN
-          🔹 CLUBS: 51:RMA, 52:BARCA, 53:CITY, 54:ARS, 55:LIV, 56:MUN, 57:CHE, 58:BAY, 59:PSG, 60:JUV, 61:ALN
+          Matches (e.g. 1,2 | 17,18). OFF to disable.
+          - UEFA LEAGUE A: [A1] 1:FRA, 2:ITA, 3:BEL, 4:TUR [A2] 5:GER, 6:NED, 7:SRB, 8:GRE [A3] 9:ESP, 10:CRO, 11:ENG, 12:CZE [A4] 13:POR, 14:DEN, 15:NOR, 16:WAL
+          - UEFA LEAGUE B: [B1] 17:SCO, 18:SUI, 19:SVN, 20:MKD [B2] 21:HUN, 22:UKR, 23:GEO, 24:NIR [B3] 25:ISR, 26:AUT, 27:IRL, 28:KOS [B4] 29:POL, 30:BIH, 31:ROU, 32:SWE
+          - UEFA LEAGUE C: [C1] 33:ALB, 34:FIN, 35:BLR, 36:SMR [C2] 37:MNE, 38:ARM, 39:CYP, 40:LVA [C3] 41:KAZ, 42:SVK, 43:FRO, 44:MDA [C4] 45:ISL, 46:BUL, 47:EST, 48:LUX
+          - UEFA LEAGUE D: [D1] 49:MLT, 50:GIB, 51:AND [D2] 52:LTU, 53:AZE, 54:LIE
+          - WORLD: 61:ARG, 62:BRA, 63:URU, 64:COL, 65:USA, 66:MEX, 67:MAR, 68:ALG, 69:NGA, 70:SEN
+          - CLUBS: 81:RMA, 82:BARCA, 83:CITY, 84:ARS, 85:LIV, 86:MUN, 87:CHE, 88:BAY, 89:PSG, 90:JUV, 91:ALN
         required: true
         type: string
         default: 'OFF'
