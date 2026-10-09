@@ -1,3 +1,6 @@
+
+
+
 name: Delete Old Workflow Runs
 on:
   workflow_dispatch:
@@ -5,13 +8,63 @@ on:
 jobs:
   delete-runs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       actions: write
     steps:
       - name: Delete all workflow runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          CURRENT_RUN: ${{ github.run_id }}
         run: |
-          gh api repos/${{ github.repository }}/actions/runs \
-            --paginate -q '.workflow_runs[] | select(.id != ${{ github.run_id }}) | .id' | \
-          xargs -I {} -P 5 gh api repos/${{ github.repository }}/actions/runs/{} -X DELETE || true
+          # 1. Saare run IDs ek file mein jama karo (current run ko chhod kar)
+          gh api "repos/$REPO/actions/runs?per_page=100" --paginate \
+            -q ".workflow_runs[] | select(.id != $CURRENT_RUN) | .id" > run_ids.txt
+
+          COUNT=$(wc -l < run_ids.txt)
+          echo "Total runs to delete: $COUNT"
+
+          # 2. Agar kuch nahi mila to yahin stop
+          if [ "$COUNT" -eq 0 ]; then
+            echo "Nothing to delete. Done."
+            exit 0
+          fi
+
+          # 3. Delete karo (5 parallel), -r ki wajah se khali input par kuch nahi chalega
+          xargs -r -P 5 -I {} sh -c \
+            'gh api -X DELETE "repos/$REPO/actions/runs/{}" --silent || echo "Skipped {}"' \
+            < run_ids.txt
+
+          echo "All done."
+
+
+
+
+
+
+
+
+
+
+
+
+# ================= yeh sab delet kar deta hai very good. issue is yeh running stop nahye hu rah hai ===========
+
+# name: Delete Old Workflow Runs
+# on:
+#   workflow_dispatch:
+
+# jobs:
+#   delete-runs:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       actions: write
+#     steps:
+#       - name: Delete all workflow runs
+#         env:
+#           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           gh api repos/${{ github.repository }}/actions/runs \
+#             --paginate -q '.workflow_runs[] | select(.id != ${{ github.run_id }}) | .id' | \
+#           xargs -I {} -P 5 gh api repos/${{ github.repository }}/actions/runs/{} -X DELETE || true
