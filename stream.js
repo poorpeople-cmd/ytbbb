@@ -1554,7 +1554,7 @@ const TEAM_DB = {
     88: { name: 'Bayern Munich', flag: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg' }, 
     89: { name: 'PSG', flag: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg' },
     90: { name: 'Juventus', flag: 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_2017_icon_%28black%29.svg' },
-    91: { name: 'Al Nassr', flag: 'https://upload.wikimedia.org/wikipedia/en/b/b3/Al-Nassr.svg' }
+    91: { name: 'Al Nassr', flag: 'https://upload.wikimedia.org/wikipedia/en/b/b3/Al-Nassr.svg' },
 
 
 
