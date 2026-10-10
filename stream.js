@@ -1869,12 +1869,13 @@ rawUrls.split('|').forEach(phaseStr => {
     let durationPart = parts.length > 1 ? parts[1].trim() : 'None';
     
     let phaseUrls = urlsPart.split(',').map(u => {
-        let trimmed = u.trim();
-        let hangThreshold = 8000; 
-        if (trimmed.startsWith('!')) { hangThreshold = 20000; trimmed = trimmed.substring(1); }
-        if (!trimmed.startsWith('http')) trimmed = 'https://' + trimmed;
-        return { url: trimmed, hangTime: hangThreshold };
-    }).filter(u => u.url !== 'https://');
+    let trimmed = u.trim();
+    let hangThreshold = 8000; 
+    if (trimmed.startsWith('!')) { hangThreshold = 20000; trimmed = trimmed.substring(1); }
+    // 🟢 UPDATE: Agar 'about:blank' hai toh uske aage https:// mat lagao
+    if (!trimmed.startsWith('http') && trimmed !== 'about:blank') trimmed = 'https://' + trimmed;
+    return { url: trimmed, hangTime: hangThreshold };
+}).filter(u => u.url !== 'https://');
     
     if (phaseUrls.length > 0) {
         phases.push({ urls: phaseUrls, durationStr: durationPart, durationMs: parseDurationToMs(durationPart) });
