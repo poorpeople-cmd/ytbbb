@@ -1932,10 +1932,19 @@ async function injectOfficialWatermark(page) {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div'); overlay.id = 'sport4u-watermark';
                         
-                        overlay.innerHTML = `
+                        // overlay.innerHTML = `
 
-                            <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000;">
-                                Guys, please support me ❤️🙏
+                        //     <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000;">
+                        //         Guys, please support me ❤️🙏
+                        //     </div>
+                        // `;
+
+                        overlay.innerHTML = `
+                            <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000; text-align: center;">
+                                <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
+                                <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
+                                    "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
+                                </div>
                             </div>
                         `;
                         
