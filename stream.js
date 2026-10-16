@@ -1931,7 +1931,9 @@ async function injectOfficialWatermark(page) {
                 try {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div'); overlay.id = 'sport4u-watermark';
-                        
+
+                        // part 1
+                    
                         // overlay.innerHTML = `
 
                         //     <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000;">
@@ -1939,14 +1941,148 @@ async function injectOfficialWatermark(page) {
                         //     </div>
                         // `;
 
+
+                        // part 2
+                        
+                        // overlay.innerHTML = `
+                        //     <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000; text-align: center;">
+                        //         <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
+                        //         <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
+                        //             "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
+                        //         </div>
+                        //     </div>
+                        // `;
+
+                        // part 3
+
                         overlay.innerHTML = `
-                            <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000; text-align: center;">
-                                <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
-                                <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
-                                    "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
-                                </div>
-                            </div>
-                        `;
+    <div style="
+        position: relative;
+        background: radial-gradient(circle at 50% 100%, rgba(212, 175, 55, 0.18) 0%, rgba(10, 14, 18, 0.96) 65%, rgba(5, 7, 10, 0.98) 100%);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 2px solid #d4af37;
+        outline: 1px solid rgba(212, 175, 55, 0.35);
+        outline-offset: -7px;
+        border-radius: 22px;
+        padding: 3.8vh 4vw 2vh 4vw;
+        margin: 4vh auto 0 auto;
+        max-width: 86%;
+        text-align: center;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(212, 175, 55, 0.25), inset 0 0 25px rgba(212, 175, 55, 0.08);
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    ">
+        <!-- Top Overlapping Royal Gold Badge -->
+        <div style="
+            position: absolute;
+            top: -2.1vh;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, #4a3511 0%, #1f1606 100%);
+            border: 1.5px solid #f5d77f;
+            outline: 1px solid rgba(212, 175, 55, 0.4);
+            outline-offset: -4px;
+            color: #fce288;
+            font-weight: 800;
+            font-size: 2.1vmin;
+            letter-spacing: 1.5px;
+            padding: 0.7vh 3.2vw;
+            border-radius: 50px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.85), 0 0 15px rgba(212, 175, 55, 0.45);
+            white-space: nowrap;
+            text-transform: uppercase;
+        ">
+            ★ CREATOR'S VERIFIED PROMISE ★
+        </div>
+
+        <!-- Main Heading with Highlighted "1 second" -->
+        <div style="
+            font-size: 3.7vmin;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 1.6vh;
+            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.8);
+            letter-spacing: 0.3px;
+        ">
+            Guys, just <span style="
+                background: linear-gradient(180deg, #fff6d1 0%, #e5b842 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                filter: drop-shadow(0 0 10px rgba(229, 184, 66, 0.45));
+            ">1 second</span> of your time! ❤️🙏
+        </div>
+
+        <!-- Luxury Italic Message Body -->
+        <div style="
+            font-size: 2.9vmin;
+            color: #eaeaea;
+            line-height: 1.55;
+            font-style: italic;
+            font-weight: 500;
+            max-width: 94%;
+            margin: 0 auto;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
+        ">
+            “Before you skip, check my <span style="color: #ecc454; font-weight: 700;">Profile</span> or 
+            <span style="color: #ecc454; font-weight: 700;">Pinned Comment</span> once... It takes 1 second 
+            to see that my work is <span style="
+                color: #f7d26a;
+                font-weight: 700;
+                border-bottom: 2px solid rgba(247, 210, 106, 0.65);
+                padding-bottom: 1px;
+            ">100% real & legit!</span> ✨🛡️”
+        </div>
+
+        <!-- Emerald & Gold "TRUSTED & VERIFIED" Pill -->
+        <div style="
+            display: flex;
+            justify-content: flex-end;
+            padding-right: 4%;
+            margin-top: 1.6vh;
+        ">
+            <div style="
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: linear-gradient(180deg, #0f3d29 0%, #061f14 100%);
+                border: 1.5px solid #d4af37;
+                color: #f3d478;
+                font-family: 'Georgia', serif;
+                font-weight: 700;
+                font-size: 2vmin;
+                letter-spacing: 1px;
+                padding: 0.5vh 2.2vw;
+                border-radius: 50px;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(46, 204, 113, 0.25);
+            ">
+                TRUSTED & VERIFIED <span style="color: #4ade80; font-family: sans-serif; font-weight: 900;">✔</span>
+            </div>
+        </div>
+
+        <!-- Bouncing Metallic Gold Arrow -->
+        <div style="
+            margin-top: 0.5vh;
+            font-size: 4.2vmin;
+            font-weight: 900;
+            background: linear-gradient(180deg, #fff3c4 0%, #c89628 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.45));
+            animation: luxuryArrowBounce 1.5s infinite ease-in-out;
+            display: inline-block;
+            line-height: 1;
+        ">
+            ↓
+        </div>
+    </div>
+
+    <style>
+        @keyframes luxuryArrowBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
+        }
+    </style>
+`;
                         
                         overlay.style.cssText = `position: fixed !important; top: 0 !important; left: 0 !important; z-index: 2147483647 !important; background-color: rgba(0, 0, 0, 0.70) !important; color: #ffffff !important; padding: 1vh 2vw !important; font-family: 'Segoe UI', Arial, sans-serif !important; font-size: 4vmin !important; font-weight: bold !important; text-align: center !important; border-top: 0.3vmin solid #e50914 !important; border-bottom: 0.3vmin solid #e50914 !important; width: 100vw !important; height: auto !important; max-height: none !important; overflow: visible !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: center !important; pointer-events: none !important;`;
                         let target = document.body || document.documentElement; if (target) target.appendChild(overlay);
