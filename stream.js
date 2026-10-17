@@ -511,18 +511,22 @@ async function injectOfficialWatermark(page) {
                         if (powerText && powerText.toLowerCase() !== 'none' && powerText.trim() !== '') {
                             powerTextHTML = `
                                 <div style="
-                                    font-size: 6vmin; 
+                                    display: inline-block;
+                                    font-size: 5.5vmin; 
                                     font-weight: 900; 
                                     text-transform: uppercase;
-                                    letter-spacing: 4px;
+                                    letter-spacing: 3px;
                                     margin-bottom: 2vh;
-                                    background: linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+                                    padding: 1.2vh 4vw;
+                                    border-radius: 12px;
+                                    color: #ffffff; /* Solid White Text for 100% visibility */
+                                    text-shadow: 2px 2px 4px rgba(0,0,0,1), 0 0 15px rgba(255,255,255,0.6);
+                                    /* Box ka background jo color change karega */
+                                    background: linear-gradient(90deg, rgba(229, 9, 20, 0.85), rgba(255, 115, 0, 0.85), rgba(122, 0, 255, 0.85), rgba(229, 9, 20, 0.85));
                                     background-size: 200% auto;
-                                    color: transparent;
-                                    -webkit-background-clip: text;
-                                    background-clip: text;
-                                    animation: liquidShine 3s linear infinite, floatPulse 4s ease-in-out infinite;
-                                    filter: drop-shadow(0px 8px 15px rgba(0, 0, 0, 0.9)) drop-shadow(0px 0px 20px rgba(255, 255, 255, 0.2));
+                                    border: 2px solid rgba(255, 255, 255, 0.5);
+                                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 115, 0, 0.6);
+                                    animation: bgBoxShift 3s linear infinite, floatPulse 4s ease-in-out infinite;
                                 ">
                                     ${powerText}
                                 </div>
@@ -578,10 +582,14 @@ async function injectOfficialWatermark(page) {
                             <style>
                                 @keyframes moveBg { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
                                 @keyframes colorShift { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(3600deg); } }
-                                @keyframes liquidShine { to { background-position: 200% center; } }
+                                
+                                /* Box Background Animation */
+                                @keyframes bgBoxShift { to { background-position: 200% center; } }
+                                
+                                /* Floating and Pulsing Animation */
                                 @keyframes floatPulse { 
-                                    0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0px 8px 15px rgba(0,0,0,0.9)) brightness(1); } 
-                                    50% { transform: translateY(-8px) scale(1.03); filter: drop-shadow(0px 15px 25px rgba(229, 9, 20, 0.4)) brightness(1.2); } 
+                                    0%, 100% { transform: translateY(0px) scale(1); box-shadow: 0 10px 25px rgba(0,0,0,0.9), 0 0 25px rgba(255, 115, 0, 0.6); } 
+                                    50% { transform: translateY(-8px) scale(1.03); box-shadow: 0 15px 35px rgba(0,0,0,1), 0 0 40px rgba(122, 0, 255, 0.8); } 
                                 }
                             </style>
                         `;
