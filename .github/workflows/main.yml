@@ -12,7 +12,7 @@ on:
         description: 'Format: url1,url2::2h 20m | url3,url4::1h | url5::None'
         required: true
         type: string
-        default: 'https://dadocric.st/player.php?id=starsp3&v=m::None'
+        default: 'None'
       youtube_stream_key:
         description: 'YouTube Stream Key (Optional)'
         required: false
