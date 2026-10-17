@@ -51,6 +51,7 @@ const VIDEO_SHOW_TIME = parseInt(process.env.VIDEO_SHOW_TIME) || 10;
 const VIDEO_HIDE_TIME = parseInt(process.env.VIDEO_HIDE_TIME) || 5;
 
 const WATERMARK_ICON_INPUT = process.env.WATERMARK_ICON || 'Football ⚽';
+const CENTER_POWER_TEXT = process.env.CENTER_POWER_TEXT || 'None';
 let MATCH_ICON = '⚽';
 if (WATERMARK_ICON_INPUT.includes('Cricket')) MATCH_ICON = '🏏';
 else if (WATERMARK_ICON_INPUT.includes('Both')) MATCH_ICON = '⚽ 🏏';
@@ -500,141 +501,97 @@ async function injectBlackOverlay(page) {
 async function injectOfficialWatermark(page) {
      if (!page || !ENABLE_TEXT_OVERLAY) return;
      try {
-        await page.evaluate((icon) => {
+        await page.evaluate((icon, powerText) => {
             setInterval(() => {
                 try {
                     if (!document.getElementById('sport4u-watermark')) {
                         const overlay = document.createElement('div'); overlay.id = 'sport4u-watermark';
 
-                        // part 1
-                    
-                        // overlay.innerHTML = `
-
-                        //     <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000;">
-                        //         Guys, please support me ❤️🙏
-                        //     </div>
-                        // `;
-
-
-                        // part 2
-                        
-                        // overlay.innerHTML = `
-                        //     <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000; text-align: center;">
-                        //         <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
-                        //         <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
-                        //             "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
-                        //         </div>
-                        //     </div>
-                        // `;
-
-                        // part 3
-
-
-
-                        
-//                       overlay.innerHTML = `
-//     <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000; text-align: center;">
-//         <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
-//         <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
-//             "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
-//         </div>
-        
-//         <!-- Emerald & Gold "TRUSTED & VERIFIED" Pill -->
-//         <div style="
-//             display: flex;
-//             justify-content: flex-end;
-//             padding-right: 4%;
-//             margin-top: 1.6vh;
-//         ">
-//             <div style="
-//                 display: inline-flex;
-//                 align-items: center;
-//                 gap: 6px;
-//                 background: linear-gradient(180deg, #0f3d29 0%, #061f14 100%);
-//                 border: 1.5px solid #d4af37;
-//                 color: #f3d478;
-//                 font-family: 'Georgia', serif;
-//                 font-weight: 700;
-//                 font-size: 2vmin;
-//                 letter-spacing: 1px;
-//                 padding: 0.5vh 2.2vw;
-//                 border-radius: 50px;
-//                 box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(46, 204, 113, 0.25);
-//             ">
-//                 TRUSTED & VERIFIED <span style="color: #4ade80; font-family: sans-serif; font-weight: 900;">✔</span>
-//             </div>
-//         </div>
-//     </div>
-// `;
-
-
-
+                        let powerTextHTML = '';
+                        if (powerText && powerText.toLowerCase() !== 'none' && powerText.trim() !== '') {
+                            powerTextHTML = `
+                                <div style="
+                                    font-size: 6vmin; 
+                                    font-weight: 900; 
+                                    text-transform: uppercase;
+                                    letter-spacing: 4px;
+                                    margin-bottom: 2vh;
+                                    background: linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+                                    background-size: 200% auto;
+                                    color: transparent;
+                                    -webkit-background-clip: text;
+                                    background-clip: text;
+                                    animation: liquidShine 3s linear infinite, floatPulse 4s ease-in-out infinite;
+                                    filter: drop-shadow(0px 8px 15px rgba(0, 0, 0, 0.9)) drop-shadow(0px 0px 20px rgba(255, 255, 255, 0.2));
+                                ">
+                                    ${powerText}
+                                </div>
+                            `;
+                        }
 
                         overlay.innerHTML = `
-    <div style="
-        font-size: 3.5vmin; 
-        margin-top: 2vh; 
-        color: #dddddd; 
-        text-shadow: 1px 1px 2px #000; 
-        text-align: center;
-        padding: 3vh;
-        border-radius: 15px;
-        /* Yahan se moving background start hota hai */
-        background: linear-gradient(270deg, #05070a, #1a1c20, #0a0e14, #000000);
-        background-size: 400% 400%;
-        animation: botBypassBg 8s ease infinite;
-    ">
-        <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
-        <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
-            "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
-        </div>
-        
-        <!-- Emerald & Gold "TRUSTED & VERIFIED" Pill -->
-        <div style="
-            display: flex;
-            justify-content: flex-end;
-            padding-right: 4%;
-            margin-top: 1.6vh;
-        ">
-            <div style="
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                background: linear-gradient(180deg, #0f3d29 0%, #061f14 100%);
-                border: 1.5px solid #d4af37;
-                color: #f3d478;
-                font-family: 'Georgia', serif;
-                font-weight: 700;
-                font-size: 2vmin;
-                letter-spacing: 1px;
-                padding: 0.5vh 2.2vw;
-                border-radius: 50px;
-                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(46, 204, 113, 0.25);
-            ">
-                TRUSTED & VERIFIED <span style="color: #4ade80; font-family: sans-serif; font-weight: 900;">✔</span>
-            </div>
-        </div>
-    </div>
+                            <div style="
+                                font-size: 3.5vmin; 
+                                margin-top: 2vh; 
+                                color: #dddddd; 
+                                text-shadow: 1px 1px 2px #000; 
+                                text-align: center;
+                                padding: 3vh;
+                                border-radius: 15px;
+                                background: linear-gradient(270deg, #1a0b1c, #0d1a26, #1c110a, #0a1c13, #1c0a0a);
+                                background-size: 800% 800%;
+                                animation: moveBg 12s ease infinite, colorShift 120s linear infinite;
+                            ">
+                                ${powerTextHTML}
 
-    <!-- CSS for continuous pixel movement -->
-    <style>
-        @keyframes botBypassBg {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-    </style>
-`;
+                                <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
+                                <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
+                                    "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
+                                </div>
+                                
+                                <div style="
+                                    display: flex;
+                                    justify-content: flex-end;
+                                    padding-right: 4%;
+                                    margin-top: 1.6vh;
+                                ">
+                                    <div style="
+                                        display: inline-flex;
+                                        align-items: center;
+                                        gap: 6px;
+                                        background: linear-gradient(180deg, #0f3d29 0%, #061f14 100%);
+                                        border: 1.5px solid #d4af37;
+                                        color: #f3d478;
+                                        font-family: 'Georgia', serif;
+                                        font-weight: 700;
+                                        font-size: 2vmin;
+                                        letter-spacing: 1px;
+                                        padding: 0.5vh 2.2vw;
+                                        border-radius: 50px;
+                                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(46, 204, 113, 0.25);
+                                    ">
+                                        TRUSTED & VERIFIED <span style="color: #4ade80; font-family: sans-serif; font-weight: 900;">✔</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                        
-                     
+                            <style>
+                                @keyframes moveBg { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+                                @keyframes colorShift { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(3600deg); } }
+                                @keyframes liquidShine { to { background-position: 200% center; } }
+                                @keyframes floatPulse { 
+                                    0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0px 8px 15px rgba(0,0,0,0.9)) brightness(1); } 
+                                    50% { transform: translateY(-8px) scale(1.03); filter: drop-shadow(0px 15px 25px rgba(229, 9, 20, 0.4)) brightness(1.2); } 
+                                }
+                            </style>
+                        `;
                         
                         overlay.style.cssText = `position: fixed !important; top: 0 !important; left: 0 !important; z-index: 2147483647 !important; background-color: rgba(0, 0, 0, 0.70) !important; color: #ffffff !important; padding: 1vh 2vw !important; font-family: 'Segoe UI', Arial, sans-serif !important; font-size: 4vmin !important; font-weight: bold !important; text-align: center !important; border-top: 0.3vmin solid #e50914 !important; border-bottom: 0.3vmin solid #e50914 !important; width: 100vw !important; height: auto !important; max-height: none !important; overflow: visible !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: center !important; pointer-events: none !important;`;
                         let target = document.body || document.documentElement; if (target) target.appendChild(overlay);
                     }
                 } catch(e) {}
             }, 1000); 
-        }, MATCH_ICON); 
+        }, MATCH_ICON, CENTER_POWER_TEXT); 
     } catch (e) {}
 }
 
@@ -1514,7 +1471,7 @@ else {
             const scoreboardMatchesStatus = process.env.SCOREBOARD_MATCHES || 'OFF';
             
             console.log("[⏳] SMART HANDOFF: Triggering new GitHub Workflow in background...");
-            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f black_overlay_opacity="${blackOverlayOpacity}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f pic_urls="${PIC_URLS_INPUT}" -f enable_text_overlay="${textOverlayStatus}" -f watermark_icon="${watermarkIconStatus}" -f enable_video_overlay="${videoOverlayStatus}" -f video_overlay_position="${videoPositionStatus}" -f video_show_time="${videoShowStatus}" -f video_hide_time="${videoHideStatus}" -f background_audios="${bgAudiosInputStatus}" -f scoreboard_matches="${scoreboardMatchesStatus}" -f custom_duration="None"`;
+            const cmd = `gh workflow run main.yml -f target_urls="${targetUrls}" -f youtube_stream_key="${YT_KEY}" -f facebook_stream_key="${FB_KEY}" -f stream_format="${format}" -f stream_quality="${quality}" -f server_selection="${server}" -f proxy_engine="${PROXY_ENGINE}" -f enable_black_overlay="${blackOverlayStatus}" -f black_overlay_opacity="${blackOverlayOpacity}" -f enable_stream_audio="${streamAudioStatus}" -f enable_background_audio="${bgAudioStatus}" -f enable_pic_overlay="${picOverlayStatus}" -f pic_urls="${PIC_URLS_INPUT}" -f enable_text_overlay="${textOverlayStatus}" -f watermark_icon="${watermarkIconStatus}" -f center_power_text="${CENTER_POWER_TEXT}" -f enable_video_overlay="${videoOverlayStatus}" -f video_overlay_position="${videoPositionStatus}" -f video_show_time="${videoShowStatus}" -f video_hide_time="${videoHideStatus}" -f background_audios="${bgAudiosInputStatus}" -f scoreboard_matches="${scoreboardMatchesStatus}" -f custom_duration="None"`;
             execSync(cmd, { stdio: 'inherit' });
             
             // 8 Minutes (480000ms) overlap time for new runner setup and OBS takeover
