@@ -529,8 +529,61 @@ async function injectOfficialWatermark(page) {
 
                         // part 3
 
-                      overlay.innerHTML = `
-    <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000; text-align: center;">
+
+
+                        
+//                       overlay.innerHTML = `
+//     <div style="font-size: 3.5vmin; margin-top: 2vh; color: #dddddd; text-shadow: 1px 1px 2px #000; text-align: center;">
+//         <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
+//         <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
+//             "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
+//         </div>
+        
+//         <!-- Emerald & Gold "TRUSTED & VERIFIED" Pill -->
+//         <div style="
+//             display: flex;
+//             justify-content: flex-end;
+//             padding-right: 4%;
+//             margin-top: 1.6vh;
+//         ">
+//             <div style="
+//                 display: inline-flex;
+//                 align-items: center;
+//                 gap: 6px;
+//                 background: linear-gradient(180deg, #0f3d29 0%, #061f14 100%);
+//                 border: 1.5px solid #d4af37;
+//                 color: #f3d478;
+//                 font-family: 'Georgia', serif;
+//                 font-weight: 700;
+//                 font-size: 2vmin;
+//                 letter-spacing: 1px;
+//                 padding: 0.5vh 2.2vw;
+//                 border-radius: 50px;
+//                 box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(46, 204, 113, 0.25);
+//             ">
+//                 TRUSTED & VERIFIED <span style="color: #4ade80; font-family: sans-serif; font-weight: 900;">✔</span>
+//             </div>
+//         </div>
+//     </div>
+// `;
+
+
+
+
+                        overlay.innerHTML = `
+    <div style="
+        font-size: 3.5vmin; 
+        margin-top: 2vh; 
+        color: #dddddd; 
+        text-shadow: 1px 1px 2px #000; 
+        text-align: center;
+        padding: 3vh;
+        border-radius: 15px;
+        /* Yahan se moving background start hota hai */
+        background: linear-gradient(270deg, #05070a, #1a1c20, #0a0e14, #000000);
+        background-size: 400% 400%;
+        animation: botBypassBg 8s ease infinite;
+    ">
         <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
         <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
             "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
@@ -562,8 +615,18 @@ async function injectOfficialWatermark(page) {
             </div>
         </div>
     </div>
+
+    <!-- CSS for continuous pixel movement -->
+    <style>
+        @keyframes botBypassBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
 `;
 
+                        
                      
                         
                         overlay.style.cssText = `position: fixed !important; top: 0 !important; left: 0 !important; z-index: 2147483647 !important; background-color: rgba(0, 0, 0, 0.70) !important; color: #ffffff !important; padding: 1vh 2vw !important; font-family: 'Segoe UI', Arial, sans-serif !important; font-size: 4vmin !important; font-weight: bold !important; text-align: center !important; border-top: 0.3vmin solid #e50914 !important; border-bottom: 0.3vmin solid #e50914 !important; width: 100vw !important; height: auto !important; max-height: none !important; overflow: visible !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; align-items: center !important; pointer-events: none !important;`;
