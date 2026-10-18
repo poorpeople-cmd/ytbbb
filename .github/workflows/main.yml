@@ -258,9 +258,9 @@ jobs:
           sudo apt-get update && sudo apt-get install -y cloudflare-warp
           
           # 🟢 KING1 FIX: Exact working commands for WARP proxy
-          warp-cli --accept-tos register
-          warp-cli --accept-tos set-mode proxy
-          warp-cli --accept-tos set-proxy-port 40000
+          warp-cli --accept-tos registration new
+          warp-cli --accept-tos mode proxy
+          warp-cli --accept-tos proxy port 40000
           warp-cli --accept-tos connect
           sleep 5
           curl -x socks5://127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace # Verify WARP connection
