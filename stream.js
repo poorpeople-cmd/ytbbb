@@ -1,4 +1,8 @@
 
+
+
+
+
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -461,7 +465,6 @@ let obsProcess = null; let audioProcesses = [];
 async function createBrowserInstance(args) {
     return await puppeteer.launch({
         headless: false, 
-        executablePath: '/usr/bin/google-chrome', // 🟢 GitHub Server (Linux) ka real Chrome jisme DRM hota hai
         defaultViewport: { width: RES_W, height: RES_H },
         ignoreDefaultArgs: ['--enable-automation'], 
         args: args
@@ -1100,14 +1103,29 @@ async function initializeVideo(p, startMuted) {
         while (!isVideoPlaying && attempts < 15) {
             for (const frame of p.frames()) {
                 try {
+                    if (frame.isDetached()) continue;
                     const autoPlayed = await frame.evaluate(() => {
                         let playing = false;
-                        document.querySelectorAll('video:not(#sport4u-video-overlay)').forEach(v => { if (v.clientWidth > 50 && !v.paused && v.currentTime > 0) { v.muted = false; v.volume = 1.0; playing = true; } });
+                        document.querySelectorAll('video:not(#sport4u-video-overlay)').forEach(v => { 
+                            if (v.clientWidth > 50) { 
+                                // 🟢 KING1 FIX: Force Unmute & Play aggressive check
+                                if (v.paused) {
+                                    v.muted = false;
+                                    v.volume = 1.0;
+                                    v.play().catch(()=>{}); 
+                                }
+                                if (!v.paused && v.currentTime > 0) {
+                                    v.muted = false; 
+                                    v.volume = 1.0; 
+                                    playing = true; 
+                                }
+                            } 
+                        });
                         return playing;
                     });
                     if (autoPlayed) { isVideoPlaying = true; break; }
 
-                    const playBtn = await frame.$('.jw-icon-display[aria-label="Play"], button[data-plyr="play"], .vjs-big-play-button, [class*="unmute"], .fp-play');
+                    const playBtn = await frame.$('.jw-icon-display[aria-label="Play"], button[data-plyr="play"], .vjs-big-play-button, [class*="unmute"], .fp-play, .play-wrapper, #play-btn'); // Added generic classes
                     if (playBtn) {
                         const isVisible = await frame.evaluate(el => { const style = window.getComputedStyle(el); return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0'; }, playBtn);
                         if (isVisible) { await frame.evaluate(el => el.click(), playBtn); await new Promise(r => setTimeout(r, 3000)); isVideoPlaying = true; break; }
@@ -1401,13 +1419,16 @@ async function startDirectStreaming() {
 
     if (isObsConnected) { try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){} }
 
-    browserArgs = [
+browserArgs = [
         '--no-sandbox', '--disable-setuid-sandbox', `--window-size=${RES_W},${RES_H}`, '--window-position=0,0', '--kiosk', '--start-fullscreen',
-        '--autoplay-policy=no-user-gesture-required', '--disable-dev-shm-usage', '--ignore-certificate-errors', '--disable-web-security',
+        '--autoplay-policy=no-user-gesture-required', '--disable-dev-shm-usage', '--ignore-certificate-errors', 
+        /* 🚨 REMOVED: '--disable-web-security' (This was triggering the fake block) */
         '--ignore-gpu-blocklist', '--use-gl=egl', '--disable-accelerated-video-decode', '--disable-accelerated-video-encode',
         '--disable-smooth-scrolling', '--disable-blink-features=AutomationControlled',
         '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion,NetworkServiceInProcess2',
-        '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding'
+        '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
+        // 🟢 KING1 FIX: Force Chrome to use the default ALSA audio device (PulseAudio)
+        '--alsa-output-device=default'
     ];
     if (PROXY_ENGINE.includes('Cloudflare')) browserArgs.push('--proxy-server=socks5://127.0.0.1:40000');
 
@@ -1424,13 +1445,6 @@ async function startDirectStreaming() {
     await showLoadingUI(page, "STREAM LOADING", "Optimizing live video connection...");
     await initializeVideo(page, false); 
     
-    // 🟢 DEBUG BLOCK START: Exact issue dekhne ke liye 15s wait aur screenshot
-    console.log('[🔍] DEBUG: Waiting 15s to capture DRM status screenshot...');
-    await new Promise(r => setTimeout(r, 15000));
-    await page.screenshot({ path: 'github-debug-screen.png', fullPage: true });
-    console.log('[📸] DEBUG: Screenshot saved as github-debug-screen.png');
-    // 🟢 DEBUG BLOCK END
-
     const activeVisualReady = await waitForActiveVisualReady(page);
     if (activeVisualReady) await hideLoadingUI(page); 
     
@@ -1502,13 +1516,6 @@ else {
 }
 
 mainLoop();
-
-
-
-
-
-
-
 
 
 
