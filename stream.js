@@ -494,9 +494,24 @@ async function injectBlackOverlay(page) {
                         } else if (overlayMode.includes('Full Black')) { 
                             container.style.cssText = baseCss + `background-color: #000000 !important;`; 
                         } else if (overlayMode.includes('Tiny Holes')) { 
-                            // Agar opacity 100 se zyada hai, toh holes ko extra dark background se fill karo
-                            let extraDark = rawOpacity > 100 ? (rawOpacity - 100) / 100 : 0;
-                            container.style.cssText = baseCss + `background-image: radial-gradient(circle, transparent 1px, #000000 1.5px) !important; background-size: 6px 6px !important; background-color: rgba(0, 0, 0, ${extraDark}) !important;`; 
+                            let holeSize = 1;
+                            let extraDim = 0;
+                            
+                            // Agar 100% se zyada ho, toh holes shrink honge aur overall shade dark hoga
+                            if (rawOpacity > 100) {
+                                holeSize = Math.max(0.1, 1 - ((rawOpacity - 100) / 100)); // Shrinks hole physical size
+                                extraDim = Math.min(1, (rawOpacity - 100) / 100);         // Increases background darkness
+                            }
+                            
+                            // Updated Tiny Holes Pattern
+                            container.style.cssText = baseCss + `background-image: radial-gradient(circle, transparent ${holeSize}px, #000000 ${holeSize + 0.5}px) !important; background-size: 6px 6px !important; background-color: rgba(0, 0, 0, ${extraDim}) !important;`; 
+                            
+                            // Aggressive Dimmer for 100+ Opacity
+                            if (rawOpacity > 100) {
+                                const darkBlanket = document.createElement('div');
+                                darkBlanket.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; background-color: rgba(0, 0, 0, ${extraDim * 0.7}) !important; pointer-events: none !important; border: none !important; z-index: 1 !important;`;
+                                container.appendChild(darkBlanket);
+                            }
                         }
                         
                         let target = document.body || document.documentElement; if (target) target.appendChild(container);
