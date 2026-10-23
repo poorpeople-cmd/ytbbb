@@ -1,7 +1,5 @@
 
 
-
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -994,7 +992,7 @@ tune=zerolatency
         "scene_order": [{"name": "WaitingScene"}, {"name": "MainScene"}],
         "sources": [
             { "id": "xshm_input", "name": "Screen", "settings": { "show_cursor": false } },
-            { "id": "pulse_output_capture", "name": "Audio", "settings": { "device_id": "DeepVoiceOBS.monitor" } },
+            { "id": "pulse_output_capture", "name": "Audio", "settings": {} },
             { "id": "scene", "name": "MainScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true}, {"name": "Audio", "id": 2, "visible": true} ] } },
             { "id": "scene", "name": "WaitingScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true} ] } }
         ]
@@ -1181,6 +1179,103 @@ async function initializeVideo(p, startMuted) {
         if(targetFrame) {
             await targetFrame.evaluate((muteVideo) => {
                 window.isStreamMuted = muteVideo; 
+
+                // 🎙️ ZERO-LATENCY DEEP VOICE CHANGER (Moti Aawaz + Anti-Match DSP)
+                function applyDeepVoiceChanger(mediaEl) {
+                    if (mediaEl.dataset.voiceChanged === 'true') return;
+                    try {
+                        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        if (!AudioCtx) return;
+                        if (!window._customAudioCtx) window._customAudioCtx = new AudioCtx();
+                        const ctx = window._customAudioCtx;
+                        if (ctx.state === 'suspended') ctx.resume();
+
+                        const source = ctx.createMediaElementSource(mediaEl);
+
+                        // 1. Real-Time Pitch Shifter (Jungle-style Dual Delay Line - 0ms Sync Lag!)
+                        const bufferTime = 0.080;
+                        const fadeTime = 0.035;
+                        const shiftRatio = -0.22; // -22% Pitch Drop (Moti/Bhaari Aawaz)
+
+                        const mod1 = ctx.createOscillator();
+                        const mod2 = ctx.createOscillator();
+                        const modGain1 = ctx.createGain();
+                        const modGain2 = ctx.createGain();
+                        const delay1 = ctx.createDelay(1.0);
+                        const delay2 = ctx.createDelay(1.0);
+                        const fade1 = ctx.createGain();
+                        const fade2 = ctx.createGain();
+                        const mix = ctx.createGain();
+
+                        // Sawtooth waves for continuous real-time pitch shifting without changing video speed
+                        const freq = 1 / (bufferTime - fadeTime);
+                        mod1.type = 'sawtooth';
+                        mod2.type = 'sawtooth';
+                        mod1.frequency.value = freq;
+                        mod2.frequency.value = freq;
+
+                        modGain1.gain.value = -shiftRatio * (bufferTime / 2);
+                        modGain2.gain.value = -shiftRatio * (bufferTime / 2);
+
+                        delay1.delayTime.value = bufferTime / 2;
+                        delay2.delayTime.value = bufferTime / 2;
+
+                        mod1.connect(modGain1);
+                        mod2.connect(modGain2);
+                        modGain1.connect(delay1.delayTime);
+                        modGain2.connect(delay2.delayTime);
+
+                        source.connect(delay1);
+                        source.connect(delay2);
+                        delay1.connect(fade1);
+                        delay2.connect(fade2);
+
+                        fade1.gain.value = 0.55;
+                        fade2.gain.value = 0.55;
+
+                        fade1.connect(mix);
+                        fade2.connect(mix);
+
+                        mod1.start(0);
+                        mod2.start(ctx.currentTime + (bufferTime - fadeTime) / 2);
+
+                        // 2. Heavy Bass Boost (Aawaz ko aur bhaari aur deep banane ke liye)
+                        const bassBoost = ctx.createBiquadFilter();
+                        bassBoost.type = 'lowshelf';
+                        bassBoost.frequency.value = 220;
+                        bassBoost.gain.value = 8; // +8dB Heavy Bass
+
+                        // 3. High-Cut Warmth Filter (Patli aawaz aur robotic hiss hatane ke liye)
+                        const highCut = ctx.createBiquadFilter();
+                        highCut.type = 'lowpass';
+                        highCut.frequency.value = 3400;
+
+                        // 4. Dynamics Compressor (Volume barabar aur clear rakhne ke liye)
+                        const compressor = ctx.createDynamicsCompressor();
+                        compressor.threshold.value = -20;
+                        compressor.knee.value = 30;
+                        compressor.ratio.value = 8;
+                        compressor.attack.value = 0.005;
+                        compressor.release.value = 0.150;
+
+                        // Connect Full Pipeline -> Output
+                        mix.connect(bassBoost);
+                        bassBoost.connect(highCut);
+                        highCut.connect(compressor);
+                        compressor.connect(ctx.destination);
+
+                        mediaEl.dataset.voiceChanged = 'true';
+                        console.log('[🎙️] Deep Voice Changer Activated (100% Sync Locked)');
+                    } catch (err) {
+                        // Fallback: Agar CORS ki wajah se WebAudio block ho, toh micro pitch/formant lagao
+                        try {
+                            mediaEl.preservesPitch = false;
+                            mediaEl.mozPreservesPitch = false;
+                            mediaEl.webkitPreservesPitch = false;
+                        } catch(e) {}
+                    }
+                }
+
                 setInterval(() => {
                     try {
                         const style = document.createElement('style');
@@ -1191,7 +1286,16 @@ async function initializeVideo(p, startMuted) {
                         const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
                         let realVideo = null;
 
-                        mediaElements.forEach(media => { media.muted = window.isStreamMuted; media.volume = window.isStreamMuted ? 0.0 : 1.0; });
+                        mediaElements.forEach(media => { 
+                            media.muted = window.isStreamMuted; 
+                            media.volume = window.isStreamMuted ? 0.0 : 1.0; 
+                            if (!window.isStreamMuted) {
+                                applyDeepVoiceChanger(media);
+                                if (window._customAudioCtx && window._customAudioCtx.state === 'suspended') {
+                                    window._customAudioCtx.resume().catch(()=>{});
+                                }
+                            }
+                        });
                         if (!window.isStreamMuted) document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
 
                         for (const v of videos) { if (v.clientWidth > 100 && v.clientHeight > 100) { realVideo = v; break; } }
@@ -1398,40 +1502,6 @@ async function startWatchdog() {
 }
 
 async function startDirectStreaming() {
-    console.log(`[*] Setting up System-Level Deep Voice Changer (Zero-Lag)...`);
-    try {
-        // Purane virtual speakers saaf karein (agar restart hua ho)
-        execSync('pkill -9 -f "ffmpeg.*DeepVoiceOBS" || true', { stdio: 'ignore' });
-        
-        // 1. Do Virtual Speakers banayein: RawStream (Chrome ke liye) aur DeepVoiceOBS (OBS ke liye)
-        execSync('pactl load-module module-null-sink sink_name=RawStream sink_properties=device.description=RawStream || true', { stdio: 'ignore' });
-        execSync('pactl load-module module-null-sink sink_name=DeepVoiceOBS sink_properties=device.description=DeepVoiceOBS || true', { stdio: 'ignore' });
-        
-        // 2. Chrome aur Default Audio ko RawStream par bhej dein
-        execSync('pactl set-default-sink RawStream || true', { stdio: 'ignore' });
-
-        // 3. Zero-Latency Real-Time FFmpeg Voice Changer (Pitch 20% Down + Exact Speed 1.0x Sync Lock + Bass Boost)
-        // asetrate=48000*0.80 aawaz ko mota karega, aur atempo=1.25 speed ko wapis 1.0x par lock rakhega (0.80 * 1.25 = 1.00 Exact Sync!)
-        const voiceChangerProc = spawn('ffmpeg', [
-            '-fflags', 'nobuffer',
-            '-flags', 'low_delay',
-            '-probesize', '32',
-            '-analyzeduration', '0',
-            '-f', 'pulse',
-            '-fragment_size', '512',
-            '-i', 'RawStream.monitor',
-            '-af', 'asetrate=48000*0.80,aresample=48000,atempo=1.25,bass=g=6:f=180,treble=g=-4:f=3500',
-            '-f', 'pulse',
-            '-buffer_duration', '20',
-            'DeepVoiceOBS'
-        ], { stdio: 'ignore' });
-        
-        audioProcesses.push(voiceChangerProc);
-        console.log(`[🎙️] System Deep Voice Pipe Active: RawStream -> [Moti Aawaz + 1.0x Sync] -> DeepVoiceOBS`);
-    } catch (e) {
-        console.log(`[⚠️] Voice Pipe Setup Warning:`, e.message);
-    }
-
     console.log(`[*] Starting OBS Studio...`); setupOBSConfig();
     obsProcess = spawn('obs', ['--startstreaming', '--minimize-to-tray']);
     
@@ -1481,7 +1551,7 @@ browserArgs = [
         /* 🚨 REMOVED: '--disable-web-security' (This was triggering the fake block) */
         '--ignore-gpu-blocklist', '--use-gl=egl', '--disable-accelerated-video-decode', '--disable-accelerated-video-encode',
         '--disable-smooth-scrolling', '--disable-blink-features=AutomationControlled',
-        '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion,NetworkServiceInProcess2',
+        '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion,NetworkServiceInProcess2,PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies',
         '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
         // 🟢 KING1 FIX: Force Chrome to use the default ALSA audio device (PulseAudio)
         '--alsa-output-device=default'
@@ -1528,7 +1598,7 @@ async function cleanup() {
     if (browser) { try { await browser.close(); } catch(e) { } browser = null; }
     if (obsProcess) { try { obsProcess.kill('SIGKILL'); } catch(e) { } obsProcess = null; }
     if (audioProcesses && audioProcesses.length > 0) { audioProcesses.forEach(ap => { try { ap.kill('SIGKILL'); } catch(e) {} }); audioProcesses = []; }
-    try { execSync('pkill -9 obs || true', { stdio: 'ignore' }); execSync('pkill -9 chrome || true', { stdio: 'ignore' }); execSync('pkill -9 puppeteer || true', { stdio: 'ignore' }); execSync('pkill -9 ffplay || true', { stdio: 'ignore' }); execSync('pkill -9 -f "ffmpeg.*DeepVoiceOBS" || true', { stdio: 'ignore' }); } catch (e) { }
+    try { execSync('pkill -9 obs || true', { stdio: 'ignore' }); execSync('pkill -9 chrome || true', { stdio: 'ignore' }); execSync('pkill -9 puppeteer || true', { stdio: 'ignore' }); execSync('pkill -9 ffplay || true', { stdio: 'ignore' }); } catch (e) { }
 }
 
 process.on('SIGINT', async () => { await cleanup(); process.exit(0); });
@@ -1572,8 +1642,6 @@ else {
 }
 
 mainLoop();
-
-
 
 
 
