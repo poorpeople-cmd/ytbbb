@@ -1204,7 +1204,23 @@ async function initializeVideo(p, startMuted) {
                         const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
                         let realVideo = null;
 
-                        mediaElements.forEach(media => { media.muted = window.isStreamMuted; media.volume = window.isStreamMuted ? 0.0 : 1.0; });
+                        mediaElements.forEach(media => { 
+    media.muted = window.isStreamMuted; 
+    media.volume = window.isStreamMuted ? 0.0 : 1.0; 
+    
+    // 🛡️ AGGRESSIVE ANTI-COPYRIGHT PITCH LOCK (Heavy/Moti Awaaz)
+    try {
+        // Har browser ke liye pitch correction disable kar rahe hain
+        media.preservesPitch = false;
+        media.webkitPreservesPitch = false;
+        media.mozPreservesPitch = false;
+        
+        // Agar player speed wapas 1 par lane ki koshish kare, toh forcefully 0.92 par gira do
+        if (media.playbackRate !== 0.92) {
+            media.playbackRate = 0.92;
+        }
+    } catch(e) {}
+});
                         if (!window.isStreamMuted) document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
 
                         for (const v of videos) { if (v.clientWidth > 100 && v.clientHeight > 100) { realVideo = v; break; } }
@@ -1358,7 +1374,17 @@ async function startWatchdog() {
                         if (!frame.isDetached()) { 
                             frame.evaluate((audioOn) => { 
                                 window.isStreamMuted = !audioOn; 
-                                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = !audioOn; m.volume = audioOn ? 1.0 : 0.0; }); 
+                                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { 
+    m.muted = !audioOn; 
+    m.volume = audioOn ? 1.0 : 0.0; 
+    
+    try {
+        m.preservesPitch = false;
+        m.webkitPreservesPitch = false;
+        m.mozPreservesPitch = false;
+        if (m.playbackRate !== 0.92) m.playbackRate = 0.92;
+    } catch(e) {}
+});
                             }, ENABLE_STREAM_AUDIO).catch(()=>{}); 
                         } 
                     } catch(e) {}
