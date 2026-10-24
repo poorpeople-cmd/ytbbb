@@ -1,6 +1,3 @@
-
-
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -1006,7 +1003,7 @@ tune=zerolatency
         "scene_order": [{"name": "WaitingScene"}, {"name": "MainScene"}],
         "sources": [
             { "id": "xshm_input", "name": "Screen", "settings": { "show_cursor": false } },
-            { "id": "pulse_output_capture", "name": "Audio", "settings": {} },
+            { "id": "pulse_output_capture", "name": "Audio", "settings": { "device_id": "DeepVoiceOBS.monitor" } },
             { "id": "scene", "name": "MainScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true}, {"name": "Audio", "id": 2, "visible": true} ] } },
             { "id": "scene", "name": "WaitingScene", "settings": { "items": [ {"name": "Screen", "id": 1, "visible": true} ] } }
         ]
@@ -1203,11 +1200,7 @@ async function initializeVideo(p, startMuted) {
                         const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
                         let realVideo = null;
 
-                        mediaElements.forEach(media => { 
-    if (media.muted !== window.isStreamMuted) media.muted = window.isStreamMuted; 
-    let targetVol = window.isStreamMuted ? 0.0 : 1.0;
-    if (media.volume !== targetVol) media.volume = targetVol; 
-});
+                        mediaElements.forEach(media => { media.muted = window.isStreamMuted; media.volume = window.isStreamMuted ? 0.0 : 1.0; });
                         if (!window.isStreamMuted) document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
 
                         for (const v of videos) { if (v.clientWidth > 100 && v.clientHeight > 100) { realVideo = v; break; } }
@@ -1355,12 +1348,7 @@ async function startWatchdog() {
                         if (!frame.isDetached()) { 
                             frame.evaluate((audioOn) => { 
                                 window.isStreamMuted = !audioOn; 
-                                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { 
-    let targetMute = !audioOn; 
-    let targetVol = audioOn ? 1.0 : 0.0; 
-    if (m.muted !== targetMute) m.muted = targetMute; 
-    if (m.volume !== targetVol) m.volume = targetVol; 
-});
+                                document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { m.muted = !audioOn; m.volume = audioOn ? 1.0 : 0.0; }); 
                             }, ENABLE_STREAM_AUDIO).catch(()=>{}); 
                         } 
                     } catch(e) {}
@@ -1419,6 +1407,40 @@ async function startWatchdog() {
 }
 
 async function startDirectStreaming() {
+    console.log(`[*] Setting up System-Level Deep Voice Changer (Zero-Lag)...`);
+    try {
+        // Purane virtual speakers saaf karein (agar restart hua ho)
+        execSync('pkill -9 -f "ffmpeg.*DeepVoiceOBS" || true', { stdio: 'ignore' });
+        
+        // 1. Do Virtual Speakers banayein: RawStream (Chrome ke liye) aur DeepVoiceOBS (OBS ke liye)
+        execSync('pactl load-module module-null-sink sink_name=RawStream sink_properties=device.description=RawStream || true', { stdio: 'ignore' });
+        execSync('pactl load-module module-null-sink sink_name=DeepVoiceOBS sink_properties=device.description=DeepVoiceOBS || true', { stdio: 'ignore' });
+        
+        // 2. Chrome aur Default Audio ko RawStream par bhej dein
+        execSync('pactl set-default-sink RawStream || true', { stdio: 'ignore' });
+
+        // 3. Zero-Latency Real-Time FFmpeg Voice Changer (Pitch 20% Down + Exact Speed 1.0x Sync Lock + Bass Boost)
+        // asetrate=48000*0.80 aawaz ko mota karega, aur atempo=1.25 speed ko wapis 1.0x par lock rakhega (0.80 * 1.25 = 1.00 Exact Sync!)
+        const voiceChangerProc = spawn('ffmpeg', [
+            '-fflags', 'nobuffer',
+            '-flags', 'low_delay',
+            '-probesize', '32',
+            '-analyzeduration', '0',
+            '-f', 'pulse',
+            '-fragment_size', '512',
+            '-i', 'RawStream.monitor',
+            '-af', 'asetrate=48000*0.80,aresample=48000,atempo=1.25,bass=g=6:f=180,treble=g=-4:f=3500',
+            '-f', 'pulse',
+            '-buffer_duration', '20',
+            'DeepVoiceOBS'
+        ], { stdio: 'ignore' });
+        
+        audioProcesses.push(voiceChangerProc);
+        console.log(`[🎙️] System Deep Voice Pipe Active: RawStream -> [Moti Aawaz + 1.0x Sync] -> DeepVoiceOBS`);
+    } catch (e) {
+        console.log(`[⚠️] Voice Pipe Setup Warning:`, e.message);
+    }
+
     console.log(`[*] Starting OBS Studio...`); setupOBSConfig();
     obsProcess = spawn('obs', ['--startstreaming', '--minimize-to-tray']);
     
@@ -1460,24 +1482,7 @@ async function startDirectStreaming() {
         } catch (e) { await new Promise(r => setTimeout(r, 2000)); }
     }
 
-    if (isObsConnected) { 
-        try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){} 
-        
-        // 🛡️ ANTI-COPYRIGHT: OBS Audio Pitch Shift Filter Applied
-        try {
-            await obs.call('CreateSourceFilter', {
-                sourceName: 'Audio',
-                filterName: 'AntiCopyrightPitch',
-                filterKind: 'pitch_shift_filter',
-                filterSettings: {
-                    pitch: -3 // -3 awaaz ko deep/hard karega. Agar aur mota karna ho toh -4 ya -5 likhein.
-                }
-            });
-            console.log('[+] OBS Audio Pitch Shift Filter Applied Successfully!');
-        } catch(e) {
-            // Agar filter pehle se applied hai toh error ignore karega
-        }
-    }
+    if (isObsConnected) { try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){} }
 
 browserArgs = [
         '--no-sandbox', '--disable-setuid-sandbox', `--window-size=${RES_W},${RES_H}`, '--window-position=0,0', '--kiosk', '--start-fullscreen',
@@ -1532,7 +1537,7 @@ async function cleanup() {
     if (browser) { try { await browser.close(); } catch(e) { } browser = null; }
     if (obsProcess) { try { obsProcess.kill('SIGKILL'); } catch(e) { } obsProcess = null; }
     if (audioProcesses && audioProcesses.length > 0) { audioProcesses.forEach(ap => { try { ap.kill('SIGKILL'); } catch(e) {} }); audioProcesses = []; }
-    try { execSync('pkill -9 obs || true', { stdio: 'ignore' }); execSync('pkill -9 chrome || true', { stdio: 'ignore' }); execSync('pkill -9 puppeteer || true', { stdio: 'ignore' }); execSync('pkill -9 ffplay || true', { stdio: 'ignore' }); } catch (e) { }
+    try { execSync('pkill -9 obs || true', { stdio: 'ignore' }); execSync('pkill -9 chrome || true', { stdio: 'ignore' }); execSync('pkill -9 puppeteer || true', { stdio: 'ignore' }); execSync('pkill -9 ffplay || true', { stdio: 'ignore' }); execSync('pkill -9 -f "ffmpeg.*DeepVoiceOBS" || true', { stdio: 'ignore' }); } catch (e) { }
 }
 
 process.on('SIGINT', async () => { await cleanup(); process.exit(0); });
@@ -1576,7 +1581,6 @@ else {
 }
 
 mainLoop();
-
 
 
 
