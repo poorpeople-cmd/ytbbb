@@ -1,7 +1,6 @@
 
 
 
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -1205,21 +1204,9 @@ async function initializeVideo(p, startMuted) {
                         let realVideo = null;
 
                         mediaElements.forEach(media => { 
-    media.muted = window.isStreamMuted; 
-    media.volume = window.isStreamMuted ? 0.0 : 1.0; 
-    
-    // 🛡️ AGGRESSIVE ANTI-COPYRIGHT PITCH LOCK (Heavy/Moti Awaaz)
-    try {
-        // Har browser ke liye pitch correction disable kar rahe hain
-        media.preservesPitch = false;
-        media.webkitPreservesPitch = false;
-        media.mozPreservesPitch = false;
-        
-        // Agar player speed wapas 1 par lane ki koshish kare, toh forcefully 0.92 par gira do
-        if (media.playbackRate !== 0.92) {
-            media.playbackRate = 0.92;
-        }
-    } catch(e) {}
+    if (media.muted !== window.isStreamMuted) media.muted = window.isStreamMuted; 
+    let targetVol = window.isStreamMuted ? 0.0 : 1.0;
+    if (media.volume !== targetVol) media.volume = targetVol; 
 });
                         if (!window.isStreamMuted) document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
 
@@ -1239,13 +1226,7 @@ async function initializeVideo(p, startMuted) {
                             playerWrap.style.setProperty('visibility', 'visible', 'important');
                             playerWrap.style.setProperty('display', 'block', 'important');
                             if (playerWrap !== realVideo) { realVideo.style.setProperty('width', '100%', 'important'); realVideo.style.setProperty('height', '100%', 'important'); }
-realVideo.style.setProperty('object-fit', 'contain', 'important');
-
-// 🛡️ ANTI-COPYRIGHT AUDIO: Awaaz ko "Mota" (Hard/Deep) karna taake bots detect na karein
-if (realVideo.playbackRate === 1) {
-    realVideo.preservesPitch = false; 
-    realVideo.playbackRate = 0.94; // 0.94 se awaaz thodi slow aur bhari (moti) ho jayegi
-}
+                            realVideo.style.setProperty('object-fit', 'contain', 'important');
                         }
                     } catch(err) {}
                 }, 500); 
@@ -1375,15 +1356,10 @@ async function startWatchdog() {
                             frame.evaluate((audioOn) => { 
                                 window.isStreamMuted = !audioOn; 
                                 document.querySelectorAll('video:not(#sport4u-video-overlay), audio').forEach(m => { 
-    m.muted = !audioOn; 
-    m.volume = audioOn ? 1.0 : 0.0; 
-    
-    try {
-        m.preservesPitch = false;
-        m.webkitPreservesPitch = false;
-        m.mozPreservesPitch = false;
-        if (m.playbackRate !== 0.92) m.playbackRate = 0.92;
-    } catch(e) {}
+    let targetMute = !audioOn; 
+    let targetVol = audioOn ? 1.0 : 0.0; 
+    if (m.muted !== targetMute) m.muted = targetMute; 
+    if (m.volume !== targetVol) m.volume = targetVol; 
 });
                             }, ENABLE_STREAM_AUDIO).catch(()=>{}); 
                         } 
@@ -1484,7 +1460,24 @@ async function startDirectStreaming() {
         } catch (e) { await new Promise(r => setTimeout(r, 2000)); }
     }
 
-    if (isObsConnected) { try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){} }
+    if (isObsConnected) { 
+        try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){} 
+        
+        // 🛡️ ANTI-COPYRIGHT: OBS Audio Pitch Shift Filter Applied
+        try {
+            await obs.call('CreateSourceFilter', {
+                sourceName: 'Audio',
+                filterName: 'AntiCopyrightPitch',
+                filterKind: 'pitch_shift_filter',
+                filterSettings: {
+                    pitch: -3 // -3 awaaz ko deep/hard karega. Agar aur mota karna ho toh -4 ya -5 likhein.
+                }
+            });
+            console.log('[+] OBS Audio Pitch Shift Filter Applied Successfully!');
+        } catch(e) {
+            // Agar filter pehle se applied hai toh error ignore karega
+        }
+    }
 
 browserArgs = [
         '--no-sandbox', '--disable-setuid-sandbox', `--window-size=${RES_W},${RES_H}`, '--window-position=0,0', '--kiosk', '--start-fullscreen',
@@ -1583,8 +1576,6 @@ else {
 }
 
 mainLoop();
-
-
 
 
 
