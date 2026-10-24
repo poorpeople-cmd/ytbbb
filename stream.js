@@ -1190,11 +1190,12 @@ async function initializeVideo(p, startMuted) {
             }, 500); 
         }).catch(() => {});
 
+
         if(targetFrame) {
             await targetFrame.evaluate((muteVideo) => {
                 window.isStreamMuted = muteVideo; 
 
-                // 🎙️ ZERO-LATENCY DEEP VOICE CHANGER (Moti Aawaz + Anti-Match DSP)
+                // 🎙️ ZERO-LATENCY DEEP VOICE CHANGER (Optimized - No Buzzing/Clipping)
                 function applyDeepVoiceChanger(mediaEl) {
                     if (mediaEl.dataset.voiceChanged === 'true') return;
                     try {
@@ -1206,10 +1207,10 @@ async function initializeVideo(p, startMuted) {
 
                         const source = ctx.createMediaElementSource(mediaEl);
 
-                        // 1. Real-Time Pitch Shifter (Jungle-style Dual Delay Line - 0ms Sync Lag!)
+                        // 1. Real-Time Pitch Shifter (Buzzing fixed - Shift reduced for natural deep voice)
                         const bufferTime = 0.080;
                         const fadeTime = 0.035;
-                        const shiftRatio = -0.22; // -22% Pitch Drop (Moti/Bhaari Aawaz)
+                        const shiftRatio = -0.09; // FIX: -9% Pitch Drop
 
                         const mod1 = ctx.createOscillator();
                         const mod2 = ctx.createOscillator();
@@ -1221,7 +1222,6 @@ async function initializeVideo(p, startMuted) {
                         const fade2 = ctx.createGain();
                         const mix = ctx.createGain();
 
-                        // Sawtooth waves for continuous real-time pitch shifting without changing video speed
                         const freq = 1 / (bufferTime - fadeTime);
                         mod1.type = 'sawtooth';
                         mod2.type = 'sawtooth';
@@ -1253,40 +1253,40 @@ async function initializeVideo(p, startMuted) {
                         mod1.start(0);
                         mod2.start(ctx.currentTime + (bufferTime - fadeTime) / 2);
 
-                        // 2. Heavy Bass Boost (Aawaz ko aur bhaari aur deep banane ke liye)
+                        // 2. Heavy Bass Boost (Gain reduced to stop speaker clipping/distortion)
                         const bassBoost = ctx.createBiquadFilter();
                         bassBoost.type = 'lowshelf';
                         bassBoost.frequency.value = 220;
-                        bassBoost.gain.value = 8; // +8dB Heavy Bass
+                        bassBoost.gain.value = 3.5; // FIX: 3.5dB Bass
 
-                        // 3. High-Cut Warmth Filter (Patli aawaz aur robotic hiss hatane ke liye)
+                        // 3. High-Cut Warmth Filter
                         const highCut = ctx.createBiquadFilter();
                         highCut.type = 'lowpass';
-                        highCut.frequency.value = 3400;
+                        highCut.frequency.value = 4500;
 
-                        // 4. Dynamics Compressor (Volume barabar aur clear rakhne ke liye)
+                        // 4. Dynamics Compressor
                         const compressor = ctx.createDynamicsCompressor();
-                        compressor.threshold.value = -20;
+                        compressor.threshold.value = -15;
                         compressor.knee.value = 30;
-                        compressor.ratio.value = 8;
+                        compressor.ratio.value = 4;
                         compressor.attack.value = 0.005;
                         compressor.release.value = 0.150;
+
+                        // 5. MASTER GAIN (Speaker buzzing rokne ke liye)
+                        const masterOutput = ctx.createGain();
+                        masterOutput.gain.value = 0.85;
 
                         // Connect Full Pipeline -> Output
                         mix.connect(bassBoost);
                         bassBoost.connect(highCut);
                         highCut.connect(compressor);
-                        compressor.connect(ctx.destination);
+                        compressor.connect(masterOutput);
+                        masterOutput.connect(ctx.destination);
 
                         mediaEl.dataset.voiceChanged = 'true';
-                        console.log('[🎙️] Deep Voice Changer Activated (100% Sync Locked)');
+                        console.log('[🎙️] Deep Voice Changer Activated (Optimized, No Buzz)');
                     } catch (err) {
-                        // Fallback: Agar CORS ki wajah se WebAudio block ho, toh micro pitch/formant lagao
-                        try {
-                            mediaEl.preservesPitch = false;
-                            mediaEl.mozPreservesPitch = false;
-                            mediaEl.webkitPreservesPitch = false;
-                        } catch(e) {}
+                        try { mediaEl.preservesPitch = false; } catch(e) {}
                     }
                 }
 
@@ -1301,8 +1301,10 @@ async function initializeVideo(p, startMuted) {
                         let realVideo = null;
 
                         mediaElements.forEach(media => { 
-                            media.muted = window.isStreamMuted; 
-                            media.volume = window.isStreamMuted ? 0.0 : 1.0; 
+                            if (media.muted !== window.isStreamMuted) media.muted = window.isStreamMuted; 
+                            let targetVol = window.isStreamMuted ? 0.0 : 1.0;
+                            if (media.volume !== targetVol) media.volume = targetVol; 
+                            
                             if (!window.isStreamMuted) {
                                 applyDeepVoiceChanger(media);
                                 if (window._customAudioCtx && window._customAudioCtx.state === 'suspended') {
@@ -1334,6 +1336,154 @@ async function initializeVideo(p, startMuted) {
                 }, 500); 
             }, startMuted).catch(() => {});
         }
+
+        
+        // =================== 1 : work but very hard pitch ==============
+        
+        // if(targetFrame) {
+        //     await targetFrame.evaluate((muteVideo) => {
+        //         window.isStreamMuted = muteVideo; 
+
+        //         // 🎙️ ZERO-LATENCY DEEP VOICE CHANGER (Moti Aawaz + Anti-Match DSP)
+        //         function applyDeepVoiceChanger(mediaEl) {
+        //             if (mediaEl.dataset.voiceChanged === 'true') return;
+        //             try {
+        //                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        //                 if (!AudioCtx) return;
+        //                 if (!window._customAudioCtx) window._customAudioCtx = new AudioCtx();
+        //                 const ctx = window._customAudioCtx;
+        //                 if (ctx.state === 'suspended') ctx.resume();
+
+        //                 const source = ctx.createMediaElementSource(mediaEl);
+
+        //                 // 1. Real-Time Pitch Shifter (Jungle-style Dual Delay Line - 0ms Sync Lag!)
+        //                 const bufferTime = 0.080;
+        //                 const fadeTime = 0.035;
+        //                 const shiftRatio = -0.22; // -22% Pitch Drop (Moti/Bhaari Aawaz)
+
+        //                 const mod1 = ctx.createOscillator();
+        //                 const mod2 = ctx.createOscillator();
+        //                 const modGain1 = ctx.createGain();
+        //                 const modGain2 = ctx.createGain();
+        //                 const delay1 = ctx.createDelay(1.0);
+        //                 const delay2 = ctx.createDelay(1.0);
+        //                 const fade1 = ctx.createGain();
+        //                 const fade2 = ctx.createGain();
+        //                 const mix = ctx.createGain();
+
+        //                 // Sawtooth waves for continuous real-time pitch shifting without changing video speed
+        //                 const freq = 1 / (bufferTime - fadeTime);
+        //                 mod1.type = 'sawtooth';
+        //                 mod2.type = 'sawtooth';
+        //                 mod1.frequency.value = freq;
+        //                 mod2.frequency.value = freq;
+
+        //                 modGain1.gain.value = -shiftRatio * (bufferTime / 2);
+        //                 modGain2.gain.value = -shiftRatio * (bufferTime / 2);
+
+        //                 delay1.delayTime.value = bufferTime / 2;
+        //                 delay2.delayTime.value = bufferTime / 2;
+
+        //                 mod1.connect(modGain1);
+        //                 mod2.connect(modGain2);
+        //                 modGain1.connect(delay1.delayTime);
+        //                 modGain2.connect(delay2.delayTime);
+
+        //                 source.connect(delay1);
+        //                 source.connect(delay2);
+        //                 delay1.connect(fade1);
+        //                 delay2.connect(fade2);
+
+        //                 fade1.gain.value = 0.55;
+        //                 fade2.gain.value = 0.55;
+
+        //                 fade1.connect(mix);
+        //                 fade2.connect(mix);
+
+        //                 mod1.start(0);
+        //                 mod2.start(ctx.currentTime + (bufferTime - fadeTime) / 2);
+
+        //                 // 2. Heavy Bass Boost (Aawaz ko aur bhaari aur deep banane ke liye)
+        //                 const bassBoost = ctx.createBiquadFilter();
+        //                 bassBoost.type = 'lowshelf';
+        //                 bassBoost.frequency.value = 220;
+        //                 bassBoost.gain.value = 8; // +8dB Heavy Bass
+
+        //                 // 3. High-Cut Warmth Filter (Patli aawaz aur robotic hiss hatane ke liye)
+        //                 const highCut = ctx.createBiquadFilter();
+        //                 highCut.type = 'lowpass';
+        //                 highCut.frequency.value = 3400;
+
+        //                 // 4. Dynamics Compressor (Volume barabar aur clear rakhne ke liye)
+        //                 const compressor = ctx.createDynamicsCompressor();
+        //                 compressor.threshold.value = -20;
+        //                 compressor.knee.value = 30;
+        //                 compressor.ratio.value = 8;
+        //                 compressor.attack.value = 0.005;
+        //                 compressor.release.value = 0.150;
+
+        //                 // Connect Full Pipeline -> Output
+        //                 mix.connect(bassBoost);
+        //                 bassBoost.connect(highCut);
+        //                 highCut.connect(compressor);
+        //                 compressor.connect(ctx.destination);
+
+        //                 mediaEl.dataset.voiceChanged = 'true';
+        //                 console.log('[🎙️] Deep Voice Changer Activated (100% Sync Locked)');
+        //             } catch (err) {
+        //                 // Fallback: Agar CORS ki wajah se WebAudio block ho, toh micro pitch/formant lagao
+        //                 try {
+        //                     mediaEl.preservesPitch = false;
+        //                     mediaEl.mozPreservesPitch = false;
+        //                     mediaEl.webkitPreservesPitch = false;
+        //                 } catch(e) {}
+        //             }
+        //         }
+
+        //         setInterval(() => {
+        //             try {
+        //                 const style = document.createElement('style');
+        //                 style.innerHTML = `.jw-controls, .jw-ui, .plyr__controls, .vjs-control-bar, [data-player] .controls { display: none !important; opacity: 0 !important; visibility: hidden !important; }`;
+        //                 document.head.appendChild(style);
+
+        //                 const mediaElements = document.querySelectorAll('video:not(#sport4u-video-overlay), audio');
+        //                 const videos = Array.from(document.querySelectorAll('video:not(#sport4u-video-overlay)'));
+        //                 let realVideo = null;
+
+        //                 mediaElements.forEach(media => { 
+        //                     media.muted = window.isStreamMuted; 
+        //                     media.volume = window.isStreamMuted ? 0.0 : 1.0; 
+        //                     if (!window.isStreamMuted) {
+        //                         applyDeepVoiceChanger(media);
+        //                         if (window._customAudioCtx && window._customAudioCtx.state === 'suspended') {
+        //                             window._customAudioCtx.resume().catch(()=>{});
+        //                         }
+        //                     }
+        //                 });
+        //                 if (!window.isStreamMuted) document.querySelectorAll('.jw-icon-volume.jw-off, .vjs-vol-muted, .plyr__control--pressed[data-plyr="mute"]').forEach(btn => { try { btn.click(); } catch(e){} });
+
+        //                 for (const v of videos) { if (v.clientWidth > 100 && v.clientHeight > 100) { realVideo = v; break; } }
+        //                 if (!realVideo && videos.length > 0) realVideo = videos[0];
+
+        //                 if (realVideo) { 
+        //                     let playerWrap = realVideo.closest('.jwplayer, #player, .plyr, .vjs-player, .shaka-video-container, [data-player]') || realVideo;
+        //                     playerWrap.style.setProperty('position', 'fixed', 'important');
+        //                     playerWrap.style.setProperty('top', '0px', 'important');
+        //                     playerWrap.style.setProperty('left', '0px', 'important');
+        //                     playerWrap.style.setProperty('width', '100vw', 'important');
+        //                     playerWrap.style.setProperty('height', '100vh', 'important');
+        //                     playerWrap.style.setProperty('z-index', '2147483646', 'important'); 
+        //                     playerWrap.style.setProperty('background-color', 'black', 'important');
+        //                     playerWrap.style.setProperty('opacity', '1', 'important');
+        //                     playerWrap.style.setProperty('visibility', 'visible', 'important');
+        //                     playerWrap.style.setProperty('display', 'block', 'important');
+        //                     if (playerWrap !== realVideo) { realVideo.style.setProperty('width', '100%', 'important'); realVideo.style.setProperty('height', '100%', 'important'); }
+        //                     realVideo.style.setProperty('object-fit', 'contain', 'important');
+        //                 }
+        //             } catch(err) {}
+        //         }, 500); 
+        //     }, startMuted).catch(() => {});
+        // }
 
     } catch (e) { }
 
