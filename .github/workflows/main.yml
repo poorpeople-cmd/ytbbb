@@ -158,6 +158,11 @@ on:
         required: false
         type: string
         default: ''
+      # pic_urls:
+      #   description: 'Optional: Image URLs separated by double colon (::) e.g. url1::url2'
+      #   required: false
+      #   type: string
+      #   default: ''
       enable_text_overlay:
         description: 'Enable Text Watermark Overlay'
         required: true
@@ -207,7 +212,33 @@ on:
         type: string
         default: 'OFF'
       scoreboard_matches:
-        description: 'Matches (e.g. 102,115 | 205,208)'
+        description: |
+          # Matches (e.g. 102,115 | 205,208)
+          Matches (e.g. PREMIER LEAGUE = 102,115 & 106,116 | LALIGA = 135,126)
+
+          --- ⚽ UEFA Nations League ---
+          - UEFA LEAGUE A: [A1] 1:FRA, 2:ITA, 3:BEL, 4:TUR [A2] 5:GER, 6:NED, 7:SRB, 8:GRE [A3] 9:ESP, 10:CRO, 11:ENG, 12:CZE [A4] 13:POR, 14:DEN, 15:NOR, 16:WAL
+          - UEFA LEAGUE B: [B1] 17:SCO, 18:SUI, 19:SVN, 20:MKD [B2] 21:HUN, 22:UKR, 23:GEO, 24:NIR [B3] 25:ISR, 26:AUT, 27:IRL, 28:KOS [B4] 29:POL, 30:BIH, 31:ROU, 32:SWE
+          - UEFA LEAGUE C: [C1] 33:ALB, 34:FIN, 35:BLR, 36:SMR [C2] 37:MNE, 38:ARM, 39:CYP, 40:LVA [C3] 41:KAZ, 42:SVK, 43:FRO, 44:MDA [C4] 45:ISL, 46:BUL, 47:EST, 48:LUX
+          - UEFA LEAGUE D: [D1] 49:MLT, 50:GIB, 51:AND [D2] 52:LTU, 53:AZE, 54:LIE
+          - WORLD: 61:ARG, 62:BRA, 63:URU, 64:COL, 65:USA, 66:MEX, 67:MAR, 68:ALG, 69:NGA, 70:SEN
+          - CLUBS: 81:RMA, 82:BARCA, 83:CITY, 84:ARS, 85:LIV, 86:MUN, 87:CHE, 88:BAY, 89:PSG, 90:JUV, 91:ALN
+          
+
+          --- ⚽ PREMIER LEAGUE ---
+          101:AFC Bournemouth, 102:Arsenal, 103:Aston Villa, 104:Brentford, 105:Brighton, 106:Chelsea, 107:Coventry City, 108:Crystal Palace, 109:Everton, 110:Fulham, 111:Hull City, 112:Ipswich Town, 113:Leeds United, 114:Liverpool, 115:Man City, 116:Man United, 117:Newcastle, 118:Nott'm Forest, 119:Sunderland, 120:Tottenham
+
+          --- ⚽ LALIGA ---
+          121:Athletic Club, 122:Atletico Madrid, 123:CA Osasuna, 124:Deportivo Alaves, 125:Elche CF, 126:FC Barcelona, 127:Getafe CF, 128:Levante UD, 129:Malaga CF, 130:Rayo Vallecano, 131:RC Celta, 132:Deportivo La Coruna, 133:Espanyol, 134:Real Betis, 135:Real Madrid, 136:Racing Santander, 137:Real Sociedad, 138:Sevilla FC, 139:Valencia CF, 140:Villarreal CF
+
+          --- ⚽ BUNDESLIGA ---
+          141: FC Koln, 142:Union Berlin, 143:Mainz 05, 144:Bayer Leverkusen, 145:Borussia Dortmund, 146:M'gladbach, 147:Eintracht Frankfurt, 148:FC Augsburg, 149:FC Bayern Munich, 150:Schalke 04, 151:Hamburger SV, 152:RB Leipzig, 153:SC Freiburg, 154:SC Paderborn, 155:SV Elversberg, 156:Werder Bremen, 157:TSG Hoffenheim, 158:VfB Stuttgart
+
+          --- ⚽ LIGUE 1 ---
+          159:AJ Auxerre, 160:Angers SCO, 161:AS Monaco, 162:ES Troyes, 163:FC Lorient, 164:Le Havre, 165:Le Mans, 166:LOSC Lille, 167:OGC Nice, 168:Marseille, 169:Lyon, 170:Paris FC, 171:PSG, 172:RC Lens, 173:Strasbourg, 174:Stade Brestois, 175:Stade Rennais, 176:Toulouse FC
+
+          --- 🏏 CRICKET (FULL & ASSOCIATES) ---
+          201:Afghanistan, 202:Australia, 203:Bangladesh, 204:England, 205:India, 206:Ireland, 207:New Zealand, 208:Pakistan, 209:South Africa, 210:Sri Lanka, 211:West Indies, 212:Zimbabwe, 213:Canada, 214:Namibia, 215:Nepal, 216:Netherlands, 217:Oman, 218:Papua New Guinea, 219:Scotland, 220:UAE, 221:USA
         required: true
         type: string
         default: 'OFF'
@@ -243,12 +274,13 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ focal main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
           sudo apt-get update && sudo apt-get install -y cloudflare-warp
           
+          # 🟢 KING1 FIX: Exact working commands for WARP proxy
           warp-cli --accept-tos registration new
           warp-cli --accept-tos mode proxy
           warp-cli --accept-tos proxy port 40000
           warp-cli --accept-tos connect
           sleep 5
-          curl -x socks5://127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace
+          curl -x socks5://127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace # Verify WARP connection
           echo "[+] Cloudflare WARP Proxy Shield is UP on Port 40000"
 
       - name: Download Custom Broadcast Video
@@ -306,7 +338,6 @@ jobs:
             screenshots/*.png
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 
 
 
