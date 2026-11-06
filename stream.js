@@ -1762,15 +1762,26 @@ async function startDirectStreaming() {
 
     if (isObsConnected) { try { await obs.call('SetCurrentProgramScene', { sceneName: 'WaitingScene' }); } catch(e){} }
 
-browserArgs = [
+// browserArgs = [
+//         '--no-sandbox', '--disable-setuid-sandbox', `--window-size=${RES_W},${RES_H}`, '--window-position=0,0', '--kiosk', '--start-fullscreen',
+//         '--autoplay-policy=no-user-gesture-required', '--disable-dev-shm-usage', '--ignore-certificate-errors', 
+//         /* 🚨 REMOVED: '--disable-web-security' (This was triggering the fake block) */
+//         '--ignore-gpu-blocklist', '--use-gl=egl', '--disable-accelerated-video-decode', '--disable-accelerated-video-encode',
+//         '--disable-smooth-scrolling', '--disable-blink-features=AutomationControlled',
+//         '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion,NetworkServiceInProcess2,PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies',
+//         '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
+//         // 🟢 KING1 FIX: Force Chrome to use the default ALSA audio device (PulseAudio)
+//         '--alsa-output-device=default'
+//     ];
+
+    browserArgs = [
         '--no-sandbox', '--disable-setuid-sandbox', `--window-size=${RES_W},${RES_H}`, '--window-position=0,0', '--kiosk', '--start-fullscreen',
         '--autoplay-policy=no-user-gesture-required', '--disable-dev-shm-usage', '--ignore-certificate-errors', 
-        /* 🚨 REMOVED: '--disable-web-security' (This was triggering the fake block) */
+        '--allow-file-access-from-files', '--disable-web-security', 
         '--ignore-gpu-blocklist', '--use-gl=egl', '--disable-accelerated-video-decode', '--disable-accelerated-video-encode',
         '--disable-smooth-scrolling', '--disable-blink-features=AutomationControlled',
         '--disable-features=Translate,BlinkGenPropertyTrees,CalculateNativeWinOcclusion,NetworkServiceInProcess2,PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies',
         '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
-        // 🟢 KING1 FIX: Force Chrome to use the default ALSA audio device (PulseAudio)
         '--alsa-output-device=default'
     ];
     if (PROXY_ENGINE.includes('Cloudflare')) browserArgs.push('--proxy-server=socks5://127.0.0.1:40000');
