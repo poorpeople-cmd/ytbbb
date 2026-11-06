@@ -206,7 +206,6 @@ on:
         required: true
         type: string
         default: 'None'
-      SCOREBOARD_LEAGUE: ${{ github.event.inputs.scoreboard_league }}
       scoreboard_matches:
         description: |
           # Matches (e.g. 102,115 | 205,208)
