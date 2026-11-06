@@ -206,11 +206,7 @@ on:
         required: true
         type: string
         default: 'None'
-      scoreboard_league:
-        description: 'League Title (e.g. PREMIER LEAGUE ⚽, ICC T20 🏏). Type OFF to disable.'
-        required: true
-        type: string
-        default: 'OFF'
+      SCOREBOARD_LEAGUE: ${{ github.event.inputs.scoreboard_league }}
       scoreboard_matches:
         description: |
           # Matches (e.g. 102,115 | 205,208)
