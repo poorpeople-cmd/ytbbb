@@ -610,10 +610,7 @@ async function injectOfficialWatermark(page) {
                             ">
                                 ${powerTextHTML}
 
-                                // <div style="font-weight: bold; margin-bottom: 1vh;">Guys, please support me ❤️🙏</div>
-                                // <div style="font-size: 2.8vmin; color: #ffffff; font-style: italic; opacity: 0.95;">
-                                //     "Before you skip this video, please check the pinned comment... Without it, my hard work feels incomplete. 😢👇"
-                                // </div>
+                                
                                 
                                 <div style="
                                     display: flex;
