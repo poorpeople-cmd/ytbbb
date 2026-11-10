@@ -32,19 +32,6 @@ on:
         description: 'Facebook Stream Key (Optional)'
         required: false
         type: string
-      server_selection:
-        description: 'Target Server Button - Type "None" to skip'
-        required: true
-        type: string
-        default: 'None'
-      stream_format:
-        description: 'Select Stream Format'
-        required: true
-        type: choice
-        options:
-          - 'Original (16:9 Standard)'
-          - 'Shorts (9:16 Vertical)'
-        default: 'Original (16:9 Standard)'
       stream_quality:
         description: 'Select Stream Quality'
         required: true
@@ -302,8 +289,6 @@ jobs:
           DIRECT_VIDEO_URL: ${{ github.event.inputs.direct_video_url }}
           YOUTUBE_KEY: ${{ github.event.inputs.youtube_stream_key }}
           FACEBOOK_KEY: ${{ github.event.inputs.facebook_stream_key }}
-          SERVER_SELECTION: ${{ github.event.inputs.server_selection }}
-          STREAM_FORMAT: ${{ github.event.inputs.stream_format }}
           STREAM_QUALITY: ${{ github.event.inputs.stream_quality }}
           PROXY_ENGINE: ${{ github.event.inputs.proxy_engine }}
           ENABLE_BLACK_OVERLAY: ${{ github.event.inputs.enable_black_overlay }}
